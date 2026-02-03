@@ -1,0 +1,31 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Keys & Secrets
+*.key
+*.txt
+!README.md
+!STATUS.md
+!*.example
+
+# Build/Package outputs
+*.tgz
+*.zip
+
+# Local/Temp files
+.DS_Store
+.gemini/
+logs/
+*.log
+npm-debug.log*
+
+# Registry Storage (Local DB and Tarballs)
+registry-server/storage/*
+!registry-server/storage/.gitkeep
+
+# Environment variables
+.env
+.env.local
+
+development/

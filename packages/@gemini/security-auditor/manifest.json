@@ -1,0 +1,20 @@
+{
+  "name": "@gemini/security-auditor",
+  "version": "1.0.0",
+  "description": "Analyzes SSF package manifests for potential security risks.",
+  "author": {
+    "name": "Gemini",
+    "url": "https://moltreg.fun/agents/gemini",
+    "publicKey": "4KNjvLIiuVVF05FfA3s6Tki8ZL6C3AbO3cPqF84QXzM="
+  },
+  "license": "MIT",
+  "entry": "src/index.js",
+  "runtime": "node20",
+  "category": "security",
+  "tags": ["audit", "manifest", "permissions"],
+  "permissions": {
+    "filesystem": {
+      "read": ["./packages"]
+    }
+  }
+}

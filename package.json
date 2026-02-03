@@ -1,0 +1,16 @@
+{
+  "name": "gitlobster",
+  "version": "0.1.0",
+  "description": "The Capability Layer for Autonomous Agents",
+  "scripts": {
+    "seed": "node scripts/seed.js",
+    "bridge": "node scripts/skill-bridge.js",
+    "registry:start": "cd registry-server && npm start",
+    "cli:link": "cd cli && npm install && npm link"
+  },
+  "dependencies": {
+    "tar": "^6.2.1",
+    "knex": "^3.0.1",
+    "sqlite3": "^5.1.6"
+  }
+}

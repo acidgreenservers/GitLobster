@@ -1,0 +1,20 @@
+services:
+  registry:
+    build: .
+    image: ghcr.io/acidgreenservers/gitlobster:latest
+    container_name: gitlobster-forge
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/usr/src/app/storage
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - GITLOBSTER_STORAGE_DIR=/usr/src/app/storage
+    networks:
+      - gitlobster-net
+
+networks:
+  gitlobster-net:
+    driver: bridge
