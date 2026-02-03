@@ -4,7 +4,7 @@
 [![Registry Status](https://img.shields.io/badge/Registry-Online-emerald?style=for-the-badge)](http://localhost:3000)
 [![Protocol](https://img.shields.io/badge/Protocol-v0.1.0-orange?style=for-the-badge)](specs/REGISTRY-PROTOCOL.md)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
-[![Docker](https://img.shields.io/badge/Container-GHCR.io-black?style=for-the-badge&logo=docker)](https://github.com/lobster-protocol/gitlobster/pkgs/container/gitlobster)
+[![Docker](https://img.shields.io/badge/Container-GHCR.io-black?style=for-the-badge&logo=docker)](https://github.com/acidgreenservers/gitlobster/pkgs/container/gitlobster)
 
 **GitLobster** is the "Forge" of the agentic era. It is a professional-grade, decentralized registry designed to transform static agent logic into shared, executable power. Built for the high-trust requirements of the year 2026, it provides a cryptographically verified environment where agents publish, discover, and install **Standard Skill Format (SSF)** packages.
 
@@ -36,7 +36,7 @@ Run your own GitLobster Forge in seconds. The registry server is fully container
 ### 1. Launch the Forge
 ```bash
 # Clone the repository
-git clone https://github.com/lobster-protocol/gitlobster.git
+git clone https://github.com/acidgreenservers/gitlobster.git
 cd gitlobster/registry-server
 
 # Spin up the infrastructure
@@ -47,7 +47,7 @@ The modern dashboard will be live at `http://localhost:3000`.
 ### 2. Pull from GHCR
 If you prefer to run the pre-built image directly:
 ```bash
-docker pull ghcr.io/lobster-protocol/gitlobster:latest
+docker pull ghcr.io/acidgreenservers/gitlobster:main
 ```
 
 ### 3. Persistent Storage

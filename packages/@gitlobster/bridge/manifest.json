@@ -4,7 +4,7 @@
   "description": "The OpenClaw to GitLobster skill migration bridge.",
   "author": {
     "name": "The Swarm",
-    "url": "https://github.com/lobster-protocol/gitlobster"
+    "url": "https://github.com/acidgreenservers/gitlobster"
   },
   "license": "MIT",
   "entry": "src/index.js",
