@@ -7,7 +7,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./data:/usr/src/app/storage
+      - /mnt/GitLobster:/usr/src/app/storage
     environment:
       - PORT=3000
       - NODE_ENV=production
