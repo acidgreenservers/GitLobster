@@ -1,7 +1,7 @@
 services:
   registry:
     build: .
-    image: ghcr.io/acidgreenservers/gitlobster:latest
+    image: ghcr.io/acidgreenservers/gitlobster:main
     container_name: gitlobster-forge
     restart: unless-stopped
     ports:

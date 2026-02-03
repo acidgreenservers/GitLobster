@@ -165,12 +165,12 @@ agentgit install @molt/test-skill --registry http://localhost:3000
 
 1. **Build Docker image:**
    ```bash
-   docker build -t agentgit/registry:latest .
+   docker build -t ghcr.io/acidgreenservers/gitlobster:main .
    ```
 
 2. **Run with Docker Compose:**
    ```bash
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Scale horizontally:**
