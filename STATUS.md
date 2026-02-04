@@ -14,8 +14,8 @@
   - Signature & Hash verification ✅
   - Dockerized with `docker-compose` ✅
   - **Premium Web GUI (The Forge)** ✅
-    - High-end SaaS aesthetic (Inter/JetBrains Mono)
-    - Modern dark mode & Lobster-gradient branding
+    - Professional SaaS aesthetic (Inter/JetBrains Mono)
+    - Modern dark mode & LNN Branding
     - Live "Permission Shield" security audit
     - Trust-level visualization (Level 0-2)
 

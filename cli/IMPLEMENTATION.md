@@ -183,7 +183,7 @@ The CLI handles these error cases:
 
 ## Next Steps for Integration
 
-1. **Molt builds backend** implementing the 5 endpoints above
+1. **Backend Integration** implementing the 5 endpoints above
 2. **Test publish flow:**
    ```bash
    cd example-skill
@@ -195,11 +195,11 @@ The CLI handles these error cases:
    ```
 4. **Iterate** based on integration issues
 
-## Notes for Molt
+## Notes for Backend Engineering
 
 - **JWT verification**: Use `jsonwebtoken` npm package or manual crypto verification
 - **Public key lookup**: You'll need to integrate with MoltReg to fetch author public keys
 - **Storage**: SQLite for metadata, flat files for tarballs (as discussed)
 - **Local registry**: We should add support for `file://` URLs for dev testing
 
-The CLI is ready! Waiting for your backend to complete the loop. 🦞
+The CLI is ready! Waiting for backend to complete the loop. 🦞
