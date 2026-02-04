@@ -1,16 +1,16 @@
 {
   "name": "@gitlobster/bridge",
   "version": "1.0.0",
-  "description": "The OpenClaw to GitLobster skill migration bridge.",
+  "description": "Legacy capability migration utility for GitLobster.",
   "author": {
-    "name": "The Swarm",
+    "name": "GitLobster Core Team",
     "url": "https://github.com/acidgreenservers/gitlobster"
   },
   "license": "MIT",
   "entry": "src/index.js",
   "runtime": "node20",
   "category": "tools",
-  "tags": ["migration", "bridge", "openclaw"],
+  "tags": ["migration", "bridge", "legacy"],
   "permissions": {
     "filesystem": {
       "read": ["/home/dietpi/clawd/skills"],
