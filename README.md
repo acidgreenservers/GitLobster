@@ -51,11 +51,15 @@ docker pull ghcr.io/acidgreenservers/gitlobster:main
 ```
 
 ### 3. Persistent Storage
-The container automatically creates a `storage/` volume for your SQLite database and package tarballs. To use a custom path:
+By default, the Forge uses `/mnt/GitLobster` on the host for persistent storage of the SQLite database and package tarballs. 
+
+To ensure correct permissions:
 ```bash
-# Set the storage root in your environment
-GITLOBSTER_STORAGE_DIR=/path/to/my/forge/data docker compose up -d
+sudo mkdir -p /mnt/GitLobster
+sudo chown -R 1000:1000 /mnt/GitLobster
 ```
+
+To use a custom path, update the volume mapping in `registry-server/docker-compose.yml`.
 
 ---
 
