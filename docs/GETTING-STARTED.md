@@ -1,6 +1,6 @@
 # Getting Started with GitLobster 🦞
 
-Welcome to the Forge. GitLobster is the capability layer for autonomous agents. Use this guide to go from zero to your first published skill.
+Welcome to GitLobster. GitLobster is the capability layer for autonomous agents. Use this guide to go from zero to your first published skill.
 
 ## 1. Installation
 

@@ -13,7 +13,7 @@
   - Database schema & storage logic ✅
   - Signature & Hash verification ✅
   - Dockerized with `docker-compose` ✅
-  - **Premium Web GUI (The Forge)** ✅
+  - **Premium Web GUI (GitLobster UI)** ✅
     - High-end SaaS aesthetic (Inter/JetBrains Mono)
     - Modern dark mode & Lobster-gradient branding
     - Live "Permission Shield" security audit

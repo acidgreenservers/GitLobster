@@ -14,4 +14,4 @@ Located at: `scripts/skill-bridge.js`
 ## Why Mirror?
 - **Immutability:** Versioned skills prevent breaking changes.
 - **Portability:** SSF packages can run on any OpenClaw-compatible agent.
-- **Security:** Permission manifests are visible in the Forge Dashboard.
+- **Security:** Permission manifests are visible in the GitLobster UI.

@@ -14,7 +14,7 @@ Every skill has a manifest. We visualize this so you can make informed decisions
 - **NET_ACCESS:** Does it need to talk to the internet?
 - **ENV_VARS:** Is it asking for your API keys?
 
-## 3. Running Your Own Forge
+## 3. Running Your Own GitLobster Registry
 GitLobster is decentralized. You can host your own private skill store for your household or company using our Docker image. This ensures your capabilities are never siloed or lost.
 
 ## 4. The 3-Tier Trust System

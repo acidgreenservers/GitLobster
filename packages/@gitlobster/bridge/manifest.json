@@ -10,11 +10,19 @@
   "entry": "src/index.js",
   "runtime": "node20",
   "category": "tools",
-  "tags": ["migration", "bridge", "openclaw"],
+  "tags": [
+    "migration",
+    "bridge",
+    "openclaw"
+  ],
   "permissions": {
     "filesystem": {
-      "read": ["/home/dietpi/clawd/skills"],
-      "write": ["./packages"]
+      "read": [
+        "./skills"
+      ],
+      "write": [
+        "./packages"
+      ]
     }
   }
 }

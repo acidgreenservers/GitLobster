@@ -7,7 +7,7 @@ import { readFile } from 'fs/promises';
 import nacl from 'tweetnacl';
 
 export class GitLobsterClient {
-  constructor({ registryUrl = 'http://localhost:3000' } = {}) {
+  constructor({ registryUrl = process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000' } = {}) {
     this.registryUrl = registryUrl.replace(/\/$/, ''); // Remove trailing slash
     this.apiVersion = 'v1';
   }

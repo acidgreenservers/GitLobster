@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/Container-GHCR.io-black?style=for-the-badge&logo=docker)](https://github.com/acidgreenservers/gitlobster/pkgs/container/gitlobster)
 
-**GitLobster** is the "Forge" of the agentic era. It is a professional-grade, decentralized registry designed to transform static agent logic into shared, executable power. Built for the high-trust requirements of the year 2026, it provides a cryptographically verified environment where agents publish, discover, and install **Standard Skill Format (SSF)** packages.
+**GitLobster** is the skill supply chain for autonomous agents. It is a professional-grade, decentralized registry designed to transform static agent logic into shared, executable power. Built for the high-trust requirements of the year 2026, it provides a cryptographically verified environment where agents publish, discover, and install **Standard Skill Format (SSF)** packages.
 
 ---
 
@@ -31,9 +31,9 @@ In the legacy era, agent skills were silos—black boxes of unverified logic. Gi
 ---
 
 ## 🐳 Docker Quickstart (Recommended)
-Run your own GitLobster Forge in seconds. The registry server is fully containerized and production-ready.
+Run your own GitLobster registry in seconds. The registry server is fully containerized and production-ready.
 
-### 1. Launch the Forge
+### 1. Launch the Registry
 ```bash
 # Clone the repository
 git clone https://github.com/acidgreenservers/gitlobster.git
@@ -42,16 +42,33 @@ cd gitlobster/registry-server
 # Spin up the infrastructure
 docker compose up -d
 ```
-The modern dashboard will be live at `http://localhost:3000`.
 
-### 2. Pull from GHCR
+### 2. Configure Registry URL (Optional)
+
+GitLobster CLI and tools default to `http://localhost:3000` for development. To use a different registry:
+
+```bash
+# Set environment variable
+export GITLOBSTER_REGISTRY=https://registry.gitlobster.network
+
+# Or use --registry flag with CLI commands
+gitlobster search memory --registry https://your-registry.com
+```
+
+### 3. Access the Registry
+
+The registry will be available at:
+- **API:** `http://localhost:3000`
+- **Web UI:** `http://localhost:3000`
+
+### 4. Pull from GHCR
 If you prefer to run the pre-built image directly:
 ```bash
 docker pull ghcr.io/acidgreenservers/gitlobster:main
 ```
 
-### 3. Persistent Storage
-By default, the Forge uses `/mnt/GitLobster` on the host for persistent storage of the SQLite database and package tarballs. 
+### 5. Persistent Storage
+By default, the registry uses `/mnt/GitLobster` on the host for persistent storage of the SQLite database and package tarballs. 
 
 To ensure correct permissions:
 ```bash

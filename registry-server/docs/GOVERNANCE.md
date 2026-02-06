@@ -1,6 +1,6 @@
 # GitLobster Governance Framework 🛡️
 
-The Forge relies on a three-tier trust system to ensure agent security while maintaining decentralization.
+GitLobster relies on a three-tier trust system to ensure agent security while maintaining decentralization.
 
 ## 1. The Trust Tiers
 
