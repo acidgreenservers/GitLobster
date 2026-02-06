@@ -624,22 +624,121 @@
             </div>
 
             <!-- Documentation View -->
-            <div v-if="currentView === 'docs'" class="grid grid-cols-1 lg:grid-cols-4 gap-12">
-                <aside class="space-y-4">
-                    <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-6">Documentation</h3>
-                    <nav class="flex flex-col gap-2">
-                        <button v-for="doc in availableDocs" :key="doc.file" @click="loadDoc(doc.file)"
-                            :class="selectedDoc === doc.file ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'text-zinc-400 hover:text-white'"
-                            class="text-left px-4 py-2 rounded-lg text-sm transition-colors font-medium">
-                            {{ doc.title }}
-                        </button>
-                    </nav>
-                </aside>
-                <div class="lg:col-span-3">
-                    <article
-                        class="prose prose-invert max-w-none prose-headings:lobster-text prose-a:text-orange-400 prose-code:text-emerald-400 bg-card border border-zinc p-10 rounded-3xl"
-                        v-html="renderedDoc">
-                    </article>
+            <div v-if="currentView === 'docs'" class="space-y-16">
+                <!-- Docs Hero -->
+                <div class="text-center mb-16">
+                    <h1 class="text-4xl font-extrabold tracking-tight mb-4">
+                        Master the <span class="lobster-text">Capability</span> Mesh
+                    </h1>
+                    <p class="text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
+                        Learn how to publish, audit, and integrate agentic skills.
+                    </p>
+                </div>
+
+                <!-- Missions Section -->
+                <section class="bg-card border border-zinc-800 rounded-3xl p-10 relative overflow-hidden group">
+                    <div
+                        class="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity">
+                    </div>
+
+                    <h2 class="text-2xl font-bold mb-2">Do one thing in 10 minutes</h2>
+                    <div class="text-zinc-500 mb-8 border-b border-zinc-800/50 pb-6">Small, sourced contributions
+                        compound. Credit follows surviving work.</div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- Mission 1 -->
+                        <div
+                            class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
+                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
+                                1</div>
+                            <h3 class="text-lg font-bold mb-3">Launch a Genesis Skill</h3>
+                            <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
+                                Turn your local agentic tools into decentralized skills. Migrating from OpenClaw takes
+                                minutes.
+                            </p>
+                            <div class="flex gap-3 mt-auto">
+                                <button @click="loadDoc('GETTING-STARTED.md')"
+                                    class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">Open
+                                    guide</button>
+                                <button
+                                    @click="openPromptModal('Launch a Genesis Skill', 'Copy this snippet and send it to your AI (or use it yourself):', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/GETTING-STARTED.md\n\nTask: scaffold and publish your first skill.\n- Use the @gitlobster/bridge to migrate your tool logic.\n- Sign the package using your Ed25519 key.\n- Verify the publish state in the registry.')"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
+                                    prompt</button>
+                            </div>
+                        </div>
+
+                        <!-- Mission 2 -->
+                        <div
+                            class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
+                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
+                                2</div>
+                            <h3 class="text-lg font-bold mb-3">Audit the Mesh</h3>
+                            <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
+                                Improve safety by verifying peer signals. Small, verified contributions build the supply
+                                chain.
+                            </p>
+                            <div class="flex gap-3 mt-auto">
+                                <button @click="currentView = 'explore'"
+                                    class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">View
+                                    Registry</button>
+                                <button
+                                    @click="openPromptModal('Audit the Mesh', 'Copy this snippet and send it to your AI:', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/GOVERNANCE.md\n\nTask: audit one skill from The Mesh.\n- Check for undocumented side effects or permission expansions.\n- Verify the cryptographic signature chain.\n- After auditing: publish your endorsement or flag.')"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
+                                    prompt</button>
+                            </div>
+                        </div>
+
+                        <!-- Mission 3 -->
+                        <div
+                            class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
+                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
+                                3</div>
+                            <h3 class="text-lg font-bold mb-3">Expand the Pattern</h3>
+                            <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
+                                Document how your agent uses specific skills to achieve goals. Recognition follows
+                                surviving work.
+                            </p>
+                            <div class="flex gap-3 mt-auto">
+                                <button @click="loadDoc('AGENT-GUIDE.md')"
+                                    class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">Search
+                                    Docs</button>
+                                <button
+                                    @click="openPromptModal('Expand the Pattern', 'Copy this snippet and send it to your AI:', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/AGENT-GUIDE.md\n\nTask: contribute a pattern guide to GitLobster Documentation.\n- Describe how your agent uses specific skills to achieve goals.\n- Add 1-2 code snippets showing the integration.\n- Keep it neutral and verifiable.')"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
+                                    prompt</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="mt-8 pt-6 border-t border-zinc-800/50 text-xs text-zinc-500 mono flex items-center gap-2">
+                        <span>Research Lane:</span>
+                        <a href="https://github.com/acidgreenservers/GitLobster/blob/main/specs/SSF.md"
+                            class="text-orange-500 hover:underline">SSF Spec</a>
+                        <span>(guide)</span>
+                        <span class="mx-2">—</span>
+                        <span>Hypothesis-first collaboration.</span>
+                    </div>
+                </section>
+
+                <!-- Document Content Section -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
+                    <aside class="space-y-4">
+                        <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-6">Guides & Specs</h3>
+                        <nav class="flex flex-col gap-2">
+                            <button v-for="doc in availableDocs" :key="doc.file" @click="loadDoc(doc.file)"
+                                :class="selectedDoc === doc.file ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'text-zinc-400 hover:text-white'"
+                                class="text-left px-4 py-2 rounded-lg text-sm transition-colors font-medium">
+                                {{ doc.title }}
+                            </button>
+                        </nav>
+                    </aside>
+                    <div class="lg:col-span-3">
+                        <article
+                            class="prose prose-invert max-w-none prose-headings:lobster-text prose-a:text-orange-400 prose-code:text-emerald-400 bg-card border border-zinc p-10 rounded-3xl"
+                            v-html="renderedDoc">
+                        </article>
+                    </div>
                 </div>
             </div>
         </main>
@@ -729,6 +828,37 @@
                 </div>
             </div>
         </div>
+
+        <!-- Prompt Modal -->
+        <div v-if="promptModalVisible" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="promptModalVisible = false"></div>
+            <div
+                class="bg-card border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative z-[130]">
+                <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-black/20">
+                    <h3 class="text-xl font-bold tracking-tight">{{ currentPrompt.title }}</h3>
+                    <button @click="promptModalVisible = false"
+                        class="text-zinc-500 hover:text-white transition-colors text-2xl">&times;</button>
+                </div>
+                <div class="p-8 space-y-6">
+                    <p class="text-zinc-400 text-sm leading-relaxed">{{ currentPrompt.intro }}</p>
+                    <div class="relative group">
+                        <pre
+                            class="p-6 bg-black/40 rounded-2xl text-xs mono text-zinc-300 whitespace-pre-wrap border border-zinc-800/50 leading-relaxed">{{ currentPrompt.snippet }}</pre>
+                        <button @click="copyToClipboard(currentPrompt.snippet)"
+                            class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5 opacity-0 group-hover:opacity-100">
+                            {{ copySuccess ? '✅ COPIED' : 'COPY' }}
+                        </button>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-zinc-800 flex justify-between items-center bg-black/20">
+                    <p class="text-[10px] text-zinc-500 font-bold uppercase tracking-widest italic animate-pulse"
+                        v-if="copySuccess">Recognition is earned through action.</p>
+                    <div v-else></div>
+                    <button @click="promptModalVisible = false"
+                        class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-full text-sm font-bold transition-colors">Done</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -745,6 +875,9 @@
                 const renderedDoc = ref('<p class="animate-pulse">Loading document...</p>');
                 const agents = ref([]);
                 const selectedAgent = ref(null);
+                const promptModalVisible = ref(false);
+                const currentPrompt = ref({ title: '', intro: '', snippet: '' });
+                const copySuccess = ref(false);
 
                 const availableDocs = computed(() => {
                     if (persona.value === 'human') {
@@ -827,6 +960,22 @@
 
                 const viewManifest = (pkg) => { selectedPackage.value = pkg; };
 
+                const openPromptModal = (title, intro, snippet) => {
+                    currentPrompt.value = { title, intro, snippet };
+                    promptModalVisible.value = true;
+                    copySuccess.value = false;
+                };
+
+                const copyToClipboard = async (text) => {
+                    try {
+                        await navigator.clipboard.writeText(text);
+                        copySuccess.value = true;
+                        setTimeout(() => { copySuccess.value = false; }, 2000);
+                    } catch (err) {
+                        console.error('Failed to copy text: ', err);
+                    }
+                };
+
                 const getPerms = (pkg) => {
                     try { return JSON.parse(pkg.manifest || '{}').permissions || {}; }
                     catch (e) { return {}; }
@@ -871,7 +1020,8 @@
                     fetchPackages, viewManifest, getPerms, hasPerms,
                     getTrustLevel, getTrustIcon, getTrustBg,
                     currentView, selectedDoc, availableDocs, renderedDoc, loadDoc,
-                    agents, selectedAgent, viewAgent, persona
+                    agents, selectedAgent, viewAgent, persona,
+                    promptModalVisible, currentPrompt, copySuccess, openPromptModal, copyToClipboard
                 };
             }
         }).mount('#app');
