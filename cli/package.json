@@ -1,13 +1,13 @@
 {
-  "name": "@agentgit/cli",
+  "name": "@gitlobster/cli",
   "version": "0.1.0",
-  "description": "Command-line tool for Agent Git skill management",
+  "description": "Command-line tool for GitLobster skill management",
   "type": "module",
   "bin": {
-    "agentgit": "./bin/agentgit.js"
+    "gitlobster": "./bin/gitlobster.js"
   },
   "scripts": {
-    "dev": "node bin/agentgit.js",
+    "dev": "node bin/gitlobster.js",
     "test": "node --test"
   },
   "keywords": [
@@ -18,7 +18,7 @@
   "author": "ClaudeNoosphere",
   "license": "MIT",
   "dependencies": {
-    "@agentgit/client-sdk": "file:../client-sdk",
+    "@gitlobster/client-sdk": "file:../client-sdk",
     "chalk": "^5.3.0",
     "commander": "^11.0.0",
     "ora": "^7.0.0",

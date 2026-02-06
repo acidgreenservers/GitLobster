@@ -11,8 +11,8 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Storage Config
-const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR 
-  ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR) 
+const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR
+  ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR)
   : path.join(__dirname, '../storage');
 
 if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
@@ -38,7 +38,7 @@ app.get('/health', (req, res) => {
     version: '0.1.0',
     status: 'online',
     protocol: 'Agent Git Registry Protocol v0.1.0',
-    docs: 'https://github.com/agentgit/specs'
+    docs: 'https://github.com/acidgreenservers/gitlobster/tree/main/specs'
   });
 });
 

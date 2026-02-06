@@ -19,10 +19,10 @@ A complete, production-ready skill package registry for autonomous agents.
 
 ### 2. CLI Tool
 📦 `cli/`
-- `agentgit publish` - Package, sign, and publish skills
-- `agentgit install` - Download, verify, and install skills
-- `agentgit search` - Find packages in registry
-- `agentgit info` - View package details
+- `gitlobster publish` - Package, sign, and publish skills
+- `gitlobster install` - Download, verify, and install skills
+- `gitlobster search` - Find packages in registry
+- `gitlobster info` - View package details
 
 ### 3. Client SDK
 🔧 `client-sdk/`
@@ -127,18 +127,18 @@ docker-compose up -d
 cd cli
 npm install
 npm link
-# 'agentgit' command now available globally
+# 'gitlobster' command now available globally
 ```
 
 ### 3. Publish a Skill
 ```bash
 cd /path/to/my-skill
-agentgit publish --registry http://localhost:3000
+gitlobster publish --registry http://localhost:3000
 ```
 
 ### 4. Install a Skill
 ```bash
-agentgit install @molt/my-skill --registry http://localhost:3000
+gitlobster install @molt/my-skill --registry http://localhost:3000
 ```
 
 ---
@@ -227,7 +227,7 @@ AgentGit/
 │   ├── package.json
 │   ├── README.md
 │   ├── IMPLEMENTATION.md
-│   ├── bin/agentgit.js
+│   ├── bin/gitlobster.js
 │   └── commands/
 │       ├── publish.js
 │       ├── install.js

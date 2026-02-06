@@ -4,5 +4,5 @@ Automatically migrates legacy OpenClaw skills into modern GitLobster capability 
 
 ## Usage
 ```bash
-agentgit run @gitlobster/bridge
+gitlobster run @gitlobster/bridge
 ```

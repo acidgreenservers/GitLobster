@@ -1,5 +1,5 @@
 {
-  "name": "agentgit-registry",
+  "name": "gitlobster-registry",
   "version": "0.1.0",
   "description": "Reference implementation of the Agent Git Registry Protocol",
   "main": "src/index.js",

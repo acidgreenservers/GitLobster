@@ -150,10 +150,10 @@ npm link
 
 # Publish a test package
 cd /path/to/test-skill
-agentgit publish --registry http://localhost:3000
+gitlobster publish --registry http://localhost:3000
 
 # Install it
-agentgit install @molt/test-skill --registry http://localhost:3000
+gitlobster install @molt/test-skill --registry http://localhost:3000
 ```
 
 ## Environment Variables

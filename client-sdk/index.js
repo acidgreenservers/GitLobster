@@ -1,12 +1,12 @@
 /**
- * Agent Git Client SDK
- * Low-level client for interacting with Agent Git registries
+ * GitLobster Client SDK
+ * Low-level client for interacting with GitLobster registries
  */
 
 import { readFile } from 'fs/promises';
 import nacl from 'tweetnacl';
 
-export class AgentGitClient {
+export class GitLobsterClient {
   constructor({ registryUrl = 'http://localhost:3000' } = {}) {
     this.registryUrl = registryUrl.replace(/\/$/, ''); // Remove trailing slash
     this.apiVersion = 'v1';
@@ -137,7 +137,7 @@ export class AgentGitClient {
     const now = Math.floor(Date.now() / 1000);
     const payload = {
       sub: scope,
-      iss: `agentgit-cli`,
+      iss: `gitlobster-cli`,
       iat: now,
       exp: now + 3600, // 1 hour
       scope: 'publish'

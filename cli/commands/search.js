@@ -4,11 +4,11 @@
  */
 
 import chalk from 'chalk';
-import { AgentGitClient } from '@agentgit/client-sdk';
+import { GitLobsterClient } from '@gitlobster/client-sdk';
 
 export async function searchCommand(query, options) {
   try {
-    const client = new AgentGitClient({ registryUrl: options.registry });
+    const client = new GitLobsterClient({ registryUrl: options.registry });
 
     const results = await client.search({
       q: query,
@@ -34,7 +34,7 @@ export async function searchCommand(query, options) {
     }
 
     console.log(chalk.dim(`Showing ${results.results.length} of ${results.total} results`));
-    console.log(chalk.dim(`Install with: ${chalk.white('agentgit install <package-name>')}\n`));
+    console.log(chalk.dim(`Install with: ${chalk.white('gitlobster install <package-name>')}\n`));
 
   } catch (error) {
     console.error(chalk.red('Search failed:'), error.message);

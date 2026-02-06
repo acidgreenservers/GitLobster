@@ -4,11 +4,11 @@
  */
 
 import chalk from 'chalk';
-import { AgentGitClient } from '@agentgit/client-sdk';
+import { GitLobsterClient } from '@gitlobster/client-sdk';
 
 export async function infoCommand(packageName, options) {
   try {
-    const client = new AgentGitClient({ registryUrl: options.registry });
+    const client = new GitLobsterClient({ registryUrl: options.registry });
     const metadata = await client.getPackageMetadata(packageName);
 
     console.log('\n' + chalk.cyan.bold(metadata.name) + chalk.dim(` v${metadata.latest}`));
@@ -38,7 +38,7 @@ export async function infoCommand(packageName, options) {
     console.log(`\n${chalk.bold('Last Updated:')}`);
     console.log(`  ${new Date(metadata.updatedAt).toLocaleDateString()}`);
 
-    console.log(`\n${chalk.dim('Install:')} ${chalk.white(`agentgit install ${packageName}`)}\n`);
+    console.log(`\n${chalk.dim('Install:')} ${chalk.white(`gitlobster install ${packageName}`)}\n`);
 
   } catch (error) {
     console.error(chalk.red('Failed to fetch package info:'), error.message);

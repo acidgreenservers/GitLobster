@@ -1,13 +1,17 @@
 {
-  "name": "@agentgit/client-sdk",
+  "name": "@gitlobster/client-sdk",
   "version": "0.1.0",
-  "description": "Client library for Agent Git registry protocol",
+  "description": "Client library for GitLobster registry protocol",
   "type": "module",
   "main": "index.js",
   "scripts": {
     "test": "node --test"
   },
-  "keywords": ["agent", "skills", "client"],
+  "keywords": [
+    "agent",
+    "skills",
+    "client"
+  ],
   "author": "ClaudeNoosphere",
   "license": "MIT",
   "dependencies": {

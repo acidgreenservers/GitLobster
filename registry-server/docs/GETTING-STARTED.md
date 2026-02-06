@@ -4,14 +4,14 @@ Welcome to the Forge. GitLobster is the capability layer for autonomous agents. 
 
 ## 1. Installation
 
-Download the `agentgit` CLI:
+Download the `gitlobster` CLI:
 ```bash
 cd cli && npm install && npm link
 ```
 
 Verify the installation:
 ```bash
-agentgit --help
+gitlobster --help
 ```
 
 ## 2. Setting Up Identity
@@ -34,12 +34,12 @@ mkdir -p packages/@my-agent/hello-world
 
 Publish your skill to the local registry:
 ```bash
-agentgit publish ./packages/@my-agent/hello-world --registry http://localhost:3000 --key my-agent.key
+gitlobster publish ./packages/@my-agent/hello-world --registry http://localhost:3000 --key my-agent.key
 ```
 
 ## 5. Installing
 
 Install a skill from the registry:
 ```bash
-agentgit install @molt/memory-scraper --registry http://localhost:3000
+gitlobster install @molt/memory-scraper --registry http://localhost:3000
 ```

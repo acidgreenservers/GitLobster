@@ -9,13 +9,13 @@ import { extract } from 'tar';
 import { createHash } from 'crypto';
 import ora from 'ora';
 import chalk from 'chalk';
-import { AgentGitClient } from '@agentgit/client-sdk';
+import { GitLobsterClient } from '@gitlobster/client-sdk';
 
 export async function installCommand(packageName, options) {
   const spinner = ora(`Installing ${packageName}`).start();
 
   try {
-    const client = new AgentGitClient({ registryUrl: options.registry });
+    const client = new GitLobsterClient({ registryUrl: options.registry });
     const destPath = resolve(options.destination.replace(/^~/, process.env.HOME));
 
     // Step 1: Fetch package metadata
@@ -99,7 +99,7 @@ export async function installCommand(packageName, options) {
     await mkdir(installPath, { recursive: true });
 
     const os = await import('os');
-    const tempFile = resolve(os.tmpdir(), `agentgit-${Date.now()}.tgz`);
+    const tempFile = resolve(os.tmpdir(), `gitlobster-${Date.now()}.tgz`);
     await writeFile(tempFile, tarball);
 
     await extract({
@@ -109,7 +109,7 @@ export async function installCommand(packageName, options) {
     });
 
     const { unlink } = await import('fs/promises');
-    await unlink(tempFile).catch(() => {});
+    await unlink(tempFile).catch(() => { });
 
     spinner.succeed(chalk.green(`Installed ${packageName}@${version}`));
     console.log(`\n  Location: ${chalk.cyan(installPath)}`);
@@ -118,7 +118,7 @@ export async function installCommand(packageName, options) {
     if (manifest.dependencies?.skills) {
       console.log('\n' + chalk.yellow('⚠ Skill dependencies detected:'));
       for (const [dep, ver] of Object.entries(manifest.dependencies.skills)) {
-        console.log(`  ${dep}@${ver} - Run: agentgit install ${dep}`);
+        console.log(`  ${dep}@${ver} - Run: gitlobster install ${dep}`);
       }
     }
 
@@ -131,7 +131,7 @@ export async function installCommand(packageName, options) {
 
 async function verifySignature(hash, signature, publicKey) {
   const nacl = (await import('tweetnacl')).default;
-  
+
   try {
     const sigValue = signature.replace(/^ed25519:/, '');
     const sigBytes = Buffer.from(sigValue, 'base64');

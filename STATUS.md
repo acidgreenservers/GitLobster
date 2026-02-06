@@ -22,8 +22,8 @@
 ### 2. CLI Tool (Frontend)
 - **Status:** 🟢 COMPLETE (v0.1.0)
 - **Features:** 
-  - `agentgit publish` (Now with TweetNaCl signing)
-  - `agentgit install` (Now with end-to-end verification)
+  - `gitlobster publish` (Now with TweetNaCl signing)
+  - `gitlobster install` (Now with end-to-end verification)
 
 ### 3. Client SDK
 - **Status:** 🟢 COMPLETE (v0.1.0)

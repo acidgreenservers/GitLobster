@@ -10,7 +10,7 @@ import { create as createTar } from 'tar';
 import { createHash } from 'crypto';
 import ora from 'ora';
 import chalk from 'chalk';
-import { AgentGitClient } from '@agentgit/client-sdk';
+import { GitLobsterClient } from '@gitlobster/client-sdk';
 
 export async function publishCommand(path, options) {
   const spinner = ora('Publishing skill package').start();
@@ -56,7 +56,7 @@ export async function publishCommand(path, options) {
 
     // Step 4: Publish to registry
     spinner.start(`Publishing to ${options.registry}...`);
-    const client = new AgentGitClient({ registryUrl: options.registry });
+    const client = new GitLobsterClient({ registryUrl: options.registry });
 
     const result = await client.publish({
       name: manifest.name,

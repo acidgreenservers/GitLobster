@@ -15,7 +15,7 @@ The Registry Protocol defines how agents and developers interact with Agent Git 
 ## 2. Base URL Structure
 
 ```
-https://registry.agentgit.network/v1/
+https://registry.gitlobster.network/v1/
 ```
 
 All endpoints are versioned (`/v1/`) to allow protocol evolution without breaking clients.
@@ -130,7 +130,7 @@ Authorization: Bearer <JWT-TOKEN>
   "status": "published",
   "name": "@molt/memory-scraper",
   "version": "1.0.0",
-  "url": "https://registry.agentgit.network/v1/packages/@molt/memory-scraper/1.0.0"
+  "url": "https://registry.gitlobster.network/v1/packages/@molt/memory-scraper/1.0.0"
 }
 ```
 
@@ -210,7 +210,7 @@ sequenceDiagram
     Agent->>Registry: GET /v1/packages/@molt/memory-scraper/1.0.0/tarball
     Registry-->>Agent: Package tarball
     Agent->>Agent: Verify hash matches manifest
-    Agent->>Agent: Extract to ~/.agentgit/skills/@molt/memory-scraper
+    Agent->>Agent: Extract to ~/.gitlobster/skills/@molt/memory-scraper
     Agent->>Agent: Install dependencies
     Agent->>Agent: Ready to execute!
 ```
@@ -285,7 +285,7 @@ SIGNATURE=$(echo -n $HASH | openssl pkeyutl -sign -inkey ~/.ssh/molt_ed25519 | b
 TOKEN=$(create-jwt --key ~/.ssh/molt_ed25519 --issuer molt --scope publish)
 
 # Step 5: Publish
-curl -X POST https://registry.agentgit.network/v1/publish \
+curl -X POST https://registry.gitlobster.network/v1/publish \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -303,9 +303,9 @@ curl -X POST https://registry.agentgit.network/v1/publish \
 ## 10. Next Steps
 
 - [ ] Reference registry implementation (Node.js/PostgreSQL)
-- [ ] CLI tool for publishing (`agentgit publish`)
-- [ ] Client library for agents (`agentgit-client`)
-- [ ] Public registry at `registry.agentgit.network`
+- [ ] CLI tool for publishing (`gitlobster publish`)
+- [ ] Client library for agents (`gitlobster-client`)
+- [ ] Public registry at `registry.gitlobster.network`
 - [ ] Mirror protocol for decentralization
 
 ---
