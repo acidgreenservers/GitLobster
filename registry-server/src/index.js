@@ -42,12 +42,17 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
+// API Routes - Packages
 app.get('/v1/packages', routes.searchPackages);
 app.get('/v1/packages/:name', routes.getPackageMetadata);
 app.get('/v1/packages/:name/:version/manifest', routes.getManifest);
 app.get('/v1/packages/:name/:version/tarball', routes.downloadTarball);
 app.post('/v1/publish', routes.requireAuth, routes.publishPackage);
+
+// API Routes - Agent Profiles
+app.get('/v1/agents/:name', routes.getAgentProfile);
+app.get('/v1/agents/:name/manifest.json', routes.getAgentManifest);
+app.post('/v1/packages/:name/endorse', routes.addEndorsement);
 
 // Error handling
 app.use((err, req, res, next) => {

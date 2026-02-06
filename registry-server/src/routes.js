@@ -27,9 +27,9 @@ async function searchPackages(req, res) {
     let query = db('packages').select('*');
 
     if (q) {
-      query = query.where(function() {
+      query = query.where(function () {
         this.where('name', 'like', `%${q}%`)
-            .orWhere('description', 'like', `%${q}%`);
+          .orWhere('description', 'like', `%${q}%`);
       });
     }
 
@@ -295,27 +295,117 @@ async function publishPackage(req, res) {
 }
 
 /**
- * GET /v1/agents/:name - Get agent profile
+ * GET /v1/agents/:name - Get enhanced agent profile
  */
 async function getAgentProfile(req, res) {
   try {
     const { name } = req.params;
     const agent = await db('agents').where({ name }).first();
-    
+
     if (!agent) {
       return res.status(404).json({ error: 'agent_not_found', message: 'Agent not found' });
     }
 
     const skills = await db('packages').where({ author_name: name.replace('@', '') });
-    
+
+    // Get identity metadata
+    const { getIdentityMetadata } = require('./identity');
+    const identityMeta = await getIdentityMetadata(name);
+
+    // Get trust score breakdown
+    const { getTrustScoreBreakdown } = require('./trust-score');
+    const trustScore = await getTrustScoreBreakdown(name);
+
     res.json({
       ...agent,
       metadata: JSON.parse(agent.metadata || '{}'),
-      skills
+      skills,
+      identity: identityMeta,
+      trustScore: {
+        overall: trustScore.computed_score,
+        components: {
+          capabilityReliability: trustScore.capability_reliability,
+          reviewConsistency: trustScore.review_consistency,
+          flagHistory: trustScore.flag_history_score,
+          trustAnchorOverlap: trustScore.trust_anchor_overlap,
+          timeInNetwork: trustScore.time_in_network
+        },
+        lastComputed: trustScore.last_computed
+      }
     });
   } catch (error) {
+    console.error('Profile error:', error);
     res.status(500).json({ error: 'profile_failed', message: error.message });
   }
+}
+
+/**
+ * GET /v1/agents/:name/manifest.json - Get agent profile manifest (machine-readable)
+ */
+async function getAgentManifest(req, res) {
+  try {
+    const { name } = req.params;
+    const agent = await db('agents').where({ name }).first();
+
+    if (!agent) {
+      return res.status(404).json({ error: 'agent_not_found', message: 'Agent not found' });
+    }
+
+    // Get identity metadata
+    const { getIdentityMetadata } = require('./identity');
+    const identityMeta = await getIdentityMetadata(name);
+
+    // Get trust score
+    const { getTrustScoreBreakdown } = require('./trust-score');
+    const trustScore = await getTrustScoreBreakdown(name);
+
+    // Get skill count
+    const skillCount = await db('packages')
+      .where({ author_name: name.replace('@', '') })
+      .count('* as count')
+      .first();
+
+    // Machine-readable manifest
+    res.json({
+      schema_version: "1.0",
+      agent_name: name,
+      identity: {
+        public_key: identityMeta.fullPublicKey,
+        key_fingerprint: identityMeta.keyFingerprint,
+        key_age_days: identityMeta.keyAge,
+        continuity_status: identityMeta.continuity,
+        continuity_score: identityMeta.continuityScore
+      },
+      trust_score: {
+        overall: trustScore.computed_score,
+        components: {
+          capability_reliability: trustScore.capability_reliability,
+          review_consistency: trustScore.review_consistency,
+          flag_history: trustScore.flag_history_score,
+          trust_anchor_overlap: trustScore.trust_anchor_overlap,
+          time_in_network: trustScore.time_in_network
+        }
+      },
+      statistics: {
+        skill_count: skillCount.count,
+        joined_at: agent.joined_at
+      },
+      trust_posture: determineTrustPosture(trustScore.computed_score),
+      last_updated: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Manifest error:', error);
+    res.status(500).json({ error: 'manifest_failed', message: error.message });
+  }
+}
+
+/**
+ * Determine trust posture based on score
+ */
+function determineTrustPosture(score) {
+  if (score >= 0.75) return 'conservative'; // High trust, low risk
+  if (score >= 0.50) return 'balanced'; // Medium trust
+  return 'experimental'; // Low trust, high risk
 }
 
 /**
@@ -351,5 +441,6 @@ module.exports = {
   publishPackage,
   requireAuth,
   getAgentProfile,
+  getAgentManifest,
   addEndorsement
 };
