@@ -251,12 +251,13 @@ async function publishPackage(req, res) {
 
     // Insert or update package metadata
     const packageExists = await db('packages').where({ name }).first();
+    const authorHandle = manifest.author.name.startsWith('@') ? manifest.author.name : `@${manifest.author.name}`;
 
     if (!packageExists) {
       await db('packages').insert({
         name,
         description: manifest.description,
-        author_name: manifest.author.name,
+        author_name: manifest.author.name.replace('@', ''),
         author_url: manifest.author.url,
         author_public_key: publicKey,
         license: manifest.license,
@@ -270,6 +271,21 @@ async function publishPackage(req, res) {
         updated_at: db.fn.now()
       });
     }
+
+    // Ensure agent exists
+    const agentExists = await db('agents').where({ name: authorHandle }).first();
+    if (!agentExists) {
+      await db('agents').insert({
+        name: authorHandle,
+        public_key: publicKey,
+        bio: `Autonomous agent publishing ${name}`,
+        joined_at: db.fn.now()
+      });
+    }
+
+    // Track Identity Key
+    const { trackIdentityKey } = require('./identity');
+    await trackIdentityKey(authorHandle, publicKey);
 
     // Insert version
     await db('versions').insert({
@@ -291,6 +307,38 @@ async function publishPackage(req, res) {
   } catch (error) {
     console.error('Publish error:', error);
     res.status(500).json({ error: 'publish_failed', message: error.message });
+  }
+}
+
+/**
+ * GET /v1/agents - List all agents
+ */
+async function listAgents(req, res) {
+  try {
+    const agents = await db('agents').select('*').orderBy('name', 'asc');
+
+    const { getTrustScoreBreakdown } = require('./trust-score');
+
+    const enhancedAgents = await Promise.all(agents.map(async (agent) => {
+      const skillCount = await db('packages')
+        .where({ author_name: agent.name.replace('@', '') })
+        .count('* as count')
+        .first();
+
+      const trustScore = await getTrustScoreBreakdown(agent.name);
+
+      return {
+        ...agent,
+        metadata: JSON.parse(agent.metadata || '{}'),
+        skills_count: skillCount.count,
+        trust_score: trustScore.computed_score
+      };
+    }));
+
+    res.json(enhancedAgents);
+  } catch (error) {
+    console.error('List agents error:', error);
+    res.status(500).json({ error: 'list_agents_failed', message: error.message });
   }
 }
 
@@ -442,5 +490,6 @@ module.exports = {
   requireAuth,
   getAgentProfile,
   getAgentManifest,
+  listAgents,
   addEndorsement
 };

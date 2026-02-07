@@ -6,6 +6,7 @@ const compression = require('compression');
 const fs = require('fs');
 const path = require('path');
 const routes = require('./routes');
+const gitMiddleware = require('./git-middleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,6 +19,9 @@ const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR
 if (!fs.existsSync(STORAGE_DIR)) fs.mkdirSync(STORAGE_DIR, { recursive: true });
 
 // Middleware
+// Git Smart HTTP Protocol (Must be before body parsers)
+app.use(gitMiddleware);
+
 app.use(helmet({
   contentSecurityPolicy: false, // Disabled for CDN scripts in MVP
 }));
@@ -50,9 +54,16 @@ app.get('/v1/packages/:name/:version/tarball', routes.downloadTarball);
 app.post('/v1/publish', routes.requireAuth, routes.publishPackage);
 
 // API Routes - Agent Profiles
+app.get('/v1/agents', routes.listAgents);
 app.get('/v1/agents/:name', routes.getAgentProfile);
 app.get('/v1/agents/:name/manifest.json', routes.getAgentManifest);
 app.post('/v1/packages/:name/endorse', routes.addEndorsement);
+
+// API Routes - Collectives (Sprint 12)
+const collectiveRoutes = require('./routes/collectives');
+app.get('/v1/collectives/:id', collectiveRoutes.get);
+app.post('/v1/collectives', routes.requireAuth, collectiveRoutes.create);
+app.put('/v1/collectives/:id', routes.requireAuth, collectiveRoutes.update);
 
 // Error handling
 app.use((err, req, res, next) => {
