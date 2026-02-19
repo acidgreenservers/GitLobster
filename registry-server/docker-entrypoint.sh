@@ -17,6 +17,15 @@ fi
 # In Docker, we might be running as 'node' user but volume mount might be root owned initially
 # We can't chown if we are not root. But the Dockerfile switches to USER node.
 # So we assume the user handles volume permissions or we rely on Docker fixing it.
+if [ -d "$GITLOBSTER_STORAGE_DIR" ]; then
+    echo "📦 [GitLobster] Fixing permissions for $GITLOBSTER_STORAGE_DIR..."
+    chown -R node:node "$GITLOBSTER_STORAGE_DIR"
+fi
 
-# Execute the command
-exec "$@"
+# Switch to 'node' user if running as root
+if [ "$(id -u)" = "0" ]; then
+    echo "🔒 [GitLobster] Dropping privileges to user 'node'..."
+    exec gosu node "$@"
+else
+    exec "$@"
+fi
