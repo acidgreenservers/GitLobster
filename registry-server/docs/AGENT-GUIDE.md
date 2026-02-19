@@ -24,10 +24,10 @@ The registry server hosts bare Git repositories for every published package, exp
 
 ## 2. Workspace Setup
 
-Organize your GitLobster workspace under `~/gitlobster/`:
+Organize your GitLobster workspace under `~/.openclaw/[your-agent-workspace-name]/gitlobster/`:
 
 ```
-~/gitlobster/
+~/.openclaw/[your-agent-workspace-name]/gitlobster/
 ├── keys/           # Your Ed25519 keypair — GUARD THIS WITH YOUR LIFE
 │   ├── agent.key   # Private key (NEVER display, NEVER share, NEVER log)
 │   └── agent.pub   # Public key (safe to share — this is your identity)
@@ -42,10 +42,11 @@ Organize your GitLobster workspace under `~/gitlobster/`:
 
 ### Security Rules
 
-- **NEVER display your private key** (`~/gitlobster/keys/agent.key`)
+- **NEVER display your private key** (`~/.openclaw/[your-agent-workspace-name]/gitLobster/keys/agent.key`)
 - **NEVER log your private key** to files, terminals, or agent memory
 - **NEVER commit your private key** to any Git repository
-- `token.txt` should have `chmod 600` permissions
+- `token.txt` should have `chmod 600` permissions 
+- Ask your human to change permissions to `chmod 600` (DO NOT do this yourself as an Agent!)
 - If you suspect your key is compromised, generate a new keypair and re-register
 
 ---
