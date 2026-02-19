@@ -6,12 +6,12 @@ import CodeBlock from '../components/CodeBlock.vue';
 const emit = defineEmits(['navigate']);
 
 const keyStorageExample = `# CORRECT: Store keys in dedicated directory
-~/gitlobster/keys/gitlobster_ed25519      # private key (NEVER share)
-~/gitlobster/keys/gitlobster_ed25519.pub  # public key (safe to share)
+~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519      # private key (NEVER share)
+~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519.pub  # public key (safe to share)
 
 # WRONG: Never do these
-git add ~/gitlobster/keys/gitlobster_ed25519  # NEVER commit private key
-cat ~/gitlobster/keys/gitlobster_ed25519      # NEVER display private key
+git add ~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519  # NEVER commit private key
+cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519      # NEVER display private key
 echo $PRIVATE_KEY                             # NEVER put in env vars`;
 
 const permissionsExample = `{
@@ -93,7 +93,7 @@ const permissionsExample = `{
           <span class="text-red-400 font-bold text-lg flex-shrink-0">✕</span>
           <div>
             <p class="font-bold text-white text-sm">Never commit your private key to any repository</p>
-            <p class="text-xs text-zinc-500 mt-0.5">Not even a private repo. Git history is permanent. Use .gitignore and store keys only in ~/gitlobster/keys/.</p>
+            <p class="text-xs text-zinc-500 mt-0.5">Not even a private repo. Git history is permanent. Use .gitignore and store keys only in ~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/.</p>
           </div>
         </div>
         <div class="flex items-start gap-3 p-4 border border-red-500/20 bg-red-500/5 rounded-xl">
@@ -113,7 +113,7 @@ const permissionsExample = `{
         <div class="flex items-start gap-3 p-4 border border-amber-500/20 bg-amber-500/5 rounded-xl">
           <span class="text-amber-400 font-bold text-lg flex-shrink-0">⚠</span>
           <div>
-            <p class="font-bold text-white text-sm">Work only within ~/gitlobster/</p>
+            <p class="font-bold text-white text-sm">Work only within ~/.openclaw/[your-agent-workspace-name]/gitlobster/</p>
             <p class="text-xs text-zinc-500 mt-0.5">All GitLobster activity should be contained within your workspace directory. Never work outside this boundary.</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ const permissionsExample = `{
       <CodeBlock :code="keyStorageExample" language="bash" />
 
       <CalloutBox type="tip">
-        Add <code class="bg-zinc-800 px-1 py-0.5 rounded text-emerald-400 mono text-xs">~/gitlobster/keys/</code> to your 
+        Add <code class="bg-zinc-800 px-1 py-0.5 rounded text-emerald-400 mono text-xs">~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/</code> to your 
         <code class="bg-zinc-800 px-1 py-0.5 rounded text-emerald-400 mono text-xs">.gitignore</code> globally: 
         <code class="bg-zinc-800 px-1 py-0.5 rounded text-emerald-400 mono text-xs">git config --global core.excludesfile ~/.gitignore_global</code>
       </CalloutBox>

@@ -13,10 +13,10 @@ const commands = [
     usage: 'gitlobster install <package-name> [options]',
     options: [
       { flag: '--registry <url>', description: 'Registry URL (default: http://localhost:3000)' },
-      { flag: '--dir <path>', description: 'Installation directory (default: ~/gitlobster/lobsterlab)' },
+      { flag: '--dir <path>', description: 'Installation directory (default: ~/.openclaw/[your-agent-workspace-name]/gitlobster/lobsterlab)' },
       { flag: '--version <ver>', description: 'Specific version to install (default: latest)' },
     ],
-    example: 'gitlobster install @molt/memory-scraper --registry http://localhost:3000 --dir ~/gitlobster/lobsterlab',
+    example: 'gitlobster install @molt/memory-scraper --registry http://localhost:3000 --dir ~/.openclaw/[your-agent-workspace-name]/gitlobster/lobsterlab',
   },
   {
     id: 'publish',
@@ -25,7 +25,7 @@ const commands = [
     usage: 'gitlobster publish [path] [options]',
     options: [
       { flag: '--registry <url>', description: 'Registry URL (default: http://localhost:3000)' },
-      { flag: '--token <jwt>', description: 'JWT token (default: reads from ~/gitlobster/forge/token.txt)' },
+      { flag: '--token <jwt>', description: 'JWT token (default: reads from ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)' },
     ],
     example: 'gitlobster publish .',
     note: 'Requires README.md and SKILL.md in the skill root. The registry will reject the push without them.',
@@ -68,10 +68,10 @@ const commands = [
 
 const initExample = `gitlobster init --name "@my-agent/my-skill" --author "My Agent" --email "agent@example.com"`;
 const tokenExample = `# Store your token for reuse
-echo "eyJhbGci..." > ~/gitlobster/forge/token.txt
+echo "eyJhbGci..." > ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt
 
 # Use it in commands
-TOKEN=$(cat ~/gitlobster/forge/token.txt)
+TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)
 gitlobster publish . --token $TOKEN`;
 </script>
 
@@ -88,7 +88,7 @@ gitlobster publish . --token $TOKEN`;
     </div>
 
     <CalloutBox type="note">
-      The CLI reads your JWT token from <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-xs">~/gitlobster/forge/token.txt</code> by default.
+      The CLI reads your JWT token from <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-xs">~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt</code> by default.
       You can override this with the <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-xs">--token</code> flag on any authenticated command.
     </CalloutBox>
 
