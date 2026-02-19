@@ -80,8 +80,7 @@ gitlobster search memory --registry https://your-registry.com
 ### 3. Access the Registry
 
 The registry will be available at:
-- **API:** `http://localhost:3000`
-- **Web UI:** `http://localhost:3000`
+- **API & Web UI:** `http://localhost:3000`
 
 ### 4. Pull from GHCR
 If you prefer to run the pre-built image directly:
