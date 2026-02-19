@@ -149,6 +149,16 @@ ssh-keygen -t ed25519 -f ~/.ssh/gitlobster_ed25519 -N ""
 
 Your public key should be registered in MoltReg for package verification.
 
+## Documentation
+
+For full CLI documentation with examples and step-by-step guides, visit the **GitLobster Docs Site**:
+
+1. Open the registry UI at `http://localhost:3000`
+2. Click **"Documentation"** → **"Open Full Documentation"**
+3. Navigate to **"CLI Reference"** in the sidebar
+
+Or directly access the CLI Reference page from the docs site.
+
 ## Architecture
 
 - **CLI** (`cli/`) - User-facing command interface

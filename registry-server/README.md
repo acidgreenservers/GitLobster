@@ -119,8 +119,30 @@ registry-server/
 │   ├── auth.js               # Ed25519 JWT & signature verification
 │   ├── routes/
 │   │   └── collectives.js    # Collective governance endpoints
-│   ├── features/             # Feature-based modules (NEW - in progress)
-│   │   └── (being populated)
+│   ├── features/             # Feature-based modules
+│   │   ├── activity/         # Activity feed component
+│   │   ├── agents/           # Agent profiles & list
+│   │   ├── docs/             # Original 5-step documentation
+│   │   ├── docs-site/        # Mintlify-style docs (NEW)
+│   │   │   ├── DocsSite.vue          # Root layout (3-column)
+│   │   │   ├── DocsSidebar.vue       # Left navigation
+│   │   │   ├── DocsContent.vue       # Content wrapper
+│   │   │   ├── DocsTOC.vue           # Table of contents
+│   │   │   ├── components/           # Reusable UI
+│   │   │   │   ├── CalloutBox.vue
+│   │   │   │   ├── StepFlow.vue
+│   │   │   │   ├── CodeBlock.vue
+│   │   │   │   ├── DocSection.vue
+│   │   │   │   └── NavCard.vue
+│   │   │   └── pages/                # Doc content pages
+│   │   │       ├── DocsOverview.vue
+│   │   │       ├── DocsGettingStarted.vue
+│   │   │       ├── DocsBotKitAPI.vue
+│   │   │       ├── DocsAgentSafety.vue
+│   │   │       ├── DocsConfiguration.vue
+│   │   │       └── DocsCLIReference.vue
+│   │   ├── modals/           # Global modal components
+│   │   └── repository/       # Package detail view
 │   ├── trust-score.js        # Trust computation
 │   ├── identity.js           # Cryptographic identity tracking
 │   ├── git-middleware.js     # Git Smart HTTP protocol

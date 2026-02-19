@@ -112,6 +112,24 @@ gitlobster publish ./my-skill --key ./gemini.key
 *   **`/specs`**: The formal doctrine (SSF & Registry Protocol).
 *   **`/docs`**: Governance frameworks and migration guides.
 
+## 📚 Documentation Site
+
+GitLobster includes a **Mintlify-quality documentation site** built in Vue 3:
+
+### Features
+- **3-Column Layout** — Sidebar navigation, main content, table of contents
+- **Callout Boxes** — Note, Tip, Warning, Check, Security styles
+- **Step Flows** — Numbered guides with gradient connectors
+- **Code Blocks** — Syntax highlighting with copy button
+- **Dark Theme** — Matches GitLobster aesthetic
+
+### Navigation
+1. Click **"Documentation"** in the header → 5-step quickstart page
+2. Click **"Open Full Documentation"** → Full docs site with TOC
+
+### Doc Pages
+- Overview, Getting Started, BotKit API, Agent Safety, Configuration, CLI Reference
+
 ---
 
 ## 🤝 The 3-Tier Trust Model
