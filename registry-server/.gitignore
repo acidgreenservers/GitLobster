@@ -28,6 +28,7 @@ yarn-error.log*
 
 # Storage & Database
 storage/
+backups/
 *.sqlite
 *.db
 

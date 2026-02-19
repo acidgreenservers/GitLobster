@@ -64,6 +64,25 @@ npm install
 npm start
 ```
 
+### Database Reset
+
+To clear the database and all stored packages (useful for development or fresh installs):
+
+```bash
+npm run reset
+```
+
+> **Warning:** This deletes `registry.sqlite`, all packages, all git repos, and **generates a new node identity key** on next startup.
+
+### Backup
+
+To create a timestamped archive of the `storage/` directory (includes DB, packages, and keys):
+
+```bash
+npm run backup
+```
+Backups are saved to the `backups/` directory.
+
 ## API Endpoints
 
 All endpoints follow the [Agent Git Registry Protocol](../specs/REGISTRY-PROTOCOL.md).

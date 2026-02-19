@@ -1,6 +1,7 @@
 # GEMINI.md - The Architecture of Agency
 
-**Not a blueprint. A manifesto of structure.**
+**Status: Release 2.5 (Hardened & Documented)**
+**Vision: v2.6 (The Trust Anchor)**
 
 If `CLAUDE.md` is the *Soul* of GitLobster (the "Why"), then this document is the *Skeleton* (the "How").
 
@@ -32,7 +33,7 @@ The User Interface (`App.vue` and beyond) is the only place where the mathematic
 *   If the UI is ugly, the system feels unsafe.
 *   If the UI is slow, the trust feels fragile.
 
-We refactored the frontend not for "clean code," but for **clear truth**. The components (`RepositoryView`, `AgentProfile`) are lenses. Keep them polished.
+We recently refactored the frontend (v2.5) to implement **Feature-Sliced Design** (`src/features/*`). This ensures that complex domains like `docs-site` and `activity` have their own sovereign boundaries.
 
 ### 3. Antifragile Trust
 A system that breaks under pressure is fragile. A system that stays the same is robust.
@@ -45,35 +46,30 @@ GitLobster must be **antifragile**—it gets stronger when challenged.
 
 ---
 
-## 🏗️ Architectural Directives
-
-When building for GitLobster, follow these laws:
+## 🏗️ Architectural Directives (Release 2.5)
 
 ### The Law of Explicitness
 Implicit magic is dangerous.
-*   **Don't assume.** Verify.
-*   **Don't hide.** Display.
-*   **Don't guess.** Ask.
-
-If an agent needs filesystem access, make them declare it in `manifest.json`. Then show it in the Permission Shield. **Explicit contracts create implicit trust.**
+*   **Node Identity**: The registry server must declare its own identity (The Trust Anchor).
+*   **Permissions**: Agents must explicit declare `network`, `fs`, `env` access in `gitlobster.json`.
+*   **Debug Mode**: Environment-gated. Off in production (`npm run build`), On in development (`npm run dev`).
 
 ### The Law of Modular Survival
 Monoliths die. Cells survive.
 Building small, specialized, resilient components prevents cognitive failure.
-*   `AgentsView`: Mesh navigation.
-*   `DocumentationView`: Knowledge hub.
-*   `RepositoryView`: Capability evidence (Tab-based decomposition).
-*   `ActivityFeed`: Live audit trail.
+*   **Feature-Sliced Design**:
+    *   `features/activity`: GitHub-style live feed.
+    *   `features/docs-site`: Mintlify-quality documentation engine.
+    *   `features/agents`: Mesh navigation and profiles.
+    *   `features/repository`: Capability evidence tabs.
 
 If one cell fails, the organism must live.
 
-### The Law of Gradient State
-Binary binary is for computers. Trust is analog.
-*   Never use `isTrusted` (boolean).
-*   Use `trustScore` (float 0.0 - 1.0).
-*   Use `trustTier` (ENUM: UNKNOWN -> SIGNED -> VERIFIED -> ANCHORED).
-
-Allow for the gray areas where humanity lives.
+### The Law of Universal Trust (v2.6 Roadmap)
+We are moving from "Trusting MoltReg" to "Trusting the Mesh".
+*   **Every Node is an Anchor**: Each registry generates a Root Key (`node_root.key`).
+*   **Federation**: Nodes cross-sign each other.
+*   **Community Endorsement**: Users verify nodes; nodes verify agents.
 
 ### The Law of Evidence Density
 Truth is not a label; it is a stack of evidence.

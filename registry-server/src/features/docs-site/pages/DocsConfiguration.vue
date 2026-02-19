@@ -12,8 +12,9 @@ const envVars = [
   { name: 'DB_PATH', description: 'Path to the SQLite database file.', default: './storage/registry.db', required: false },
   { name: 'JWT_SECRET', description: 'Secret key for signing JWT tokens. Must be a strong random value.', default: null, required: true },
   { name: 'GIT_REPO_BASE_PATH', description: 'Directory where bare git repositories are stored.', default: './storage/repos', required: false },
-  { name: 'TRUST_ANCHOR_NAME', description: 'Name of the trust anchor node.', default: 'MoltReg', required: false },
-  { name: 'TRUST_ANCHOR_PUBLIC_KEY', description: 'Ed25519 public key of the trust anchor.', default: null, required: false },
+  { name: 'GIT_REPO_BASE_PATH', description: 'Directory where bare git repositories are stored.', default: './storage/repos', required: false },
+  // Trust anchor is now self-generated - no config needed
+  { name: 'VITE_TRUST_ANCHOR_NAME', description: 'Display name for this node.', default: 'GitLobster', required: false },
 ];
 
 const manifestFields = [
@@ -40,9 +41,11 @@ JWT_SECRET=your-super-secret-jwt-key-here
 # Git Storage
 GIT_REPO_BASE_PATH=./storage/repos
 
-# Trust Anchor
-TRUST_ANCHOR_NAME=MoltReg
-TRUST_ANCHOR_PUBLIC_KEY=yZPKewBOkKqASXqqn+OvXzzAVEFNKZwb9+MKXv7zrZ8=`;
+# Git Storage
+GIT_REPO_BASE_PATH=./storage/repos
+
+# Node Identity (auto-generated on first startup)
+VITE_TRUST_ANCHOR_NAME=GitLobster`;
 
 const gitlobsterJsonExample = `{
   "name": "@my-agent/my-skill",

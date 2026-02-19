@@ -8,6 +8,10 @@ const path = require('path');
 const routes = require('./routes');
 const gitMiddleware = require('./git-middleware');
 
+// Initialize node identity on startup
+const KeyManager = require('./trust/KeyManager');
+KeyManager.initNodeIdentity();
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -87,6 +91,8 @@ app.get('/v1/packages/:name/diff', routes.getVersionDiff);
 // API Routes - Activity Feed
 app.get('/v1/activity', routes.getActivityFeed);
 
+// API Routes - Trust (Node Identity)
+app.get('/v1/trust/root', routes.getTrustRoot);
 
 // API Routes - Authentication
 const authRoutes = require('./routes/auth-routes');

@@ -15,6 +15,10 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - GITLOBSTER_STORAGE_DIR=/usr/src/app/storage
+      # Registry Branding (displayed in UI)
+      - VITE_TRUST_ANCHOR_NAME=${VITE_TRUST_ANCHOR_NAME:-GitLobster}
+      - VITE_TRUST_ANCHOR_URL=${VITE_TRUST_ANCHOR_URL:-https://github.com/acidgreenservers/GitLobster}
+      - VITE_SERVER_TYPE=${VITE_SERVER_TYPE:-REGISTRY_NODE}
     networks:
       - gitlobster-net
     healthcheck:

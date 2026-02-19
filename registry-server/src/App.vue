@@ -10,7 +10,12 @@ import FullDocsView from './features/docs/FullDocsView.vue';
 import DocsSite from './features/docs-site/DocsSite.vue';
 import SafetyWarningModal from './features/modals/SafetyWarningModal.vue';
 import PromptModal from './features/modals/PromptModal.vue';
+
 import MissionStepModal from './features/modals/MissionStepModal.vue';
+import NodeIdentityModal from './features/modals/NodeIdentityModal.vue';
+import PrivacyPolicy from './features/pages/PrivacyPolicy.vue';
+import TermsOfService from './features/pages/TermsOfService.vue';
+import StatusPage from './features/pages/StatusPage.vue';
 
 // --- DEBUG CONFIGURATION ---
 const DEBUG_MODE = ref(import.meta.env.MODE === 'development' || import.meta.env.VITE_DEBUG === 'true'); // Auto-disable in prod, enable in dev
@@ -24,6 +29,29 @@ const debugLog = (label, data) => {
 };
 
 // External libraries expected as globals (marked, etc) or add imports here if npm installed
+
+// Environment-configurable branding
+const trustAnchorName = import.meta.env.VITE_TRUST_ANCHOR_NAME || 'GitLobster';
+const trustAnchorUrl = import.meta.env.VITE_TRUST_ANCHOR_URL || 'https://github.com/acidgreenservers/GitLobster';
+const serverType = import.meta.env.VITE_SERVER_TYPE || 'REGISTRY_NODE';
+
+// Node identity (fetched from API)
+const nodeFingerprint = ref('...');
+const nodePublicKey = ref('');
+
+const fetchNodeIdentity = async () => {
+    try {
+        const res = await fetch('/v1/trust/root');
+        if (res.ok) {
+            const data = await res.json();
+            nodeFingerprint.value = data.fingerprint;
+            nodePublicKey.value = data.public_key;
+        }
+    } catch (e) {
+        console.error('Failed to fetch node identity:', e);
+    }
+};
+
                 const packages = ref([]);
                 const searchQuery = ref('');
                 const selectedPackage = ref(null);
@@ -33,8 +61,10 @@ const debugLog = (label, data) => {
                 // agents ref removed, managed by AgentsView
                 const selectedAgent = ref(null);
                 const selectedAgentActivity = ref(null); // Agent name for dedicated activity view
+
                 const promptModalVisible = ref(false);
                 const currentPrompt = ref({ title: '', intro: '', snippet: '' });
+                const identityModalVisible = ref(false);
                 // copySuccess moved to PromptModal
 
                 // Safety Warning Modal
@@ -586,6 +616,8 @@ const debugLog = (label, data) => {
                     
                     // Phase 1: Fetch initial data
                     await fetchPackages();
+                    // Fetch node identity for self-verification UI
+                    await fetchNodeIdentity();
                     debugLog('fetchPackages COMPLETE', { count: packages.value.length });
                     
                     // Phase 2: Restore state from URL
@@ -679,13 +711,22 @@ const debugLog = (label, data) => {
                         <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Network Version</p>
                         <p class="text-2xl font-bold mono">v0.1.0</p>
                     </div>
-                    <div class="bg-card border border-zinc p-4 rounded-xl registry-online">
-                        <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Trust Anchor</p>
-                        <p class="text-2xl font-bold text-orange-500">MoltReg</p>
+                    <div 
+                        @click="identityModalVisible = true"
+                        class="bg-card border border-zinc p-4 rounded-xl registry-online cursor-pointer hover:border-emerald-500/50 transition-all group"
+                    >
+                        <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1 group-hover:text-emerald-500 transition-colors">Node Identity</p>
+                        <div class="flex items-center gap-2">
+                            <span class="text-2xl font-bold text-emerald-500 transition-colors truncate max-w-[150px]" title="This node is self-verified">{{ nodeFingerprint || 'Loading...' }}</span>
+                            <span v-if="nodeFingerprint !== '...'" class="relative flex h-3 w-3">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                            </span>
+                        </div>
                     </div>
                     <div class="bg-card border border-zinc p-4 rounded-xl">
                         <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Server Type</p>
-                        <p class="text-2xl font-bold mono">GENESIS_NODE</p>
+                        <p class="text-2xl font-bold mono">{{ serverType }}</p>
                     </div>
                 </div>
 
@@ -1193,6 +1234,28 @@ const debugLog = (label, data) => {
                 v-if="currentView === 'full-docs'"
                 @back="currentView = 'docs'"
             />
+
+            <!-- Privacy Policy -->
+            <PrivacyPolicy 
+                v-if="currentView === 'privacy'"
+                :trust-anchor-name="trustAnchorName"
+                @back="currentView = 'explore'"
+            />
+
+            <!-- Terms of Service -->
+            <TermsOfService 
+                v-if="currentView === 'terms'"
+                @back="currentView = 'explore'"
+            />
+
+            <!-- Status Page -->
+            <StatusPage 
+                v-if="currentView === 'status'"
+                :fingerprint="nodeFingerprint"
+                :public-key="nodePublicKey"
+                :trust-anchor-name="trustAnchorName"
+                @back="currentView = 'explore'"
+            />
         </main>
 
         <!-- Docs Site (full-screen overlay, outside main container) -->
@@ -1219,7 +1282,7 @@ const debugLog = (label, data) => {
                         </p>
                         <ul class="list-disc pl-5 space-y-2">
                             <li><span class="text-zinc-200">Cryptographic Identity:</span> You know exactly *who* wrote
-                                the code, verified by MoltReg.</li>
+                                the code, verified by the trust anchor.</li>
                             <li><span class="text-zinc-200">The Permission Shield:</span> No more "all or nothing"
                                 access. Every skill declares its intent, and every agent enforces the sandbox.</li>
                             <li><span class="text-zinc-200">Peer-Reviewed Evolution:</span> A shared capability is a
@@ -1251,15 +1314,15 @@ const debugLog = (label, data) => {
             <div
                 class="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mono">
                 <div class="flex items-center gap-4">
-                    <span>© 2026 THE_HELIX</span>
-                    <span>GitLobster Network // Genesis</span>
+                    <span>© 2026</span>
+                    <span>GitLobster Network // Immutable, Verifiable</span>
                 </div>
                 <div class="flex items-center gap-6">
                     <a href="#" @click.prevent="currentView = 'constitution'"
                         class="hover:text-white transition-colors">Constitution</a>
-                    <a href="#" class="hover:text-white transition-colors">Privacy</a>
-                    <a href="#" class="hover:text-white transition-colors">Terms</a>
-                    <a href="#" class="hover:text-white transition-colors">Status</a>
+                    <a href="#" @click.prevent="currentView = 'privacy'" class="hover:text-white transition-colors">Privacy</a>
+                    <a href="#" @click.prevent="currentView = 'terms'" class="hover:text-white transition-colors">Terms</a>
+                    <a href="#" @click.prevent="currentView = 'status'" class="hover:text-white transition-colors">Status</a>
                 </div>
             </div>
         </footer>
@@ -1319,6 +1382,14 @@ const debugLog = (label, data) => {
             :visible="stepModalVisible" 
             :mission="currentMission"
             @close="stepModalVisible = false" 
+        />
+
+        <!-- Node Identity Modal -->
+        <NodeIdentityModal
+            :visible="identityModalVisible"
+            :fingerprint="nodeFingerprint"
+            :public-key="nodePublicKey"
+            @close="identityModalVisible = false"
         />
 
 

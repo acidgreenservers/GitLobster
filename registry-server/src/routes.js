@@ -397,18 +397,18 @@ async function publishPackage(req, res) {
     const packageExists = await db('packages').where({ name }).first();
 
     if (!packageExists) {
-    await db('packages').insert({
-      name,
-      uuid: crypto.randomUUID(),
-      description: manifest.description,
-      author_name: manifest.author.name.replace('@', ''),
-      author_url: manifest.author.url,
-      author_public_key: publicKey,
-      license: manifest.license,
-      category: manifest.category,
-      tags: JSON.stringify(manifest.tags || []),
-      downloads: 0
-    });
+      await db('packages').insert({
+        name,
+        uuid: crypto.randomUUID(),
+        description: manifest.description,
+        author_name: manifest.author.name.replace('@', ''),
+        author_url: manifest.author.url,
+        author_public_key: publicKey,
+        license: manifest.license,
+        category: manifest.category,
+        tags: JSON.stringify(manifest.tags || []),
+        downloads: 0
+      });
     } else {
       // SECURITY CRITICAL: Enforce Identity Continuity
       // Only the original author (holder of the original private key) can update the package.
@@ -1735,8 +1735,28 @@ module.exports = {
   flagPackage,
   getActivityFeed,
   getVersionDiff,
-  getPackageLineage
+  getPackageLineage,
+  getTrustRoot
 };
+
+/**
+ * GET /v1/trust/root - Get node's public identity
+ */
+async function getTrustRoot(req, res) {
+  try {
+    const KeyManager = require('./trust/KeyManager');
+    const identity = KeyManager.getNodeIdentity();
+    res.json({
+      public_key: identity.publicKey,
+      fingerprint: identity.fingerprint,
+      created: identity.created,
+      node_type: 'self_verified'
+    });
+  } catch (error) {
+    console.error('Trust root error:', error);
+    res.status(500).json({ error: 'trust_root_failed', message: error.message });
+  }
+}
 
 // Get package lineage (forks and ancestry)
 // Get package lineage (forks and ancestry)

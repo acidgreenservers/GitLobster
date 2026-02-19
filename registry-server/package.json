@@ -8,7 +8,9 @@
     "server": "nodemon src/index.js",
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "reset": "rm -rf storage/registry.sqlite storage/packages/* storage/git/* storage/collectives/* storage/test-repo.git storage/keys/*",
+    "backup": "node scripts/backup.js"
   },
   "dependencies": {
     "compression": "^1.7.4",

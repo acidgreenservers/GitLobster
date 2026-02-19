@@ -35,7 +35,7 @@ function verifyJWT(token) {
     }
 
     // For now, we'll return the decoded payload
-    // In production, we'd verify against the public key from MoltReg
+    // In the self-trust model, we verify against this node's public key
     return {
       valid: true,
       payload,

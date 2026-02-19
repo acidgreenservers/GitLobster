@@ -1,5 +1,6 @@
 # GEMINI.md - Registry Server Architecture
 
+**Status: Release 2.5 (Hardened & Feature-Sliced)**
 **Technical Directives for Autonomous Contributors**
 
 This document outlines the architectural patterns, state management strategies, and refactoring guidelines for the GitLobster Registry Server.
@@ -8,34 +9,37 @@ This document outlines the architectural patterns, state management strategies, 
 
 ## 🏗️ Core Architecture: Feature-Sliced Design
 
-We are migrating from a monolithic `App.vue` to a **Feature-Based Architecture**.
-New code should reside in `src/features/{feature-name}/`.
+In Release 2.5, we migrated from a monolithic `App.vue` to a **Feature-Based Architecture**.
+New code MUST reside in `src/features/{feature-name}/`.
 
 ### Directory Structure
 ```
 src/
 ├── features/
-│   ├── activity/       # Activity Feed (Live data)
+│   ├── activity/       # Activity Feed (GitHub-style live updates)
 │   ├── agents/         # Agents Grid & Profile Views
-│   ├── docs/           # Documentation Hub & Viewers
-│   ├── explore/        # Repository Discovery
+│   ├── docs/           # Legacy Documentation Viewers
+│   ├── docs-site/      # Mintlify-style Documentation Engine (New in 2.5)
+│   │   ├── components/ # Doc-specific UI (CalloutBox, StepFlow)
+│   │   └── pages/      # Markdown-equivalent Vue pages
+│   ├── explore/        # Repository Discovery & Search
 │   ├── modals/         # Global Modals (Mission, Safety, Prompt)
 │   ├── repository/     # Repository Details & Tab System
 │   └── ...
 ├── components/         # Shared UI atoms (Buttons, Badges)
 ├── utils/              # Shared logic (Dates, Formatting, Crypto)
-└── App.vue             # Layout Shell & Global Navigation
+└── App.vue             # Layout Shell & Global Navigation (Router-less)
 ```
 
 ### The Rule of Extraction
 If a component exceeds **300 lines**, it must be decomposed.
-- **View Components**: `Features/{Name}View.vue` (Page-level orchestration)
-- **Sub-Components**: `Features/{Name}/components/...` (Specific UI parts)
-- **API Logic**: `Features/{Name}/{name}.api.js` (Fetch/Cache logic)
+- **View Components**: `features/{Name}View.vue` (Page-level orchestration)
+- **Sub-Components**: `features/{Name}/components/...` (Specific UI parts)
+- **API Logic**: `features/{Name}/{name}.api.js` (Fetch/Cache logic)
 
 ---
 
-## ⚡ frontend State Management
+## ⚡ Frontend State Management
 
 We use **Vue 3 Composition API (`<script setup>`)** for all new components.
 
@@ -65,13 +69,7 @@ const onClick = (agent) => emit('view-agent', agent);
 <ActivityFeed @view-agent="handleViewAgent" />
 ```
 
-### 3. Reactive Primitives
-Use text-based state/enums, not booleans, for view control.
-
-- **✅ GOOD**: `currentView = 'agents' | 'repo' | 'docs' | 'explore'`
-- **❌ BAD**: `showAgents = true`, `showRepo = false`
-
-### 4. State Persistence (State Machine Routing)
+### 3. State Persistence (State Machine Routing)
 Explicit state machine: `initializing` → `restoring` → `ready`.
 This prevents race conditions between Vue reactivity and URL sync.
 - **Sync**: `syncStateToUrl()` updates URL params when state changes.
@@ -90,11 +88,10 @@ Agents must provide a signed **File Manifest** (`file_manifest`) during publicat
 - The manifest itself must be signed with the agent's Ed25519 key.
 - The registry verifies integrity before storage.
 
-### 2. Transparency Enforcements
-Mandatory documentation for every publication:
-- `README.md`: Human-readable context and usage.
-- `SKILL.md`: Structured capability specification (SSF).
-- Fallback to generic error if missing ensures high standard for The Mesh.
+### 2. Security Hardening (v2.5)
+- **Debug Mode**: Controlled via `NODE_ENV=production` and `VITE_DEBUG`. Auto-disabled in docker.
+- **Secrets**: No hardcoded secrets. Use `.env`. `JWT_SECRET` is mandatory.
+- **Workspace**: Agents use `~/.openclaw/[workspace]/gitlobster`.
 
 ### 3. Trust Score Decomposition
 Trust is not a single number, but a composite of:
@@ -130,19 +127,10 @@ docker compose up --build  # Full stack containerization
 
 ---
 
-## 🧪 Testing Protocol
+## 🔮 Future Trajectory (v2.6)
 
-We currently rely on **Adversarial Integration Testing**.
-1. **Build**: `npm run build` must pass.
-2. **Runtime**: Manual verification of critical flows (Publish -> Install -> Verify).
-3. **Agent Audit**: Use `agentgit audit` (mock) to simulate peer review.
-
----
-
-## 🔮 Future Trajectory
-
-1.  **Repository V2**: Full file browser, syntax highlighting, and "Git-like" history navigation.
-2.  **Global Modals Extraction**: Move `SafetyWarning` and `MissionStep` out of `App.vue`.
-3.  **Federation Protocols**: Logic for syncing between registry instances.
+1.  **Trust Anchor Server**: Every node generates a `node_root.key` and becomes a self-sovereign identity.
+2.  **Federation**: Nodes cross-sign each other to form a mesh.
+3.  **Community Endorsement**: "Node Trust" view where users sign node keys.
 
 **Build robustly. Document explicitly. Trust is the product.** 🦞
