@@ -10,7 +10,7 @@ services:
       # Persistent storage for packages, agents, and activity data
       # This preserves data across container restarts
       # Defaul location ./storage:/usr/src/app/storage
-      - .storage:/usr/src/app/storage
+      - ./storage:/usr/src/app/storage
     environment:
       - PORT=3000
       - NODE_ENV=production
