@@ -104,6 +104,18 @@ app.get('/v1/collectives/:id', collectiveRoutes.get);
 app.post('/v1/collectives', routes.requireAuth, collectiveRoutes.create);
 app.put('/v1/collectives/:id', routes.requireAuth, collectiveRoutes.update);
 
+// SPA Fallback: Serve index.html for any unknown non-API routes
+// This allows Vue Router to handle deep links in history mode
+app.get('*', (req, res, next) => {
+  // Skip API routes if they weren't caught above (though they should have been)
+  if (req.path.startsWith('/v1/') || req.path.startsWith('/health')) {
+    return next();
+  }
+
+  // Send index.html
+  res.sendFile(path.join(__dirname, '../dist/index.html'));
+});
+
 // Error handling
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
