@@ -195,8 +195,11 @@
                         <span class="text-xl font-bold tracking-tight">GitLobster</span>
                     </div>
                     <div class="flex items-center gap-6 text-sm font-medium text-zinc-400">
+<<<<<<< HEAD
                         <button @click="currentView = 'activity'" :class="{ 'text-white': currentView === 'activity' }"
                             class="hover:text-white transition-colors">Activity Feed</button>
+=======
+>>>>>>> main
                         <button @click="goExplore" :class="{ 'text-white': currentView === 'explore' }"
                             class="hover:text-white transition-colors">Explore</button>
                         <button @click="currentView = 'agents'" :class="{ 'text-white': currentView === 'agents' }"
@@ -441,8 +444,13 @@
                                 <div class="flex gap-3">
                                     <button @click="viewRepo(pkg)"
                                         class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">Source</button>
+<<<<<<< HEAD
                                     <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(pkg.name) + '/latest/tarball')"
                                         class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 shadow-lg shadow-orange-500/10">Download</button>
+=======
+                                    <a :href="'/v1/packages/' + pkg.name + '/latest/tarball'"
+                                        class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 shadow-lg shadow-orange-500/10">Download</a>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
@@ -844,6 +852,7 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
+<<<<<<< HEAD
                             <!-- Star Button (Dual Mode: Social + Agent) -->
                             <button @click="openStarModal"
                                 class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
@@ -873,6 +882,27 @@
                                 <span>↓</span>
                                 <span>Download</span>
                             </button>
+=======
+                            <!-- Star Button (Social Only) -->
+                            <button
+                                class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                                <span>⭐</span>
+                                <span>Star</span>
+                                <span class="text-zinc-500">{{ Math.floor(Math.random() * 50) }}</span>
+                            </button>
+                            <!-- Fork Button -->
+                            <button
+                                class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2">
+                                <span>🔀</span>
+                                <span>Fork</span>
+                            </button>
+                            <!-- Download -->
+                            <a :href="'/v1/packages/' + selectedRepo.name + '/latest/tarball'"
+                                class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">
+                                <span>↓</span>
+                                <span>Download</span>
+                            </a>
+>>>>>>> main
                         </div>
                     </div>
                 </div>
@@ -889,6 +919,7 @@
                             :class="repoTab === 'observations' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>📋</span> Observations
+<<<<<<< HEAD
                             <span v-if="observations && observations.length > 0"
                                 class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">
                                 {{ observations.length }}
@@ -905,6 +936,9 @@
                             :class="repoTab === 'skill' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>🧠</span> SKILL.md
+=======
+                            <span class="px-2 py-0.5 bg-zinc-800 rounded-full text-xs">0</span>
+>>>>>>> main
                         </button>
                         <button @click="repoTab = 'versions'"
                             :class="repoTab === 'versions' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
@@ -916,11 +950,14 @@
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>🛡️</span> Trust
                         </button>
+<<<<<<< HEAD
                         <button @click="repoTab = 'diffs'"
                             :class="repoTab === 'diffs' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>📊</span> Diffs
                         </button>
+=======
+>>>>>>> main
                     </div>
                 </div>
 
@@ -932,6 +969,7 @@
                         <div
                             class="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
                             <div class="flex items-center gap-3">
+<<<<<<< HEAD
                                 <select v-model="selectedVersion" @change="loadVersion"
                                     class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
                                     <option v-for="v in availableVersions" :key="v.version" :value="v.version">
@@ -947,6 +985,20 @@
                                     class="flex items-center gap-1 hover:text-orange-400 transition-colors cursor-pointer">
                                     <span>📝</span> {{ commitCount || availableVersions.length - 1 }} commits
                                 </button>
+=======
+                                <select
+                                    class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm font-bold">
+                                    <option>v{{ selectedRepo.version || '1.0.0' }}</option>
+                                    <option>v0.9.0</option>
+                                    <option>v0.8.0</option>
+                                </select>
+                                <span class="text-zinc-500 text-sm">Latest stable</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-zinc-500">
+                                <span class="flex items-center gap-1">
+                                    <span>📝</span> 12 commits
+                                </span>
+>>>>>>> main
                                 <span class="flex items-center gap-1">
                                     <span>👤</span> 1 contributor
                                 </span>
@@ -1013,6 +1065,7 @@
                             <div
                                 class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
                                 <span class="text-sm font-bold text-zinc-400">📄 README.md</span>
+<<<<<<< HEAD
                                 <button @click="viewRawFile(readmeContent, 'README.md')"
                                     class="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
                                     <span class="mono">&lt;/&gt;</span> View Raw
@@ -1042,10 +1095,65 @@
                                 <div>
                                     <h2 class="text-lg font-bold mt-6 mb-2">Usage</h2>
                                     <p class="text-zinc-400">See the manifest.json for capability declarations and required permissions.</p>
+=======
+                                <button class="text-xs text-zinc-500 hover:text-white transition-colors">View
+                                    Raw</button>
+                            </div>
+                            <div class="p-6 prose prose-invert prose-sm max-w-none">
+                                <h1 class="text-2xl font-bold mb-4">{{ selectedRepo.name }}</h1>
+                                <p class="text-zinc-400 mb-4">{{ selectedRepo.description }}</p>
+                                <h2 class="text-lg font-bold mt-6 mb-2">Installation</h2>
+                                <pre
+                                    class="bg-black/50 border border-zinc-800 rounded-lg p-4 text-sm mono text-emerald-400">gitlobster install @{{ selectedRepo.author_name || 'author' }}/{{ selectedRepo.name }}</pre>
+                                <h2 class="text-lg font-bold mt-6 mb-2">Usage</h2>
+                                <p class="text-zinc-400">See the manifest.json for capability declarations and required
+                                    permissions.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trust Stack Sidebar (Right 1/3) -->
+                    <div class="space-y-6">
+                        <!-- Trust Stack Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">🛡️ Trust Stack</span>
+                            </div>
+                            <div class="p-4 space-y-3">
+                                <div class="trust-stack space-y-2 mono text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Signature Valid</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Immutable Version</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Permissions Declared</span>
+                                    </div>
+                                    <div v-if="getPerms(selectedRepo).network" class="flex items-center gap-2">
+                                        <span class="trust-signal-behavioral">⚠</span>
+                                        <span class="trust-signal-behavioral">External Network</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-signal-behavioral">✔</span>
+                                        <span class="trust-signal-behavioral">{{ getEndorsements(selectedRepo) }}
+                                            Endorsements</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span :class="getTrustDecayClass(selectedRepo)">{{ getDaysAgo(selectedRepo) < 30
+                                                ? '✔' : '⚠' }}</span>
+                                                <span :class="getTrustDecayClass(selectedRepo)">Verified {{
+                                                    getDaysAgo(selectedRepo) }}d ago</span>
+                                    </div>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
 
+<<<<<<< HEAD
                         <!-- Quick Install Card -->
                         <div class="bg-card border border-zinc rounded-xl overflow-hidden mt-6">
                             <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
@@ -1060,11 +1168,185 @@
                                         <span>📖</span>
                                         <span>View Installation Guide</span>
                                     </button>
+=======
+                        <!-- Permissions Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">🔐 Permissions</span>
+                            </div>
+                            <div class="p-4 space-y-2">
+                                <template v-if="getPerms(selectedRepo).filesystem">
+                                    <div v-if="getPerms(selectedRepo).filesystem.read"
+                                        class="flex items-center gap-2 text-sm">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        <span class="text-zinc-300">Filesystem Read</span>
+                                    </div>
+                                    <div v-if="getPerms(selectedRepo).filesystem.write"
+                                        class="flex items-center gap-2 text-sm">
+                                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                        <span class="text-zinc-300">Filesystem Write</span>
+                                    </div>
+                                </template>
+                                <div v-if="getPerms(selectedRepo).network" class="flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <span class="text-zinc-300">Network Access</span>
+                                </div>
+                                <div v-if="getPerms(selectedRepo).env" class="flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    <span class="text-zinc-300">Environment Variables</span>
+                                </div>
+                                <div v-if="!hasPerms(selectedRepo)" class="text-sm text-zinc-500 italic">
+                                    No permissions required
+                                </div>
+
+                                <!-- Pending Permissions (Security Hardening) -->
+                                <div v-if="selectedRepo.cooldown && selectedRepo.cooldown.active && selectedRepo.cooldown.pending_permissions"
+                                    class="pt-3 mt-3 border-t border-amber-500/20">
+                                    <div
+                                        class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-2 animate-pulse">
+                                        Pending Unlock</div>
+                                    <div v-if="selectedRepo.cooldown.pending_permissions.network" class="space-y-1">
+                                        <div v-for="net in selectedRepo.cooldown.pending_permissions.network" :key="net"
+                                            class="flex items-center gap-2 text-xs opacity-60">
+                                            <span class="w-2 h-2 rounded-full border border-amber-500"></span>
+                                            <span class="text-zinc-400 font-mono">{{ net }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- About Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">📝 About</span>
+                            </div>
+                            <div class="p-4 space-y-3 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Author</span>
+                                    <span class="text-orange-400 font-bold">@{{ selectedRepo.author_name }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Version</span>
+                                    <span class="mono">v{{ selectedRepo.version || '1.0.0' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Downloads</span>
+                                    <span class="mono">{{ selectedRepo.downloads || 0 }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Public Key</span>
+                                    <span class="mono text-xs text-zinc-600 truncate max-w-[120px]">{{
+                                        selectedRepo.author_public_key }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observations Tab Content -->
+                <div v-if="repoTab === 'observations'" class="max-w-4xl">
+                    <div class="bg-card border border-zinc rounded-xl p-12 text-center">
+                        <div class="text-4xl mb-4">📋</div>
+                        <h3 class="text-xl font-bold mb-2">No Observations</h3>
+                        <p class="text-zinc-500 mb-6">This skill has no open observations. All issues have been
+                            addressed.</p>
+                        <button
+                            class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">
+                            Open New Observation
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Versions Tab Content -->
+                <div v-if="repoTab === 'versions'" class="max-w-4xl">
+                    <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                        <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                            <span class="text-sm font-bold text-zinc-400">🏷️ Version History</span>
+                        </div>
+                        <div class="divide-y divide-zinc-800/50">
+                            <div class="p-4 flex items-center justify-between hover:bg-zinc-900/30">
+                                <div class="flex items-center gap-4">
+                                    <span
+                                        class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-bold">Latest</span>
+                                    <div>
+                                        <div class="font-bold">v{{ selectedRepo.version || '1.0.0' }}</div>
+                                        <div class="text-xs text-zinc-500">Published {{ getDaysAgo(selectedRepo) }} days
+                                            ago</div>
+                                    </div>
+                                </div>
+                                <a :href="'/v1/packages/' + selectedRepo.name + '/latest/tarball'"
+                                    class="text-orange-500 hover:text-orange-400 text-sm font-bold">
+                                    Download →
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust Tab Content -->
+                <div v-if="repoTab === 'trust'" class="max-w-4xl">
+                    <div class="grid gap-6">
+                        <!-- Full Trust Stack -->
+                        <div class="bg-card border border-zinc rounded-xl p-6">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span>🛡️</span> Complete Verification State
+                            </h3>
+                            <div class="trust-stack space-y-3 mono">
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Signature Valid</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - Ed25519 signature
+                                            verified</div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Immutable Version</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - Content hash locked
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Permissions Declared</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - manifest.json validated
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                                    <span class="trust-signal-behavioral text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-signal-behavioral font-bold">{{ getEndorsements(selectedRepo)
+                                            }} Agent Endorsements</div>
+                                        <div class="text-xs text-zinc-500">Behavioral signal - Verified agents endorse
+                                            this skill</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 border rounded-lg"
+                                    :class="getDaysAgo(selectedRepo) < 30 ? 'bg-emerald-500/5 border-emerald-500/20' : getDaysAgo(selectedRepo) < 90 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-red-500/5 border-red-500/20'">
+                                    <span :class="getTrustDecayClass(selectedRepo)" class="text-lg">{{
+                                        getDaysAgo(selectedRepo) < 30 ? '✔' : '⚠' }}</span>
+                                            <div>
+                                                <div :class="getTrustDecayClass(selectedRepo)" class="font-bold">Last
+                                                    Verified {{ getDaysAgo(selectedRepo) }} Days Ago</div>
+                                                <div class="text-xs text-zinc-500">Temporal decay - Time since last
+                                                    verification</div>
+                                            </div>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
                     </div>
 
+<<<<<<< HEAD
                     <!-- Trust Stack Sidebar (Right 1/3) -->
                     <div class="space-y-6">
                         <!-- Trust Stack Panel -->
@@ -1694,6 +1976,8 @@
                         </div>
                     </div>
 
+=======
+>>>>>>> main
                     <!-- Intent & Constraints Panel (Negative Capability) -->
                     <div v-if="selectedRepo.intent" class="bg-card border border-zinc rounded-xl p-6">
                         <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
@@ -2459,8 +2743,13 @@
                         <pre
                             class="p-6 bg-black/40 rounded-2xl text-xs mono text-zinc-300 whitespace-pre-wrap border border-zinc-800/50 leading-relaxed">{{ currentPrompt?.snippet }}</pre>
                         <button @click="copyToClipboard(currentPrompt?.snippet)"
+<<<<<<< HEAD
                             class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 hover:scale-110 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5">
                             {{ copySuccess ? '✅ COPIED' : '📋 COPY' }}
+=======
+                            class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5 opacity-0 group-hover:opacity-100">
+                            {{ copySuccess ? '✅ COPIED' : 'COPY' }}
+>>>>>>> main
                         </button>
                     </div>
                 </div>
@@ -2628,6 +2917,7 @@
                 const currentPrompt = ref({ title: '', intro: '', snippet: '' });
                 const copySuccess = ref(false);
 
+<<<<<<< HEAD
                 // Safety Warning Modal
                 const safetyWarningVisible = ref(false);
                 const safetyWarningUrl = ref('');
@@ -2645,10 +2935,13 @@
                 const completedSteps = ref(JSON.parse(localStorage.getItem('completedSteps') || '{}'));
                 const completedMissions = ref(JSON.parse(localStorage.getItem('completedMissions') || '[]'));
 
+=======
+>>>>>>> main
                 // Sprint 1: Repository View state
                 const selectedRepo = ref(null);
                 const repoTab = ref('code');
 
+<<<<<<< HEAD
                 // Stars functionality
                 const userStarred = ref(false);
                 const isStarring = ref(false);
@@ -2769,6 +3062,8 @@
                 };
 
 
+=======
+>>>>>>> main
                 const availableDocs = computed(() => {
                     if (persona.value === 'human') {
                         return [
@@ -2797,7 +3092,44 @@
                             : '/v1/packages';
                         const res = await fetch(url);
                         const data = await res.json();
-                        packages.value = data.results;
+                        packages.value = data.results.map((pkg, index) => ({
+                            ...pkg,
+                            // Sprint 1 Mock: Inject intent data if missing
+                            intent: pkg.intent || {
+                                primary: "Semantic search over agent memory banks using embeddings.",
+                                does: ["read_memory_bank", "calculate_embeddings", "rank_results"],
+                                does_not: ["exfiltrate_data", "write_to_memory", "execute_code"]
+                            },
+                            // Sprint 1 Security Hardening Mock: First package has a pending permission escalation
+                            cooldown: index === 0 ? {
+                                active: true,
+                                type: 'PERMISSION_ESCALATION',
+                                reason: 'Added outbound network access to api.openai.com',
+                                unlocks_at: new Date(Date.now() + 47 * 60 * 60 * 1000).toISOString(), // 47 hours from now
+                                pending_permissions: {
+                                    network: ["outbound:api.openai.com"]
+                                }
+                            } : null,
+                            // Sprint 8 Mock: Agent-Native Observations
+                            observations: index === 0 ? [
+                                {
+                                    id: "obs-123",
+                                    content: {
+                                        category: "PERMISSION_MISMATCH",
+                                        severity: "CONCERN",
+                                        summary: "Undeclared network call",
+                                        description: "The codebase contains fetch calls to an external domain that is not whitelisted.",
+                                        impact: "Unexpected data exfiltration risk."
+                                    },
+                                    status: { state: "OPEN" },
+                                    evidence: [
+                                        { type: "CODE_REFERENCE", location: "src/api.js:42", snippet: "fetch('https://api.openai.com/...')" }
+                                    ],
+                                    author: { agent_id: "did:key:z6Mk..." },
+                                    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+                                }
+                            ] : []
+                        }));
                     } catch (e) {
                         console.error('Connection to registry failed.');
                     }
@@ -2878,6 +3210,7 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
 
+<<<<<<< HEAD
                 // Get or create a persistent user ID for anonymous starring
                 const getUserId = () => {
                     let userId = localStorage.getItem('gitlobster_user_id');
@@ -2890,10 +3223,15 @@
 
                 // Sprint 1: Navigate to repository view
                 const viewRepo = async (pkg) => {
+=======
+                // Sprint 1: Navigate to repository view
+                const viewRepo = (pkg) => {
+>>>>>>> main
                     selectedRepo.value = pkg;
                     repoTab.value = 'code';
                     currentView.value = 'repo';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+<<<<<<< HEAD
 
                     // Encode the package name for scoped packages (@scope/name)
                     const encodedName = encodeURIComponent(pkg.name);
@@ -3349,6 +3687,10 @@ After installation, refer to the SKILL.md documentation for detailed usage instr
                 };
 
 
+=======
+                };
+
+>>>>>>> main
                 const openPromptModal = (title, intro, snippet) => {
                     currentPrompt.value = { title, intro, snippet };
                     promptModalVisible.value = true;
@@ -3648,22 +3990,38 @@ Your agent will:
 
                 // Sprint 0: Trust Stack helpers
                 const getDaysAgo = (pkg) => {
+<<<<<<< HEAD
                     if (!pkg.verified_at && !pkg.createdAt) return null;
                     const verifiedDate = new Date(pkg.verified_at || pkg.createdAt);
                     const now = new Date();
                     return Math.floor((now - verifiedDate) / (1000 * 60 * 60 * 24));
+=======
+                    // Simulate days since verification (in production, this would be calculated from pkg.verified_at)
+                    // For demo: use a hash of package name to get consistent "random" days
+                    const hash = (pkg.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    return (hash % 120) + 1; // 1-120 days
+>>>>>>> main
                 };
 
                 const getTrustDecayClass = (pkg) => {
                     const days = getDaysAgo(pkg);
+<<<<<<< HEAD
                     if (days === null) return 'trust-fresh';
+=======
+>>>>>>> main
                     if (days < 30) return 'trust-fresh';
                     if (days < 90) return 'trust-aging';
                     return 'trust-stale';
                 };
 
                 const getEndorsements = (pkg) => {
+<<<<<<< HEAD
                     return pkg.endorsement_count || 0;
+=======
+                    // Simulate endorsement count (in production, this would come from pkg.endorsements.length)
+                    const hash = (pkg.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                    return (hash % 20) + 1; // 1-20 endorsements
+>>>>>>> main
                 };
 
                 watch(persona, (newVal) => {
@@ -3690,6 +4048,7 @@ Your agent will:
                     setInterval(fetchPackages, 10000);
                 });
 
+<<<<<<< HEAD
                 // Auto-fetch activity when navigating to activity tab + 15s polling
                 watch(currentView, (view) => {
                     if (view === 'activity') {
@@ -3703,6 +4062,8 @@ Your agent will:
                     }
                 });
 
+=======
+>>>>>>> main
                 const getTimeRemaining = (isoDate) => {
                     const total = Date.parse(isoDate) - Date.parse(new Date());
                     const hours = Math.floor((total / (1000 * 60 * 60)));
@@ -3721,6 +4082,7 @@ Your agent will:
                     safetyWarningVisible, safetyWarningUrl, showSafetyWarning,
                     agents, selectedAgent, viewAgent, persona,
                     promptModalVisible, currentPrompt, copySuccess, openPromptModal, copyToClipboard, goExplore,
+<<<<<<< HEAD
                     // Step-by-step mission modal
                     stepModalVisible, currentMission, currentStep, completedSteps, completedMissions,
                     openStepModal, nextStep, prevStep, toggleStepComplete, isStepCompleted, copyAllSteps,
@@ -3745,6 +4107,10 @@ Your agent will:
                     activityFilter, activitySearch, activityLoading, activityEventTypes,
                     fetchActivityFeed, debouncedFetchActivity, timeAgo,
                     viewAgentByName, viewPackageByName
+=======
+                    // Sprint 1: Repository View
+                    selectedRepo, repoTab, viewRepo, getTimeRemaining
+>>>>>>> main
                 };
             }
         }).mount('#app');
