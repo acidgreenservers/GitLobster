@@ -3,33 +3,94 @@ const path = require('path');
 const fs = require('fs');
 
 const GIT_PROJECT_ROOT = process.env.GITLOBSTER_STORAGE_DIR
-    ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR)
-    : path.resolve(__dirname, '../storage');
+    ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR, 'git')
+    : path.resolve(__dirname, '../storage/git');
+
+// Path to the post-receive hook source
+const POST_RECEIVE_HOOK_SOURCE = path.resolve(__dirname, '../scripts/git-hooks/post-receive.js');
+
+// Git template directory for auto-installing hooks on new repos
+const GIT_TEMPLATE_DIR = path.resolve(__dirname, '../storage/git-template');
+
+/**
+ * Initialize the git template directory with hooks.
+ * This ensures new bare repos automatically get the post-receive hook.
+ */
+function initializeGitTemplate() {
+    const hooksDir = path.join(GIT_TEMPLATE_DIR, 'hooks');
+    const hookDest = path.join(hooksDir, 'post-receive');
+
+    // Create template directory structure
+    if (!fs.existsSync(hooksDir)) {
+        fs.mkdirSync(hooksDir, { recursive: true });
+    }
+
+    // Copy the post-receive hook to template
+    if (fs.existsSync(POST_RECEIVE_HOOK_SOURCE)) {
+        fs.copyFileSync(POST_RECEIVE_HOOK_SOURCE, hookDest);
+        fs.chmodSync(hookDest, 0o755);
+        console.log('[GIT-MIDDLEWARE] Initialized git template with post-receive hook');
+    } else {
+        console.warn('[GIT-MIDDLEWARE] Warning: post-receive hook source not found at', POST_RECEIVE_HOOK_SOURCE);
+    }
+}
+
+// Ensure git storage directory exists
+if (!fs.existsSync(GIT_PROJECT_ROOT)) {
+    fs.mkdirSync(GIT_PROJECT_ROOT, { recursive: true });
+}
+
+// Initialize git template directory
+initializeGitTemplate();
+
+/**
+ * Convert scoped package name to directory-safe name
+ * @scope/name -> scope-name.git
+ */
+function scopedToDirName(name) {
+    return name.replace(/^@/, '').replace('/', '-') + '.git';
+}
+
+/**
+ * Convert directory-safe name back to scoped package name
+ * scope-name.git -> @scope/name
+ */
+function dirNameToScoped(name) {
+    if (name.endsWith('.git')) {
+        const base = name.slice(0, -4);
+        // Check if it looks like a scoped package (contains -)
+        if (base.includes('-')) {
+            const parts = base.split(/-/);
+            if (parts.length >= 2) {
+                return '@' + parts[0] + '/' + parts.slice(1).join('/');
+            }
+        }
+    }
+    return name;
+}
 
 const gitMiddleware = (req, res, next) => {
-    // Only handle requests that look like git operations
-    // Pattern: /:repo.git/* or /:repo.git
-    const gitRegex = /^\/([a-zA-Z0-9_\-]+\.git)(.*)$/;
+    // Handle requests with /git/... prefix or direct .git access
+    // Pattern: /git/:repo.git/* or /git/:repo.git or /:repo.git/*
+    const gitRegex = /^\/git\/([a-zA-Z0-9_\-@\.]+\.git)(.*)$|^\/([a-zA-Z0-9_\-]+\.git)(.*)$/;
     const match = req.url.match(gitRegex);
 
     if (!match) return next();
 
-    const repoName = match[1];
-    const pathInfo = match[2] || '/'; // The rest of the path, e.g. /info/refs?service=git-upload-pack
+    // Determine which group matched
+    const repoName = match[1] || match[3];
+    const pathInfo = (match[2] || match[4] || '/').replace(/^\/+/, '');
 
     // Security: Prevent directory traversal
     if (repoName.includes('..') || pathInfo.includes('..')) {
         return res.status(403).send('Forbidden');
     }
 
-    const repoPath = path.join(GIT_PROJECT_ROOT, repoName);
-
-    // Initial check if repo exists is skipped here because git-http-backend handles it,
-    // but better to check to avoid spawning unnecessary processes.
-    // However, for correct error messages from git, we can just let it handle it.
+    // Convert scoped package names to directory-safe names
+    const dirName = scopedToDirName(repoName);
+    const repoPath = path.join(GIT_PROJECT_ROOT, dirName);
 
     // Fix: PATH_INFO must not include query string for git-http-backend
-    // req.path is usually the path without query in Express, but let's be explicitly safe parsing originalUrl
     const urlObj = new URL(req.originalUrl, 'http://localhost');
     const safePathInfo = urlObj.pathname;
 
@@ -37,15 +98,16 @@ const gitMiddleware = (req, res, next) => {
         ...process.env,
         GIT_PROJECT_ROOT: GIT_PROJECT_ROOT,
         GIT_HTTP_EXPORT_ALL: '1',
-        PATH_INFO: safePathInfo, // Use pathname only (e.g. /repo.git/info/refs)
-        REMOTE_USER: req.user ? req.user.id : 'anonymous', // If we have auth
+        GIT_TEMPLATE_DIR: GIT_TEMPLATE_DIR,  // Auto-install hooks on new repos
+        PATH_INFO: safePathInfo,
+        REMOTE_USER: req.user ? req.user.id : 'anonymous',
         REMOTE_ADDR: req.ip,
         CONTENT_TYPE: req.headers['content-type'],
         QUERY_STRING: req.query ? new URLSearchParams(req.query).toString() : '',
         REQUEST_METHOD: req.method
     };
 
-    console.log(`[GIT] ${req.method} ${req.url} -> Spawning git http-backend`);
+    console.log(`[GIT] ${req.method} ${req.url} -> Spawning git http-backend (repo: ${dirName})`);
 
     const git = spawn('git', ['http-backend'], {
         env,
@@ -54,18 +116,6 @@ const gitMiddleware = (req, res, next) => {
 
     // Pipe request body to git stdin (for POST git-receive-pack)
     req.pipe(git.stdin);
-
-    // Pipe git stdout to response, but we need to parse headers first?
-    // git http-backend outputs CGI headers (Status, Content-Type, etc.) followed by body.
-    // Node generic piping won't parse those headers automatically.
-    // We need a simple CGI parser.
-
-    // Actually, for simplicity, we can buffer headers or use a simple state machine.
-    // But handling binary git data + headers in a stream is tricky.
-
-    // ALTERNATIVE: Use 'zlib' if needed? No, http-backend handles compression.
-
-    // Let's implement a rudimentary CGI header parser.
 
     let headersSent = false;
     let buffer = Buffer.alloc(0);
@@ -101,8 +151,6 @@ const gitMiddleware = (req, res, next) => {
             res.write(body);
         } else {
             // Edge case: Header boundary might be split across chunks.
-            // Wait for more data.
-            // If buffer gets too large without headers, abort (safety).
             if (buffer.length > 10 * 1024) {
                 console.error('[GIT] Header buffer overflow');
                 git.kill();
@@ -123,7 +171,6 @@ const gitMiddleware = (req, res, next) => {
 
     git.on('close', (code) => {
         if (!headersSent) {
-            // Process ended without sending headers (error case)
             if (!res.headersSent) {
                 res.status(500).send('Git process exited unexpectedly');
             }
@@ -133,3 +180,6 @@ const gitMiddleware = (req, res, next) => {
 };
 
 module.exports = gitMiddleware;
+module.exports.scopedToDirName = scopedToDirName;
+module.exports.dirNameToScoped = dirNameToScoped;
+module.exports.GIT_PROJECT_ROOT = GIT_PROJECT_ROOT;

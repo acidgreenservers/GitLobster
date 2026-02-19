@@ -4,6 +4,8 @@ node_modules/
 
 # Keys & Secrets
 *.key
+**/test-keys.json
+
 *.txt
 !README.md
 !STATUS.md
@@ -29,3 +31,4 @@ registry-server/storage/*
 .env.local
 
 development/
+.claude

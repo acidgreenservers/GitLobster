@@ -102,24 +102,75 @@ function checkStructure(newSha, refName) {
 
     if (!isMainBranch) return true;
 
-    // check if manifest.json exists
+    // Check if gitlobster.json exists
     try {
-        // git cat-file -e $newSha:manifest.json
-        // But git show $newSha:manifest.json is easier to read content too
-        execSync(`git cat-file -e ${newSha}:manifest.json`, { stdio: 'ignore' });
+        execSync(`git cat-file -e ${newSha}:gitlobster.json`, { stdio: 'ignore' });
 
         // It exists, now read and parse
         try {
-            const content = execSync(`git show ${newSha}:manifest.json`, { encoding: 'utf-8' });
-            JSON.parse(content);
+            const content = execSync(`git show ${newSha}:gitlobster.json`, { encoding: 'utf-8' });
+            const manifest = JSON.parse(content);
+
+            // Validate required fields
+            const errors = [];
+            
+            if (!manifest.name || typeof manifest.name !== 'string') {
+                errors.push('missing or invalid "name" field');
+            }
+            if (!manifest.version || typeof manifest.version !== 'string') {
+                errors.push('missing or invalid "version" field');
+            }
+            if (!manifest.author || typeof manifest.author !== 'object') {
+                errors.push('missing or invalid "author" field (must be an object)');
+            } else {
+                if (!manifest.author.name || typeof manifest.author.name !== 'string') {
+                    errors.push('missing or invalid "author.name" field');
+                }
+                if (!manifest.author.email || typeof manifest.author.email !== 'string') {
+                    errors.push('missing or invalid "author.email" field');
+                }
+            }
+
+            if (errors.length > 0) {
+                console.log(`❌ [GitLobster] gitlobster.json is invalid: ${errors.join(', ')}.`);
+                return false;
+            }
+
+            // Check for README.md existence
+            try {
+                execSync(`git cat-file -e ${newSha}:README.md`, { stdio: 'ignore' });
+            } catch (e) {
+                console.log(`❌ [GitLobster] Missing 'README.md' at root. Required for all packages.`);
+                return false;
+            }
+
+            // Validate README has YAML frontmatter (check for --- at start)
+            try {
+                const readmeContent = execSync(`git show ${newSha}:README.md`, { encoding: 'utf-8' });
+                const trimmed = readmeContent.trim();
+                if (!trimmed.startsWith('---')) {
+                    console.log(`❌ [GitLobster] README.md must have YAML frontmatter (must start with '---').`);
+                    return false;
+                }
+                // Check for closing ---
+                const secondDashIndex = trimmed.indexOf('---', 3);
+                if (secondDashIndex === -1) {
+                    console.log(`❌ [GitLobster] README.md must have YAML frontmatter (missing closing '---').`);
+                    return false;
+                }
+            } catch (readmeErr) {
+                console.log(`❌ [GitLobster] Failed to read README.md: ${readmeErr.message}`);
+                return false;
+            }
+
             return true;
         } catch (parseErr) {
-            console.log(`❌ [GitLobster] manifest.json is invalid JSON.`);
+            console.log(`❌ [GitLobster] gitlobster.json is invalid JSON.`);
             return false;
         }
     } catch (e) {
         // Does not exist
-        console.log(`❌ [GitLobster] Missing 'manifest.json' at root. Required for all packages.`);
+        console.log(`❌ [GitLobster] Missing 'gitlobster.json' at root. Required for all packages.`);
         return false;
     }
 }

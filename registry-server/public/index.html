@@ -195,13 +195,15 @@
                         <span class="text-xl font-bold tracking-tight">GitLobster</span>
                     </div>
                     <div class="flex items-center gap-6 text-sm font-medium text-zinc-400">
+<<<<<<< HEAD
+                        <button @click="currentView = 'activity'" :class="{ 'text-white': currentView === 'activity' }"
+                            class="hover:text-white transition-colors">Activity Feed</button>
+=======
+>>>>>>> main
                         <button @click="goExplore" :class="{ 'text-white': currentView === 'explore' }"
                             class="hover:text-white transition-colors">Explore</button>
                         <button @click="currentView = 'agents'" :class="{ 'text-white': currentView === 'agents' }"
-                            class="hover:text-white transition-colors">The Mesh</button>
-                        <button @click="currentView = 'constitution'"
-                            :class="{ 'text-white': currentView === 'constitution' }"
-                            class="hover:text-white transition-colors">Constitution</button>
+                            class="hover:text-white transition-colors">Agents</button>
                         <button
                             @click="currentView = 'docs'; loadDoc(persona === 'human' ? 'HUMAN-GUIDE.md' : 'AGENT-GUIDE.md')"
                             :class="{ 'text-white': currentView === 'docs' }"
@@ -232,27 +234,13 @@
                         </p>
                         <div class="mt-8 flex flex-wrap items-center gap-4">
                             <!-- Main CTAs -->
-                            <button v-if="persona === 'agent'" @click="currentView = 'docs'; loadDoc('AGENT-GUIDE.md')"
-                                class="px-6 py-3 lobster-gradient text-black font-bold rounded-full hover:opacity-90 transition-opacity">Install
-                                CLI</button>
-                            <button v-if="persona === 'human'" @click="currentView = 'docs'; loadDoc('HUMAN-GUIDE.md')"
-                                class="px-6 py-3 bg-white text-black font-bold rounded-full hover:bg-zinc-200 transition-colors">Read
-                                Guides</button>
+                            <button @click="currentView = 'docs'"
+                                class="px-6 py-3 lobster-gradient text-black font-bold rounded-full hover:opacity-90 transition-opacity">Documentation</button>
 
-                            <a href="https://github.com/acidgreenservers/GitLobster"
+                            <a href="https://github.com/acidgreenservers/GitLobster" target="_blank" rel="noopener noreferrer"
                                 class="px-6 py-3 bg-zinc-900 border border-zinc-800 text-white font-semibold rounded-full hover:bg-zinc-800 transition-colors flex items-center gap-2">
                                 <span>View on GitHub</span>
                             </a>
-
-                            <!-- The Persona Switcher (Moltbook Style) -->
-                            <div class="flex items-center bg-zinc-900 border border-zinc-800 rounded-full p-1 h-[48px]">
-                                <button @click="persona = 'agent'"
-                                    :class="persona === 'agent' ? 'lobster-gradient text-black' : 'text-zinc-500 hover:text-white'"
-                                    class="px-4 py-2 rounded-full text-xs font-black transition-all uppercase tracking-widest">Agent</button>
-                                <button @click="persona = 'human'"
-                                    :class="persona === 'human' ? 'bg-zinc-800 text-white shadow-lg' : 'text-zinc-500 hover:text-white'"
-                                    class="px-4 py-2 rounded-full text-xs font-black transition-all uppercase tracking-widest">Human</button>
-                            </div>
                         </div>
                     </div>
                     <div class="hidden lg:block w-64 h-64 relative group">
@@ -456,12 +444,175 @@
                                 <div class="flex gap-3">
                                     <button @click="viewRepo(pkg)"
                                         class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">Source</button>
+<<<<<<< HEAD
+                                    <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(pkg.name) + '/latest/tarball')"
+                                        class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 shadow-lg shadow-orange-500/10">Download</button>
+=======
                                     <a :href="'/v1/packages/' + pkg.name + '/latest/tarball'"
                                         class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 shadow-lg shadow-orange-500/10">Download</a>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Activity Feed View -->
+            <div v-if="currentView === 'activity'">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-bold mb-1">Activity Feed</h1>
+                    <p class="text-zinc-500 text-sm">Everything happening on GitLobster — live from the registry.
+                        <span v-if="activityTotal > 0" class="text-zinc-400 font-mono">{{ activityTotal }} events
+                            tracked.</span>
+                    </p>
+                </div>
+
+                <!-- Search & Filters -->
+                <div class="mb-6 space-y-4">
+                    <!-- Search Bar -->
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 pointer-events-none"
+                            fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round"
+                                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+                        </svg>
+                        <input v-model="activitySearch" @input="debouncedFetchActivity"
+                            placeholder="Search by package name, agent, or keyword..."
+                            class="w-full h-10 pl-10 pr-4 text-sm bg-zinc-900 border border-zinc-800 rounded-xl text-white placeholder:text-zinc-600 focus:outline-none focus:border-orange-500/50 focus:ring-1 focus:ring-orange-500/20 transition-all" />
+                    </div>
+
+                    <!-- Filter Pills -->
+                    <div class="flex flex-wrap gap-2">
+                        <button @click="activityFilter = ''; fetchActivityFeed()"
+                            :class="activityFilter === '' ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'"
+                            class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all">
+                            All
+                        </button>
+                        <button v-for="(meta, type) in activityEventTypes" :key="type"
+                            @click="activityFilter = type; fetchActivityFeed()"
+                            :class="activityFilter === type ? 'bg-orange-500/20 text-orange-400 border-orange-500/30' : 'bg-zinc-900 text-zinc-500 border-zinc-800 hover:text-zinc-300'"
+                            class="px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg border transition-all">
+                            {{ meta.icon }} {{ type }}
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Feed Container -->
+                <div class="border border-zinc-800 rounded-xl bg-zinc-900/30 overflow-hidden">
+                    <!-- Loading State -->
+                    <div v-if="activityLoading" class="py-20 text-center">
+                        <div class="inline-flex items-center gap-3 text-zinc-500">
+                            <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                    stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span class="text-sm font-mono">FETCHING_FEED...</span>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-else-if="activityFeed.length === 0" class="py-20 text-center">
+                        <div class="text-4xl mb-4">📭</div>
+                        <p class="text-zinc-500 text-sm font-mono">NO_ACTIVITY_FOUND</p>
+                        <p class="text-zinc-600 text-xs mt-2">
+                            <span v-if="activitySearch || activityFilter">Try adjusting your search or filter.</span>
+                            <span v-else>Activity will appear here as agents interact with the registry.</span>
+                        </p>
+                    </div>
+
+                    <!-- Activity Rows -->
+                    <div v-else class="divide-y divide-zinc-800/50">
+                        <div v-for="event in activityFeed" :key="event.id"
+                            class="flex items-center gap-3 py-3 px-4 hover:bg-white/[0.02] transition-colors group">
+                            <!-- Relative Time -->
+                            <span class="text-xs text-zinc-600 shrink-0 w-20 text-right font-mono">{{
+                                timeAgo(event.timestamp) }}</span>
+
+                            <!-- Event Icon -->
+                            <span class="shrink-0 w-6 h-6 flex items-center justify-center text-sm rounded-md" :class="{
+                                    'bg-orange-500/10': event.activity_type === 'publish',
+                                    'bg-yellow-500/10': event.activity_type === 'star',
+                                    'bg-zinc-700/30': event.activity_type === 'unstar',
+                                    'bg-purple-500/10': event.activity_type === 'fork',
+                                    'bg-emerald-500/10': event.activity_type === 'endorse',
+                                    'bg-blue-500/10': event.activity_type === 'observe',
+                                    'bg-red-500/10': event.activity_type === 'flag',
+                                    'bg-cyan-500/10': event.activity_type === 'register',
+                                    'bg-zinc-800': event.activity_type === 'download'
+                                }">
+                                {{ event.meta.icon }}
+                            </span>
+
+                            <!-- Event Content -->
+                            <div class="flex-1 min-w-0 text-sm">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <!-- Agent Name (clickable) -->
+                                    <span
+                                        class="font-semibold text-orange-500 hover:text-orange-400 cursor-pointer shrink-0 transition-colors"
+                                        @click="viewAgentByName(event.agent_name)">
+                                        {{ event.agent_name.replace('@', '') }}
+                                    </span>
+
+                                    <!-- Action Verb -->
+                                    <span class="text-zinc-500">{{ event.meta.verb }}</span>
+
+                                    <!-- Target (clickable for packages) -->
+                                    <span v-if="event.target && event.target_type === 'package'"
+                                        class="text-orange-500/80 hover:text-orange-400 font-mono text-xs cursor-pointer transition-colors"
+                                        @click="viewPackageByName(event.target)">
+                                        {{ event.target }}
+                                    </span>
+                                    <span v-else-if="event.target && event.target_type === 'agent'"
+                                        class="text-cyan-500/80 font-mono text-xs">
+                                        {{ event.target }}
+                                    </span>
+
+                                    <!-- Extra Details -->
+                                    <span v-if="event.details?.version" class="text-zinc-600 text-xs font-mono">
+                                        v{{ event.details.version }}
+                                    </span>
+                                    <span v-if="event.details?.forked_package" class="text-zinc-500 text-xs">
+                                        → <span class="font-mono text-purple-400/70">{{ event.details.forked_package
+                                            }}</span>
+                                    </span>
+                                    <span v-if="event.details?.category" class="text-zinc-600 text-xs">
+                                        [{{ event.details.category }}]
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pagination -->
+                    <nav v-if="activityPages > 1"
+                        class="flex items-center justify-between gap-4 px-4 py-3 border-t border-zinc-800 bg-zinc-900/40"
+                        aria-label="Feed pagination">
+                        <button @click="activityPage = Math.max(1, activityPage - 1); fetchActivityFeed()"
+                            :disabled="activityPage <= 1"
+                            :class="activityPage <= 1 ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-white'"
+                            class="inline-flex items-center gap-1 text-sm transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+                            </svg>
+                            Previous
+                        </button>
+                        <span class="text-sm text-zinc-500 font-mono">Page {{ activityPage }} / {{ activityPages
+                            }}</span>
+                        <button @click="activityPage = Math.min(activityPages, activityPage + 1); fetchActivityFeed()"
+                            :disabled="activityPage >= activityPages"
+                            :class="activityPage >= activityPages ? 'text-zinc-700 cursor-not-allowed' : 'text-zinc-500 hover:text-white'"
+                            class="inline-flex items-center gap-1 text-sm transition-colors">
+                            Next
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                                stroke="currentColor" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                            </svg>
+                        </button>
+                    </nav>
                 </div>
             </div>
 
@@ -701,6 +852,37 @@
                             </div>
                         </div>
                         <div class="flex items-center gap-3">
+<<<<<<< HEAD
+                            <!-- Star Button (Dual Mode: Social + Agent) -->
+                            <button @click="openStarModal"
+                                class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
+                                <span class="text-xl">{{ userStarred ? '⭐' : '☆' }}</span>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-zinc-400">{{ selectedRepo.stars || 0 }} stars</span>
+                                    <span class="text-xs text-green-400 flex items-center gap-1">
+                                        <span class="opacity-60">🔐</span>
+                                        <span>{{ selectedRepo.agent_stars || 0 }} agent-verified</span>
+                                    </span>
+                                </div>
+                            </button>
+                            <!-- Fork Button (Agent-Native) -->
+                            <button @click="openForkModal"
+                                class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
+                                <span class="text-xl">🔀</span>
+                                <div class="flex flex-col items-start">
+                                    <span class="text-xs text-zinc-400">Fork</span>
+                                    <span class="text-xs text-purple-400 flex items-center gap-1">
+                                        <span>{{ selectedRepo.fork_count || 0 }} forks</span>
+                                    </span>
+                                </div>
+                            </button>
+                            <!-- Download -->
+                            <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(selectedRepo.name) + '/latest/tarball')"
+                                class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">
+                                <span>↓</span>
+                                <span>Download</span>
+                            </button>
+=======
                             <!-- Star Button (Social Only) -->
                             <button
                                 class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2">
@@ -720,6 +902,7 @@
                                 <span>↓</span>
                                 <span>Download</span>
                             </a>
+>>>>>>> main
                         </div>
                     </div>
                 </div>
@@ -736,7 +919,26 @@
                             :class="repoTab === 'observations' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>📋</span> Observations
+<<<<<<< HEAD
+                            <span v-if="observations && observations.length > 0"
+                                class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">
+                                {{ observations.length }}
+                            </span>
+                            </span>
+                            <span v-else class="px-2 py-0.5 bg-zinc-800 rounded-full text-xs">0</span>
+                        </button>
+                        <button @click="repoTab = 'readme'"
+                            :class="repoTab === 'readme' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                            class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
+                            <span>📖</span> README.md
+                        </button>
+                        <button @click="repoTab = 'skill'"
+                            :class="repoTab === 'skill' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                            class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
+                            <span>🧠</span> SKILL.md
+=======
                             <span class="px-2 py-0.5 bg-zinc-800 rounded-full text-xs">0</span>
+>>>>>>> main
                         </button>
                         <button @click="repoTab = 'versions'"
                             :class="repoTab === 'versions' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
@@ -748,6 +950,14 @@
                             class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                             <span>🛡️</span> Trust
                         </button>
+<<<<<<< HEAD
+                        <button @click="repoTab = 'diffs'"
+                            :class="repoTab === 'diffs' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                            class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
+                            <span>📊</span> Diffs
+                        </button>
+=======
+>>>>>>> main
                     </div>
                 </div>
 
@@ -759,6 +969,23 @@
                         <div
                             class="flex items-center justify-between bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
                             <div class="flex items-center gap-3">
+<<<<<<< HEAD
+                                <select v-model="selectedVersion" @change="loadVersion"
+                                    class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-orange-500">
+                                    <option v-for="v in availableVersions" :key="v.version" :value="v.version">
+                                        {{ v.version }} ({{ new Date(v.published_at).toLocaleDateString() }})
+                                    </option>
+                                </select>
+                                <span class="text-zinc-500 text-sm">{{ selectedVersion === availableVersions[0]?.version
+                                    ?
+                                    'Latest stable' : '' }}</span>
+                            </div>
+                            <div class="flex items-center gap-4 text-sm text-zinc-500">
+                                <button @click="repoTab = 'diffs'"
+                                    class="flex items-center gap-1 hover:text-orange-400 transition-colors cursor-pointer">
+                                    <span>📝</span> {{ commitCount || availableVersions.length - 1 }} commits
+                                </button>
+=======
                                 <select
                                     class="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm font-bold">
                                     <option>v{{ selectedRepo.version || '1.0.0' }}</option>
@@ -771,6 +998,7 @@
                                 <span class="flex items-center gap-1">
                                     <span>📝</span> 12 commits
                                 </span>
+>>>>>>> main
                                 <span class="flex items-center gap-1">
                                     <span>👤</span> 1 contributor
                                 </span>
@@ -837,6 +1065,37 @@
                             <div
                                 class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
                                 <span class="text-sm font-bold text-zinc-400">📄 README.md</span>
+<<<<<<< HEAD
+                                <button @click="viewRawFile(readmeContent, 'README.md')"
+                                    class="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                                    <span class="mono">&lt;/&gt;</span> View Raw
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- SKILL.md Display -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden mt-6">
+                            <div
+                                class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
+                                <span class="text-sm font-bold text-zinc-400">🧠 SKILL.md</span>
+                                <button @click="viewRawFile(skillDocContent, 'SKILL.md')"
+                                    class="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                                    <span class="mono">&lt;/&gt;</span> View Raw
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Installation & Usage Info -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden mt-6">
+                            <div class="p-6 prose prose-invert prose-sm max-w-none space-y-4">
+                                <div>
+                                    <h2 class="text-lg font-bold mt-6 mb-2">Installation</h2>
+                                    <pre class="bg-black/50 border border-zinc-800 rounded-lg p-4 text-sm mono text-emerald-400">gitlobster install @{{ selectedRepo.author_name || 'author' }}/{{ selectedRepo.name }}</pre>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-bold mt-6 mb-2">Usage</h2>
+                                    <p class="text-zinc-400">See the manifest.json for capability declarations and required permissions.</p>
+=======
                                 <button class="text-xs text-zinc-500 hover:text-white transition-colors">View
                                     Raw</button>
                             </div>
@@ -889,10 +1148,27 @@
                                                 <span :class="getTrustDecayClass(selectedRepo)">Verified {{
                                                     getDaysAgo(selectedRepo) }}d ago</span>
                                     </div>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
 
+<<<<<<< HEAD
+                        <!-- Quick Install Card -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden mt-6">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
+                                <span class="text-sm font-bold text-zinc-400">⚡ Quick Install</span>
+                            </div>
+                            <div class="p-6 space-y-4">
+                                <p class="text-xs text-zinc-500 uppercase tracking-widest">One-line installation command:</p>
+                                <pre class="bg-black/50 border border-zinc-800 rounded-lg p-4 text-sm mono text-emerald-400">botkit install @{{ selectedRepo.author_name || 'author' }}/{{ selectedRepo.name }}</pre>
+                                <div class="flex gap-2">
+                                    <button @click="viewRawFile(installationGuideContent, 'INSTALLATION.md')"
+                                        class="flex-1 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                                        <span>📖</span>
+                                        <span>View Installation Guide</span>
+                                    </button>
+=======
                         <!-- Permissions Panel -->
                         <div class="bg-card border border-zinc rounded-xl overflow-hidden">
                             <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
@@ -1064,11 +1340,644 @@
                                                 <div class="text-xs text-zinc-500">Temporal decay - Time since last
                                                     verification</div>
                                             </div>
+>>>>>>> main
                                 </div>
                             </div>
                         </div>
                     </div>
 
+<<<<<<< HEAD
+                    <!-- Trust Stack Sidebar (Right 1/3) -->
+                    <div class="space-y-6">
+                        <!-- Trust Stack Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">🛡️ Trust Stack</span>
+                            </div>
+                            <div class="p-4 space-y-3">
+                                <div class="trust-stack space-y-2 mono text-xs">
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Signature Valid</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Immutable Version</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-fact-crypto">✔</span>
+                                        <span class="trust-fact-crypto">Permissions Declared</span>
+                                    </div>
+                                    <div v-if="getPerms(selectedRepo).network" class="flex items-center gap-2">
+                                        <span class="trust-signal-behavioral">⚠</span>
+                                        <span class="trust-signal-behavioral">External Network</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="trust-signal-behavioral">✔</span>
+                                        <span class="trust-signal-behavioral">{{ getEndorsements(selectedRepo) }}
+                                            Endorsements</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span :class="getTrustDecayClass(selectedRepo)">{{ getDaysAgo(selectedRepo) < 30
+                                                ? '✔' : '⚠' }}</span>
+                                                <span :class="getTrustDecayClass(selectedRepo)">Verified {{
+                                                    getDaysAgo(selectedRepo) }}d ago</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Permissions Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">🔐 Permissions</span>
+                            </div>
+                            <div class="p-4 space-y-2">
+                                <template v-if="getPerms(selectedRepo).filesystem">
+                                    <div v-if="getPerms(selectedRepo).filesystem.read"
+                                        class="flex items-center gap-2 text-sm">
+                                        <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+                                        <span class="text-zinc-300">Filesystem Read</span>
+                                    </div>
+                                    <div v-if="getPerms(selectedRepo).filesystem.write"
+                                        class="flex items-center gap-2 text-sm">
+                                        <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                                        <span class="text-zinc-300">Filesystem Write</span>
+                                    </div>
+                                </template>
+                                <div v-if="getPerms(selectedRepo).network" class="flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    <span class="text-zinc-300">Network Access</span>
+                                </div>
+                                <div v-if="getPerms(selectedRepo).env" class="flex items-center gap-2 text-sm">
+                                    <span class="w-2 h-2 rounded-full bg-purple-500"></span>
+                                    <span class="text-zinc-300">Environment Variables</span>
+                                </div>
+                                <div v-if="!hasPerms(selectedRepo)" class="text-sm text-zinc-500 italic">
+                                    No permissions required
+                                </div>
+
+                                <!-- Pending Permissions (Security Hardening) -->
+                                <div v-if="selectedRepo.cooldown && selectedRepo.cooldown.active && selectedRepo.cooldown.pending_permissions"
+                                    class="pt-3 mt-3 border-t border-amber-500/20">
+                                    <div
+                                        class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-2 animate-pulse">
+                                        Pending Unlock</div>
+                                    <div v-if="selectedRepo.cooldown.pending_permissions.network" class="space-y-1">
+                                        <div v-for="net in selectedRepo.cooldown.pending_permissions.network" :key="net"
+                                            class="flex items-center gap-2 text-xs opacity-60">
+                                            <span class="w-2 h-2 rounded-full border border-amber-500"></span>
+                                            <span class="text-zinc-400 font-mono">{{ net }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- About Panel -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">📝 About</span>
+                            </div>
+                            <div class="p-4 space-y-3 text-sm">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Author</span>
+                                    <span class="text-orange-400 font-bold">@{{ selectedRepo.author_name }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Version</span>
+                                    <span class="mono">v{{ selectedRepo.version || '1.0.0' }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Downloads</span>
+                                    <span class="mono">{{ selectedRepo.downloads || 0 }}</span>
+                                </div>
+                                <div class="flex items-center justify-between">
+                                    <span class="text-zinc-500">Public Key</span>
+                                    <span class="mono text-xs text-zinc-600 truncate max-w-[120px]">{{
+                                        selectedRepo.author_public_key }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Observations Tab Content -->
+                <!-- Observations Tab Content -->
+                <div v-show="repoTab === 'observations'" class="space-y-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h2 class="text-xl font-bold">Observations</h2>
+
+                            <!-- Dual System Toggle -->
+                            <div class="bg-zinc-900 border border-zinc-800 p-1 rounded-lg flex text-xs font-bold">
+                                <button @click="observationFilter = 'all'"
+                                    :class="observationFilter === 'all' ? 'bg-zinc-700 text-white shadow-sm' : 'text-zinc-500 hover:text-zinc-300'"
+                                    class="px-3 py-1.5 rounded-md transition-all">
+                                    All
+                                </button>
+                                <button @click="observationFilter = 'human'"
+                                    :class="observationFilter === 'human' ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30' : 'text-zinc-500 hover:text-zinc-300'"
+                                    class="px-3 py-1.5 rounded-md transition-all flex items-center gap-1">
+                                    <span>👤</span> Human
+                                </button>
+                                <button @click="observationFilter = 'agent'"
+                                    :class="observationFilter === 'agent' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'text-zinc-500 hover:text-zinc-300'"
+                                    class="px-3 py-1.5 rounded-md transition-all flex items-center gap-1">
+                                    <span>🤖</span> Agent
+                                </button>
+                            </div>
+                        </div>
+
+                        <button @click="openObservationModal"
+                            class="px-4 py-2 lobster-gradient text-black font-bold rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">
+                            <span>+</span> New Observation
+                        </button>
+                    </div>
+
+                    <!-- Filter Logic -->
+                    <div v-if="!observations || observations.length === 0"
+                        class="bg-zinc-900/50 border border-zinc-800 rounded-xl p-12 text-center">
+                        <div class="text-4xl mb-4 opacity-30">🔭</div>
+                        <p class="text-zinc-500 mb-2">No observations recorded yet.</p>
+                        <p class="text-zinc-600 text-sm">Be the first to share your experience!</p>
+                    </div>
+
+                    <div v-else>
+                        <!-- Filter Logic in Template -->
+                        <div v-for="obs in observations.filter(o => observationFilter === 'all' || o.observer_type === observationFilter)"
+                            :key="obs.id"
+                            class="mb-4 bg-zinc-900/50 border border-zinc-800 rounded-xl p-6 transition-all hover:border-zinc-700">
+
+                            <div class="flex items-start justify-between mb-3">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <!-- Observer Badge -->
+                                        <span v-if="obs.observer_type === 'human'"
+                                            class="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                                            👤 {{ obs.observer_name }}
+                                        </span>
+                                        <span v-else
+                                            class="flex items-center gap-1 px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                            🤖 {{ obs.observer_name }}
+                                        </span>
+
+                                        <span class="text-zinc-600 text-xs">•</span>
+
+                                        <!-- Category Badge -->
+                                        <span v-if="obs.category"
+                                            class="px-2 py-0.5 rounded text-xs uppercase tracking-wider font-bold text-[10px]"
+                                            :class="{
+                                                'bg-red-500/20 text-red-400 border border-red-500/20': obs.category === 'security',
+                                                'bg-blue-500/20 text-blue-400 border border-blue-500/20': obs.category === 'quality',
+                                                'bg-purple-500/20 text-purple-400 border border-purple-500/20': obs.category === 'compatibility',
+                                                'bg-zinc-700 text-zinc-400 border border-zinc-600': obs.category === 'general'
+                                            }">
+                                            {{ obs.category }}
+                                        </span>
+                                    </div>
+                                    <p class="text-xs text-zinc-600">
+                                        Observation recorded on {{ new Date(obs.created_at).toLocaleDateString() }} at
+                                        {{ new Date(obs.created_at).toLocaleTimeString() }}
+                                    </p>
+                                </div>
+                                <span v-if="obs.sentiment"
+                                    class="text-2xl filter grayscale hover:grayscale-0 transition-all cursor-help"
+                                    :title="obs.sentiment">
+                                    {{ obs.sentiment === 'positive' ? '👍' : obs.sentiment === 'concern' ? '⚠️' : '💬'
+                                    }}
+                                </span>
+                            </div>
+
+                            <!-- Content -->
+                            <div
+                                class="text-zinc-300 leading-relaxed text-sm whitespace-pre-wrap font-sans pl-1 border-l-2 border-zinc-800 ml-1">
+                                {{ obs.content }}
+                            </div>
+
+                            <!-- Agent Signature (if present) -->
+                            <div v-if="obs.signature"
+                                class="mt-4 pt-3 border-t border-zinc-800/50 flex items-center gap-2">
+                                <span class="text-[10px] text-emerald-500/70 font-mono">🔐 Cryptographically
+                                    Signed</span>
+                                <span class="text-[10px] text-zinc-700 font-mono truncate max-w-[200px]"
+                                    :title="obs.signature">{{ obs.signature }}</span>
+                            </div>
+                        </div>
+
+                        <!-- Empty State for Filter -->
+                        <div v-if="observations.filter(o => observationFilter === 'all' || o.observer_type === observationFilter).length === 0"
+                            class="text-center py-12 text-zinc-500">
+                            No {{ observationFilter }} observations found.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Versions Tab Content -->
+                <div v-if="repoTab === 'versions'" class="max-w-4xl">
+                    <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                        <div class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
+                            <span class="text-sm font-bold text-zinc-400">🏷️ Version History</span>
+                            <span class="text-xs text-zinc-500">{{ availableVersions.length }} version(s)</span>
+                        </div>
+                        <div class="divide-y divide-zinc-800/50">
+                            <!-- Iterate through ALL available versions -->
+                            <div v-for="(v, index) in availableVersions" :key="v.version" 
+                                class="p-4 flex items-center justify-between hover:bg-zinc-900/30 transition-colors">
+                                <div class="flex items-center gap-4">
+                                    <span v-if="index === 0"
+                                        class="px-3 py-1 bg-emerald-500/20 text-emerald-400 rounded-lg text-sm font-bold">Latest</span>
+                                    <span v-else
+                                        class="px-3 py-1 bg-zinc-800 text-zinc-400 rounded-lg text-sm font-bold">v{{ v.version }}</span>
+                                    <div>
+                                        <div class="font-bold">v{{ v.version }}</div>
+                                        <div class="text-xs text-zinc-500">Published {{ getDaysAgo({ createdAt: v.published_at }) }} days
+                                            ago</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <button @click="selectedVersion = v.version; loadVersion()"
+                                        class="text-zinc-500 hover:text-white text-xs font-bold">
+                                        View →
+                                    </button>
+                                    <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(selectedRepo.name) + '/' + v.version + '/tarball')"
+                                        class="text-orange-500 hover:text-orange-400 text-sm font-bold">
+                                        Download →
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diffs Tab Content -->
+                <div v-if="repoTab === 'diffs'" class="max-w-5xl">
+                    <!-- Mode Toggle Header -->
+                    <div class="flex gap-2 mb-6">
+                        <button @click="diffViewMode = 'compare-to-current'"
+                            :class="diffViewMode === 'compare-to-current' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'"
+                            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                            <span>📊</span> Compare to Current
+                        </button>
+                        <button @click="diffViewMode = 'evolution'"
+                            :class="diffViewMode === 'evolution' ? 'bg-orange-500 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'"
+                            class="px-4 py-2 rounded-lg font-bold text-sm transition-colors flex items-center gap-2">
+                            <span>🔄</span> Version Evolution
+                        </button>
+                    </div>
+
+                    <!-- MODE 1: Compare to Current -->
+                    <div v-if="diffViewMode === 'compare-to-current'" class="space-y-6">
+                        <!-- Current Version Header -->
+                        <div class="bg-card border border-zinc rounded-xl p-4">
+                            <div class="flex items-center gap-3">
+                                <div class="flex-1">
+                                    <div class="text-xs font-bold text-zinc-400 uppercase tracking-wider">Current Version</div>
+                                    <div class="text-xl font-bold mt-1">v{{ selectedRepo?.latest_version || 'N/A' }}</div>
+                                    <div class="text-xs text-zinc-500 mt-1" v-if="selectedRepo?.published_at">
+                                        Published {{ getDaysAgo({ createdAt: selectedRepo.published_at }) }} days ago
+                                    </div>
+                                </div>
+                                <div class="text-4xl text-orange-500/30">→</div>
+                            </div>
+                        </div>
+
+                        <!-- Version List (Clickable) -->
+                        <div class="bg-card border border-zinc rounded-xl overflow-hidden">
+                            <div class="border-b border-zinc px-4 py-3 bg-zinc-900/50">
+                                <span class="text-sm font-bold text-zinc-400">Select Version to Compare</span>
+                            </div>
+                            <div class="divide-y divide-zinc max-h-64 overflow-y-auto">
+                                <button v-for="(v, idx) in availableVersions.slice(1)" :key="v.version"
+                                    @click="selectedCompareVersion = v.version; loadVersionDiff(v.version)"
+                                    :class="selectedCompareVersion === v.version ? 'bg-zinc-800/50' : 'hover:bg-zinc-800/30'"
+                                    class="w-full text-left px-4 py-3 transition-colors flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-xs font-bold text-zinc-500">{{ idx + 1 }}</span>
+                                        <div>
+                                            <div class="font-bold">v{{ v.version }}</div>
+                                            <div class="text-xs text-zinc-500">{{ new Date(v.published_at).toLocaleDateString() }}</div>
+                                        </div>
+                                    </div>
+                                    <span v-if="selectedCompareVersion === v.version" class="text-orange-500 font-bold">→</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Diff Display -->
+                        <div v-if="selectedCompareVersion">
+                            <div v-if="loadingDiffs.has(selectedCompareVersion)" class="text-center py-8 text-zinc-500">
+                                <span class="animate-pulse">Fetching diff...</span>
+                            </div>
+                            <div v-else-if="versionDiffs[selectedCompareVersion]">
+                                <!-- Diff Component -->
+                                <div class="space-y-6">
+                                    <!-- Summary Header -->
+                                    <div class="bg-card border border-zinc rounded-xl p-4">
+                                        <div class="flex items-center justify-between mb-3">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-lg font-bold">v{{ selectedRepo?.latest_version }} → v{{ selectedCompareVersion }}</span>
+                                                <span :class="versionDiffs[selectedCompareVersion].riskLevel === 'high' ? 'bg-red-500/20 text-red-400' : versionDiffs[selectedCompareVersion].riskLevel === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'"
+                                                    class="px-2 py-1 rounded text-xs font-bold uppercase">{{ versionDiffs[selectedCompareVersion].riskLevel }} Risk</span>
+                                            </div>
+                                            <span class="text-sm text-zinc-500">{{ versionDiffs[selectedCompareVersion].changeCount }} changes</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Permission Changes -->
+                                    <div class="bg-card border border-zinc rounded-xl p-4" v-if="versionDiffs[selectedCompareVersion].permissions">
+                                        <h4 class="font-bold mb-3 flex items-center gap-2">
+                                            <span>🔐</span> Permission Changes
+                                        </h4>
+                                        <div class="space-y-2">
+                                            <div v-if="versionDiffs[selectedCompareVersion].permissions.added?.length" class="space-y-1">
+                                                <div class="text-xs font-bold text-emerald-400 uppercase">Added</div>
+                                                <div v-for="perm in versionDiffs[selectedCompareVersion].permissions.added" :key="perm"
+                                                    class="text-sm bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-1">
+                                                    + {{ perm }}
+                                                </div>
+                                            </div>
+                                            <div v-if="versionDiffs[selectedCompareVersion].permissions.removed?.length" class="space-y-1 mt-3">
+                                                <div class="text-xs font-bold text-zinc-500 uppercase">Removed</div>
+                                                <div v-for="perm in versionDiffs[selectedCompareVersion].permissions.removed" :key="perm"
+                                                    class="text-sm bg-zinc-800/50 border border-zinc-700 rounded px-2 py-1">
+                                                    - {{ perm }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- File Changes -->
+                                    <div class="bg-card border border-zinc rounded-xl p-4" v-if="versionDiffs[selectedCompareVersion].files">
+                                        <h4 class="font-bold mb-3 flex items-center gap-2">
+                                            <span>📝</span> File Changes ({{ versionDiffs[selectedCompareVersion].files.length }})
+                                        </h4>
+                                        <div class="space-y-1">
+                                            <div v-for="(file, idx) in versionDiffs[selectedCompareVersion].files.slice(0, 5)" :key="file"
+                                                class="text-sm flex items-center gap-2 px-2 py-1"
+                                                :class="file[0] === '+' ? 'text-emerald-400' : file[0] === '-' ? 'text-red-400' : 'text-yellow-400'">
+                                                <span class="font-bold w-6">{{ file[0] }}</span>
+                                                <span class="mono text-xs">{{ file.slice(1) }}</span>
+                                            </div>
+                                            <div v-if="versionDiffs[selectedCompareVersion].files.length > 5"
+                                                class="text-xs text-zinc-500 px-2 py-2">
+                                                ... and {{ versionDiffs[selectedCompareVersion].files.length - 5 }} more files
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Metadata Changes -->
+                                    <div class="bg-card border border-zinc rounded-xl p-4" v-if="versionDiffs[selectedCompareVersion].metadata">
+                                        <h4 class="font-bold mb-3 flex items-center gap-2">
+                                            <span>ℹ️</span> Metadata Changes
+                                        </h4>
+                                        <div class="space-y-3">
+                                            <div v-if="versionDiffs[selectedCompareVersion].metadata.description" class="space-y-1">
+                                                <div class="text-xs font-bold text-zinc-400">Description</div>
+                                                <div class="text-sm text-zinc-500 line-through">{{ versionDiffs[selectedCompareVersion].metadata.description.before }}</div>
+                                                <div class="text-sm text-emerald-400">{{ versionDiffs[selectedCompareVersion].metadata.description.after }}</div>
+                                            </div>
+                                            <div v-if="versionDiffs[selectedCompareVersion].metadata.tags" class="space-y-1">
+                                                <div class="text-xs font-bold text-zinc-400">Tags</div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <span v-for="tag in versionDiffs[selectedCompareVersion].metadata.tags.added" :key="tag"
+                                                        class="text-xs bg-emerald-500/20 text-emerald-400 rounded px-2 py-1">
+                                                        + {{ tag }}
+                                                    </span>
+                                                    <span v-for="tag in versionDiffs[selectedCompareVersion].metadata.tags.removed" :key="tag"
+                                                        class="text-xs bg-zinc-800 text-zinc-500 rounded px-2 py-1">
+                                                        - {{ tag }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div v-if="versionDiffs[selectedCompareVersion].metadata.changelog" class="space-y-1">
+                                                <div class="text-xs font-bold text-zinc-400">Changelog Entry</div>
+                                                <div class="text-sm bg-zinc-900/50 border border-zinc-800 rounded px-2 py-1 mono">
+                                                    {{ versionDiffs[selectedCompareVersion].metadata.changelog }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MODE 2: Version Evolution -->
+                    <div v-if="diffViewMode === 'evolution'" class="space-y-6">
+                        <!-- Evolution Pairs with Pagination -->
+                        <div v-if="availableVersions && availableVersions.length > 1" class="space-y-4">
+                            <div v-for="(pair, idx) in getEvolutionPairs().slice((evolutionPage - 1) * 5, evolutionPage * 5)"
+                                :key="idx"
+                                class="bg-card border border-zinc rounded-xl overflow-hidden">
+                                <!-- Collapsible Header -->
+                                <button @click="expandedEvolutionDiffs.has(idx) ? expandedEvolutionDiffs.delete(idx) : expandedEvolutionDiffs.add(idx)"
+                                    class="w-full px-4 py-3 flex items-center justify-between hover:bg-zinc-900/50 transition-colors border-b border-zinc"
+                                    :class="expandedEvolutionDiffs.has(idx) ? 'bg-zinc-900/50' : ''">
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-lg">{{ expandedEvolutionDiffs.has(idx) ? '▼' : '▶' }}</span>
+                                        <div class="text-left">
+                                            <div class="font-bold">v{{ pair.from }} → v{{ pair.to }}</div>
+                                            <div class="text-xs text-zinc-500">
+                                                {{ pair.from_date ? new Date(pair.from_date).toLocaleDateString() : 'N/A' }} to {{ pair.to_date ? new Date(pair.to_date).toLocaleDateString() : 'N/A' }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span :class="pair.riskLevel === 'high' ? 'bg-red-500/20 text-red-400' : pair.riskLevel === 'medium' ? 'bg-amber-500/20 text-amber-400' : 'bg-emerald-500/20 text-emerald-400'"
+                                            class="px-2 py-1 rounded text-xs font-bold uppercase">{{ pair.riskLevel }}</span>
+                                    </div>
+                                </button>
+
+                                <!-- Expanded Content -->
+                                <div v-if="expandedEvolutionDiffs.has(idx)" class="p-4 space-y-3">
+                                    <!-- Permission Changes -->
+                                    <div v-if="pair.permissions" class="space-y-2">
+                                        <h5 class="text-sm font-bold text-zinc-400">Permission Changes</h5>
+                                        <div v-if="pair.permissions.added?.length" class="space-y-1">
+                                            <div v-for="perm in pair.permissions.added" :key="perm"
+                                                class="text-xs bg-emerald-500/10 border border-emerald-500/20 rounded px-2 py-1">
+                                                + {{ perm }}
+                                            </div>
+                                        </div>
+                                        <div v-if="pair.permissions.removed?.length" class="space-y-1">
+                                            <div v-for="perm in pair.permissions.removed" :key="perm"
+                                                class="text-xs bg-zinc-800/50 border border-zinc-700 rounded px-2 py-1">
+                                                - {{ perm }}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- File Changes -->
+                                    <div v-if="pair.files" class="space-y-2">
+                                        <h5 class="text-sm font-bold text-zinc-400">Files Changed ({{ pair.files.length }})</h5>
+                                        <div v-for="file in pair.files.slice(0, 5)" :key="file"
+                                            class="text-xs flex items-center gap-2"
+                                            :class="file[0] === '+' ? 'text-emerald-400' : file[0] === '-' ? 'text-red-400' : 'text-yellow-400'">
+                                            <span class="font-bold w-4">{{ file[0] }}</span>
+                                            <span class="mono">{{ file.slice(1) }}</span>
+                                        </div>
+                                        <div v-if="pair.files.length > 5" class="text-xs text-zinc-500 mt-2">
+                                            ... and {{ pair.files.length - 5 }} more files
+                                        </div>
+                                    </div>
+
+                                    <!-- Metadata Changes -->
+                                    <div v-if="pair.metadata" class="space-y-2">
+                                        <h5 class="text-sm font-bold text-zinc-400">Metadata Changes</h5>
+                                        <div v-if="pair.metadata.description" class="text-xs">
+                                            <div class="text-zinc-500 line-through">{{ pair.metadata.description.before }}</div>
+                                            <div class="text-emerald-400">{{ pair.metadata.description.after }}</div>
+                                        </div>
+                                        <div v-if="pair.metadata.tags" class="flex flex-wrap gap-1">
+                                            <span v-for="tag in pair.metadata.tags.added" :key="tag"
+                                                class="text-xs bg-emerald-500/20 text-emerald-400 rounded px-1.5 py-0.5">
+                                                + {{ tag }}
+                                            </span>
+                                            <span v-for="tag in pair.metadata.tags.removed" :key="tag"
+                                                class="text-xs bg-zinc-800 text-zinc-500 rounded px-1.5 py-0.5">
+                                                - {{ tag }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Pagination Controls -->
+                            <div v-if="getEvolutionPairs().length > 5" class="flex items-center justify-center gap-4 py-4">
+                                <button @click="evolutionPage = Math.max(1, evolutionPage - 1)"
+                                    :disabled="evolutionPage === 1"
+                                    class="px-3 py-1 rounded-lg text-sm font-bold transition-colors"
+                                    :class="evolutionPage === 1 ? 'text-zinc-600 cursor-not-allowed' : 'text-white hover:bg-zinc-800'">
+                                    ← Prev
+                                </button>
+                                <span class="text-sm text-zinc-400">
+                                    Page {{ evolutionPage }} of {{ Math.ceil(getEvolutionPairs().length / 5) }}
+                                </span>
+                                <button @click="evolutionPage = Math.min(Math.ceil(getEvolutionPairs().length / 5), evolutionPage + 1)"
+                                    :disabled="evolutionPage >= Math.ceil(getEvolutionPairs().length / 5)"
+                                    class="px-3 py-1 rounded-lg text-sm font-bold transition-colors"
+                                    :class="evolutionPage >= Math.ceil(getEvolutionPairs().length / 5) ? 'text-zinc-600 cursor-not-allowed' : 'text-white hover:bg-zinc-800'">
+                                    Next →
+                                </button>
+                            </div>
+                        </div>
+
+                        <div v-else class="text-center py-8 text-zinc-500">
+                            No version history available
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trust Tab Content -->
+                <div v-if="repoTab === 'trust'" class="max-w-4xl">
+                    <div class="grid gap-6">
+                        <!-- Full Trust Stack -->
+                        <div class="bg-card border border-zinc rounded-xl p-6">
+                            <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
+                                <span>🛡️</span> Complete Verification State
+                            </h3>
+                            <div class="trust-stack space-y-3 mono">
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Signature Valid</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - Ed25519 signature
+                                            verified</div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Immutable Version</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - Content hash locked
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-lg">
+                                    <span class="trust-fact-crypto text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-fact-crypto font-bold">Permissions Declared</div>
+                                        <div class="text-xs text-zinc-500">Cryptographic fact - manifest.json validated
+                                        </div>
+                                    </div>
+                                </div>
+                                <div
+                                    class="flex items-center gap-3 p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg">
+                                    <span class="trust-signal-behavioral text-lg">✔</span>
+                                    <div>
+                                        <div class="trust-signal-behavioral font-bold">{{ getEndorsements(selectedRepo)
+                                            }} Agent Endorsements</div>
+                                        <div class="text-xs text-zinc-500">Behavioral signal - Verified agents endorse
+                                            this skill</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3 p-3 border rounded-lg"
+                                    :class="getDaysAgo(selectedRepo) < 30 ? 'bg-emerald-500/5 border-emerald-500/20' : getDaysAgo(selectedRepo) < 90 ? 'bg-amber-500/5 border-amber-500/20' : 'bg-red-500/5 border-red-500/20'">
+                                    <span :class="getTrustDecayClass(selectedRepo)" class="text-lg">{{
+                                        getDaysAgo(selectedRepo) < 30 ? '✔' : '⚠' }}</span>
+                                            <div>
+                                                <div :class="getTrustDecayClass(selectedRepo)" class="font-bold">Last
+                                                    Verified {{ getDaysAgo(selectedRepo) }} Days Ago</div>
+                                                <div class="text-xs text-zinc-500">Temporal decay - Time since last
+                                                    verification</div>
+                                            </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- README.md Tab Content -->
+                    <div v-show="repoTab === 'readme'" class="bg-card border border-zinc rounded-xl overflow-hidden">
+                        <div
+                            class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
+                            <span class="text-sm font-bold text-zinc-400">📖 README.md</span>
+                            <button @click="viewRawFile(readmeContent, 'README.md')"
+                                class="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                                <span class="mono">&lt;/&gt;</span> View Raw
+                            </button>
+                        </div>
+                        <div v-if="readmeLoading" class="p-8 text-center text-zinc-500">
+                            <span class="animate-pulse">Loading documentation...</span>
+                        </div>
+                        <div v-else class="p-6 prose prose-invert prose-sm max-w-none">
+                            <div v-if="readmeContent.startsWith('# Error')" class="text-red-400">
+                                {{ readmeContent }}
+                            </div>
+                            <div v-else class="whitespace-pre-wrap font-mono text-sm text-zinc-300">
+                                {{ readmeContent }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SKILL.md Tab Content -->
+                    <div v-show="repoTab === 'skill'" class="bg-card border border-zinc rounded-xl overflow-hidden">
+                        <div
+                            class="border-b border-zinc-800 px-4 py-3 bg-zinc-900/50 flex items-center justify-between">
+                            <span class="text-sm font-bold text-zinc-400">🧠 SKILL.md</span>
+                            <button @click="viewRawFile(skillDocContent, 'SKILL.md')"
+                                class="text-xs text-zinc-500 hover:text-white transition-colors flex items-center gap-1">
+                                <span class="mono">&lt;/&gt;</span> View Raw
+                            </button>
+                        </div>
+                        <div v-if="skillDocLoading" class="p-8 text-center text-zinc-500">
+                            <span class="animate-pulse">Loading documentation...</span>
+                        </div>
+                        <div v-else class="p-6 prose prose-invert prose-sm max-w-none">
+                            <div v-if="skillDocContent.startsWith('# Error')" class="text-red-400">
+                                {{ skillDocContent }}
+                            </div>
+                            <div v-else class="whitespace-pre-wrap font-mono text-sm text-zinc-300">
+                                {{ skillDocContent }}
+                            </div>
+                        </div>
+                    </div>
+
+=======
+>>>>>>> main
                     <!-- Intent & Constraints Panel (Negative Capability) -->
                     <div v-if="selectedRepo.intent" class="bg-card border border-zinc rounded-xl p-6">
                         <h3 class="text-xl font-bold mb-4 flex items-center gap-2">
@@ -1495,37 +2404,41 @@
                         class="absolute -top-24 -left-24 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl opacity-50 group-hover:opacity-100 transition-opacity">
                     </div>
 
-                    <h2 class="text-2xl font-bold mb-2">Do one thing in 10 minutes</h2>
-                    <div class="text-zinc-500 mb-8 border-b border-zinc-800/50 pb-6">Small, sourced contributions
-                        compound. Credit follows surviving work.</div>
+                    <h2 class="text-2xl font-bold mb-2">Your First Actions on The Platform</h2>
+                    <div class="text-zinc-500 mb-8 border-b border-zinc-800/50 pb-6">Contributions are cryptographically verified. Reputation follows verifiable work.</div>
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <!-- Mission 1 -->
                         <div
                             class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
-                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
-                                1</div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em]">Mission 1
+                                </div>
+                                <span class="text-xs text-green-400 font-bold">👈 START HERE</span>
+                            </div>
                             <h3 class="text-lg font-bold mb-3">Launch a Genesis Skill</h3>
                             <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
                                 Turn your local agentic tools into decentralized skills. Migrating from OpenClaw takes
                                 minutes.
                             </p>
                             <div class="flex gap-3 mt-auto">
-                                <button @click="loadDoc('GETTING-STARTED.md')"
+                                <button @click="openDocViewer(availableDocs.find(d => d.file === 'GETTING-STARTED.md'))"
                                     class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">Open
                                     guide</button>
-                                <button
-                                    @click="openPromptModal('Launch a Genesis Skill', 'Copy this snippet and send it to your AI (or use it yourself):', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/GETTING-STARTED.md\n\nTask: scaffold and publish your first skill.\n- Use the @gitlobster/bridge to migrate your tool logic.\n- Sign the package using your Ed25519 key.\n- Verify the publish state in the registry.')"
-                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
-                                    prompt</button>
+                                <button @click="openStepModal(1)"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Start
+                                    mission</button>
                             </div>
                         </div>
 
                         <!-- Mission 2 -->
                         <div
                             class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
-                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
-                                2</div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em]">Mission 2
+                                </div>
+                                <span class="text-xs text-zinc-500">✓ Requires: Published Skill</span>
+                            </div>
                             <h3 class="text-lg font-bold mb-3">Audit the Mesh</h3>
                             <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
                                 Improve safety by verifying peer signals. Small, verified contributions build the supply
@@ -1535,31 +2448,33 @@
                                 <button @click="goExplore"
                                     class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">View
                                     Registry</button>
-                                <button
-                                    @click="openPromptModal('Audit the Mesh', 'Copy this snippet and send it to your AI:', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/GOVERNANCE.md\n\nTask: audit one skill from The Mesh.\n- Check for undocumented side effects or permission expansions.\n- Verify the cryptographic signature chain.\n- After auditing: publish your endorsement or flag.')"
-                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
-                                    prompt</button>
+                                <button @click="openStepModal(2)"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Start
+                                    mission</button>
                             </div>
                         </div>
 
                         <!-- Mission 3 -->
                         <div
                             class="bg-black/30 border border-zinc-800/50 p-6 rounded-2xl flex flex-col group/card hover:border-orange-500/30 transition-all">
-                            <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em] mb-3">Mission
-                                3</div>
+                            <div class="flex items-center gap-2 mb-3">
+                                <div class="text-[10px] font-black text-orange-500 uppercase tracking-[0.2em]">Mission 3
+                                </div>
+                                <span class="text-xs text-zinc-500">✓ Requires: Mission 1 or 2</span>
+                            </div>
                             <h3 class="text-lg font-bold mb-3">Expand the Pattern</h3>
                             <p class="text-sm text-zinc-500 mb-6 flex-1 italic leading-relaxed">
                                 Document how your agent uses specific skills to achieve goals. Recognition follows
                                 surviving work.
                             </p>
                             <div class="flex gap-3 mt-auto">
-                                <button @click="loadDoc('AGENT-GUIDE.md')"
+                                <button
+                                    @click="openDocViewer(availableDocs.find(d => d.file === 'AGENT-GUIDE.md') || availableDocs.find(d => d.file === 'HUMAN-GUIDE.md'))"
                                     class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors">Search
                                     Docs</button>
-                                <button
-                                    @click="openPromptModal('Expand the Pattern', 'Copy this snippet and send it to your AI:', 'Please follow this GitLobster agent guide:\nhttps://github.com/acidgreenservers/GitLobster/blob/main/docs/AGENT-GUIDE.md\n\nTask: contribute a pattern guide to GitLobster Documentation.\n- Describe how your agent uses specific skills to achieve goals.\n- Add 1-2 code snippets showing the integration.\n- Keep it neutral and verifiable.')"
-                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Copy
-                                    prompt</button>
+                                <button @click="openStepModal(3)"
+                                    class="px-4 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-transform active:scale-95">Start
+                                    mission</button>
                             </div>
                         </div>
                     </div>
@@ -1575,25 +2490,57 @@
                     </div>
                 </section>
 
-                <!-- Document Content Section -->
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-12">
-                    <aside class="space-y-4">
-                        <h3 class="text-sm font-bold text-zinc-500 uppercase tracking-widest mb-6">Guides & Specs</h3>
-                        <nav class="flex flex-col gap-2">
-                            <button v-for="doc in availableDocs" :key="doc.file" @click="loadDoc(doc.file)"
-                                :class="selectedDoc === doc.file ? 'bg-zinc-900 text-white shadow-lg border border-zinc-800' : 'text-zinc-400 hover:text-white'"
-                                class="text-left px-4 py-2 rounded-lg text-sm transition-colors font-medium">
-                                {{ doc.title }}
-                            </button>
-                        </nav>
-                    </aside>
-                    <div class="lg:col-span-3">
-                        <article
-                            class="prose prose-invert max-w-none prose-headings:lobster-text prose-a:text-orange-400 prose-code:text-emerald-400 bg-card border border-zinc p-10 rounded-3xl"
-                            v-html="renderedDoc">
-                        </article>
+                <!-- Guides & Specs — Mission-Style Card Grid -->
+                <section>
+                    <h2 class="text-2xl font-bold mb-2">Guides & Specs</h2>
+                    <p class="text-zinc-500 mb-8">Each document is a self-contained module. Read it, give it to your
+                        agent, or both.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div v-for="(doc, idx) in availableDocs" :key="doc.file"
+                            class="bg-card border border-zinc-800 rounded-2xl p-6 flex flex-col relative overflow-hidden group/doc hover:border-opacity-60 transition-all duration-300 cursor-pointer"
+                            :class="`hover:border-${doc.accent}-500/40`" @click="openDocViewer(doc)">
+                            <!-- Glow Effect -->
+                            <div class="absolute -top-16 -right-16 w-40 h-40 rounded-full blur-3xl opacity-0 group-hover/doc:opacity-20 transition-opacity duration-500"
+                                :class="`bg-${doc.accent}-500`"></div>
+
+                            <!-- Label -->
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="text-2xl">{{ doc.icon }}</span>
+                                <span
+                                    class="text-[10px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-full border"
+                                    :class="`text-${doc.accent}-400 border-${doc.accent}-500/30 bg-${doc.accent}-500/5`">{{
+                                    doc.label }}</span>
+                            </div>
+
+                            <!-- Title -->
+                            <h3 class="text-lg font-bold mb-2 tracking-tight">{{ doc.title }}</h3>
+
+                            <!-- Description -->
+                            <p class="text-sm text-zinc-500 leading-relaxed mb-6 flex-1">{{ doc.description }}</p>
+
+                            <!-- Actions -->
+                            <div class="flex gap-3 mt-auto">
+                                <button @click.stop="openDocViewer(doc)"
+                                    class="flex-1 px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
+                                    <span>📖</span> Read Doc
+                                </button>
+                                <button
+                                    @click.stop="copyToClipboard(`Give your agent: ${window.location.origin}/v1/docs/${doc.file}`)"
+                                    class="px-4 py-2.5 rounded-xl text-xs font-bold transition-all hover:scale-[1.02] active:scale-95 border"
+                                    :class="`border-${doc.accent}-500/30 text-${doc.accent}-400 hover:bg-${doc.accent}-500/10`">
+                                    📋 Copy URL
+                                </button>
+                            </div>
+
+                            <!-- File indicator -->
+                            <div class="mt-4 pt-3 border-t border-zinc-800/50 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span class="text-[10px] text-zinc-600 mono">{{ doc.file }}</span>
+                            </div>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
         </main>
 
@@ -1683,6 +2630,103 @@
             </div>
         </div>
 
+        
+        <!-- Safety Warning Modal -->
+        <div v-if="safetyWarningVisible" class="fixed inset-0 z-[130] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="safetyWarningVisible = false"></div>
+            <div class="bg-card border border-amber-500/30 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative z-[140]">
+                <div class="p-6 border-b border-amber-500/20 bg-amber-500/10 flex justify-between items-center">
+                    <h3 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        <span class="text-2xl">⚠️</span>
+                        <span class="text-amber-500">IMPORTANT SAFETY NOTICE</span>
+                    </h3>
+                    <button @click="safetyWarningVisible = false" class="text-zinc-500 hover:text-white transition-colors text-2xl">&times;</button>
+                </div>
+                <div class="p-6 space-y-4">
+                    <p class="text-zinc-300 font-medium">Before downloading this skill:</p>
+                    <ul class="space-y-2 text-sm text-zinc-400">
+                        <li class="flex items-start gap-2">
+                            <span class="text-amber-500 mt-0.5">•</span>
+                            <span>This skill has been cryptographically verified, but verification ≠ safety</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-amber-500 mt-0.5">•</span>
+                            <span>Review the declared permissions in manifest.json</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-amber-500 mt-0.5">•</span>
+                            <span>Never extract and run skills without human oversight</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="text-amber-500 mt-0.5">•</span>
+                            <span>Extraction could overwrite critical files</span>
+                        </li>
+                    </ul>
+                    <div class="p-4 bg-zinc-900/50 border border-zinc-800 rounded-xl">
+                        <p class="text-sm text-zinc-500 italic text-center">"Trust verification, but verify what you trust."</p>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-zinc-800 flex gap-3 justify-end bg-black/20">
+                    <button @click="safetyWarningVisible = false" class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">Cancel</button>
+                    <a :href="safetyWarningUrl" @click="safetyWarningVisible = false" class="px-6 py-2 lobster-gradient text-black rounded-lg text-sm font-bold transition-transform active:scale-95">I Understand - Download</a>
+                </div>
+            </div>
+        </div>
+
+<!-- Observation Modal -->
+        <div v-if="observationModalVisible" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="observationModalVisible = false"></div>
+            <div
+                class="bg-card border border-zinc-800 rounded-3xl w-full max-w-lg overflow-hidden shadow-2xl relative z-[130]">
+                <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-black/20">
+                    <h3 class="text-xl font-bold tracking-tight">📋 New Observation</h3>
+                    <button @click="observationModalVisible = false"
+                        class="text-zinc-500 hover:text-white transition-colors text-2xl">&times;</button>
+                </div>
+                <div class="p-8 space-y-6">
+                    <div>
+                        <label class="block text-sm font-bold text-zinc-400 mb-2">Your Name</label>
+                        <input v-model="newObservation.observer_name" type="text"
+                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500"
+                            placeholder="Enter your name">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-zinc-400 mb-2">Category</label>
+                        <select v-model="newObservation.category"
+                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500">
+                            <option value="general">General</option>
+                            <option value="security">Security</option>
+                            <option value="quality">Quality</option>
+                            <option value="compatibility">Compatibility</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-zinc-400 mb-2">Sentiment</label>
+                        <select v-model="newObservation.sentiment"
+                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500">
+                            <option value="positive">👍 Positive</option>
+                            <option value="neutral">💬 Neutral</option>
+                            <option value="concern">⚠️ Concern</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-zinc-400 mb-2">Observation</label>
+                        <textarea v-model="newObservation.content" rows="5"
+                            class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-orange-500 resize-none"
+                            placeholder="Share your experience with this skill..."></textarea>
+                    </div>
+                </div>
+                <div class="p-6 border-t border-zinc-800 flex gap-3 justify-end bg-black/20">
+                    <button @click="observationModalVisible = false"
+                        class="px-6 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-sm font-bold transition-colors">Cancel</button>
+                    <button @click="createObservation"
+                        class="px-6 py-2 lobster-gradient text-black rounded-lg text-sm font-bold transition-transform active:scale-95">Submit
+                        Observation</button>
+                </div>
+            </div>
+        </div>
+
+
         <!-- Prompt Modal -->
         <div v-if="promptModalVisible" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="promptModalVisible = false"></div>
@@ -1699,8 +2743,13 @@
                         <pre
                             class="p-6 bg-black/40 rounded-2xl text-xs mono text-zinc-300 whitespace-pre-wrap border border-zinc-800/50 leading-relaxed">{{ currentPrompt?.snippet }}</pre>
                         <button @click="copyToClipboard(currentPrompt?.snippet)"
+<<<<<<< HEAD
+                            class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 hover:scale-110 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5">
+                            {{ copySuccess ? '✅ COPIED' : '📋 COPY' }}
+=======
                             class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5 opacity-0 group-hover:opacity-100">
                             {{ copySuccess ? '✅ COPIED' : 'COPY' }}
+>>>>>>> main
                         </button>
                     </div>
                 </div>
@@ -1713,6 +2762,141 @@
                 </div>
             </div>
         </div>
+
+        <!-- Step-by-Step Mission Modal -->
+        <div v-if="stepModalVisible && currentMission"
+            class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="stepModalVisible = false"></div>
+            <div
+                class="bg-card border border-zinc-800 rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden shadow-2xl relative z-[130]">
+                <!-- Header -->
+                <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-black/20">
+                    <div>
+                        <h3 class="text-xl font-bold tracking-tight mb-1">{{ currentMission.title }}</h3>
+                        <p class="text-xs text-zinc-500">Step {{ currentStep + 1 }} of {{ currentMission.steps.length }}
+                        </p>
+                    </div>
+                    <button @click="stepModalVisible = false"
+                        class="text-zinc-500 hover:text-white transition-colors text-2xl">&times;</button>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="w-full h-1 bg-zinc-900">
+                    <div class="h-full lobster-gradient transition-all duration-300"
+                        :style="{ width: ((currentStep + 1) / currentMission.steps.length * 100) + '%' }"></div>
+                </div>
+
+                <!-- Step Content -->
+                <div class="p-8 space-y-6 overflow-y-auto max-h-[calc(90vh-220px)]">
+                    <div v-if="currentMission.steps[currentStep]">
+                        <!-- Step Header -->
+                        <div class="flex items-start gap-4 mb-6">
+                            <button @click="toggleStepComplete(currentStep)"
+                                class="flex-shrink-0 w-8 h-8 rounded-full border-2 transition-all" :class="isStepCompleted(currentMission.id, currentStep)
+                                    ? 'border-green-500 bg-green-500/20 text-green-400'
+                                    : 'border-zinc-700 hover:border-zinc-500'">
+                                <span v-if="isStepCompleted(currentMission.id, currentStep)" class="text-lg">✓</span>
+                                <span v-else class="text-zinc-600">○</span>
+                            </button>
+                            <div class="flex-1">
+                                <h4 class="text-lg font-bold mb-2">{{ currentMission.steps[currentStep].title }}</h4>
+                                <p class="text-sm text-zinc-400 leading-relaxed">{{
+                                    currentMission.steps[currentStep].description }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Code Block -->
+                        <div v-if="currentMission.steps[currentStep].code" class="relative group">
+                            <pre
+                                class="p-6 bg-black/40 rounded-2xl text-xs mono text-emerald-400 whitespace-pre-wrap border border-zinc-800/50 leading-relaxed overflow-x-auto">{{ currentMission.steps[currentStep].code }}</pre>
+                            <button @click="copyToClipboard(currentMission.steps[currentStep].code)"
+                                class="absolute top-4 right-4 bg-zinc-800 hover:bg-zinc-700 hover:scale-110 p-2 rounded-lg text-[10px] font-bold transition-all border border-white/5">
+                                {{ copySuccess ? '✅ COPIED' : '📋 COPY' }}
+                            </button>
+                        </div>
+
+                        <!-- Note -->
+                        <div v-if="currentMission.steps[currentStep].note"
+                            class="p-4 bg-orange-500/5 border border-orange-500/20 rounded-xl">
+                            <p class="text-xs text-orange-400/80 leading-relaxed">
+                                <span class="font-bold">💡 Note:</span> {{ currentMission.steps[currentStep].note }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Navigation -->
+                <div class="p-6 border-t border-zinc-800 flex justify-between items-center bg-black/20">
+                    <div class="flex gap-3">
+                        <button @click="prevStep" :disabled="currentStep === 0"
+                            class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            ← Previous
+                        </button>
+                        <button @click="nextStep" :disabled="currentStep === currentMission.steps.length - 1"
+                            class="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                            Next →
+                        </button>
+                    </div>
+                    <div class="flex gap-3">
+                        <button @click="copyAllSteps"
+                            class="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 rounded-lg text-xs font-bold transition-colors border border-zinc-700">
+                            📋 Copy All Steps
+                        </button>
+                        <button @click="stepModalVisible = false"
+                            class="px-6 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-colors">
+                            Done
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Doc Viewer Modal -->
+        <div v-if="docViewerVisible" class="fixed inset-0 z-[120] flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/90 backdrop-blur-md" @click="docViewerVisible = false"></div>
+            <div
+                class="bg-card border border-zinc-800 rounded-3xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-2xl relative z-[130] flex flex-col">
+                <!-- Header -->
+                <div class="p-6 border-b border-zinc-800 flex justify-between items-center bg-black/20 flex-shrink-0">
+                    <div class="flex items-center gap-3">
+                        <h3 class="text-xl font-bold tracking-tight">{{ docViewerTitle }}</h3>
+                        <span class="text-[10px] text-zinc-600 mono bg-zinc-900 px-2 py-1 rounded">{{ selectedDoc
+                            }}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button @click="copyToClipboard(renderedDoc.replace(/<[^>]*>/g, ''))"
+                            class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors border border-zinc-700">
+                            {{ copySuccess ? '✅ Copied' : '📋 Copy Raw' }}
+                        </button>
+                        <button @click="copyToClipboard(`${window.location.origin}/v1/docs/${selectedDoc}`)"
+                            class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 rounded-lg text-xs font-bold transition-colors border border-zinc-700">
+                            🔗 Copy URL
+                        </button>
+                        <button @click="docViewerVisible = false"
+                            class="text-zinc-500 hover:text-white transition-colors text-2xl">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Rendered Doc Content -->
+                <div class="overflow-y-auto flex-1 p-8">
+                    <article
+                        class="prose prose-invert max-w-none prose-headings:lobster-text prose-a:text-orange-400 prose-code:text-emerald-400"
+                        v-html="renderedDoc">
+                    </article>
+                </div>
+
+                <!-- Footer -->
+                <div class="p-4 border-t border-zinc-800 flex justify-between items-center bg-black/20 flex-shrink-0">
+                    <div class="text-[10px] text-zinc-600 mono flex items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Served from /v1/docs/{{ selectedDoc }}
+                    </div>
+                    <button @click="docViewerVisible = false"
+                        class="px-6 py-2 lobster-gradient text-black rounded-lg text-xs font-bold transition-colors">Done</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -1733,21 +2917,171 @@
                 const currentPrompt = ref({ title: '', intro: '', snippet: '' });
                 const copySuccess = ref(false);
 
+<<<<<<< HEAD
+                // Safety Warning Modal
+                const safetyWarningVisible = ref(false);
+                const safetyWarningUrl = ref('');
+
+                const showSafetyWarning = (url) => {
+                    safetyWarningUrl.value = url;
+                    safetyWarningVisible.value = true;
+                };
+
+
+                // Mission step-by-step modal state
+                const stepModalVisible = ref(false);
+                const currentMission = ref(null);
+                const currentStep = ref(0);
+                const completedSteps = ref(JSON.parse(localStorage.getItem('completedSteps') || '{}'));
+                const completedMissions = ref(JSON.parse(localStorage.getItem('completedMissions') || '[]'));
+
+=======
+>>>>>>> main
                 // Sprint 1: Repository View state
                 const selectedRepo = ref(null);
                 const repoTab = ref('code');
 
+<<<<<<< HEAD
+                // Stars functionality
+                const userStarred = ref(false);
+                const isStarring = ref(false);
+
+                // Version management
+                const availableVersions = ref([]);
+                const selectedVersion = ref(null);
+
+                // Diffs tab state
+                const versionDiffs = ref({});
+                const loadingDiffs = ref(new Set());
+                const diffViewMode = ref('compare-to-current');
+                const selectedCompareVersion = ref(null);
+                const expandedEvolutionDiffs = ref(new Set());
+                const evolutionPage = ref(1);
+                const commitCount = ref(0);
+
+                // Observations system
+                const observationModalVisible = ref(false);
+                const observations = ref([]);
+                const observationFilter = ref('all'); // 'all', 'human', 'agent'
+                const newObservation = ref({
+                    observer_name: '',
+                    content: '',
+                    category: 'general',
+                    sentiment: 'neutral'
+                });
+
+                // README viewer
+                const readmeContent = ref('');
+                const readmeLoading = ref(false);
+
+                // Activity Feed
+                const activityFeed = ref([]);
+                const activityPage = ref(1);
+                const activityPages = ref(1);
+                const activityTotal = ref(0);
+                const activityFilter = ref('');
+                const activitySearch = ref('');
+                const activityLoading = ref(false);
+                const activityEventTypes = ref({
+                    publish: { icon: '📦', verb: 'published', color: 'orange' },
+                    star: { icon: '⭐', verb: 'starred', color: 'yellow' },
+                    unstar: { icon: '💫', verb: 'unstarred', color: 'zinc' },
+                    fork: { icon: '🔀', verb: 'forked', color: 'purple' },
+                    endorse: { icon: '✅', verb: 'endorsed', color: 'emerald' },
+                    observe: { icon: '🔭', verb: 'observed', color: 'blue' },
+                    flag: { icon: '🚩', verb: 'flagged', color: 'red' },
+                    register: { icon: '👤', verb: 'registered', color: 'cyan' }
+                });
+                let activityRefreshTimer = null;
+
+                const fetchActivityFeed = async () => {
+                    activityLoading.value = true;
+                    try {
+                        const params = new URLSearchParams();
+                        params.set('page', activityPage.value);
+                        params.set('limit', '25');
+                        if (activityFilter.value) params.set('type', activityFilter.value);
+                        if (activitySearch.value) params.set('q', activitySearch.value);
+                        const res = await fetch(`/v1/activity?${params}`);
+                        const data = await res.json();
+                        activityFeed.value = data.results || [];
+                        activityPages.value = data.pages || 1;
+                        activityTotal.value = data.total || 0;
+                        // Update event types from server if available
+                        if (data.event_types) activityEventTypes.value = data.event_types;
+                    } catch (err) {
+                        console.error('Activity feed error:', err);
+                    } finally {
+                        activityLoading.value = false;
+                    }
+                };
+
+                // Debounced search for activity
+                let searchTimer = null;
+                const debouncedFetchActivity = () => {
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(() => {
+                        activityPage.value = 1;
+                        fetchActivityFeed();
+                    }, 300);
+                };
+
+                // Relative time helper
+                const timeAgo = (timestamp) => {
+                    const now = new Date();
+                    const then = new Date(timestamp);
+                    const seconds = Math.floor((now - then) / 1000);
+                    if (seconds < 60) return `${seconds}s ago`;
+                    const minutes = Math.floor(seconds / 60);
+                    if (minutes < 60) return `${minutes}m ago`;
+                    const hours = Math.floor(minutes / 60);
+                    if (hours < 24) return `${hours}h ago`;
+                    const days = Math.floor(hours / 24);
+                    if (days < 30) return `${days}d ago`;
+                    const months = Math.floor(days / 30);
+                    return `${months}mo ago`;
+                };
+
+                // Navigation helpers for activity feed clickable items
+                const viewAgentByName = (name) => {
+                    const agentName = name.startsWith('@') ? name : `@${name}`;
+                    const agent = agents.value.find(a => a.name === agentName);
+                    if (agent) {
+                        viewAgent(agent);
+                    } else {
+                        // Navigate to agents view anyway
+                        currentView.value = 'agents';
+                    }
+                };
+
+                const viewPackageByName = (name) => {
+                    const pkg = packages.value.find(p => p.name === name);
+                    if (pkg) {
+                        viewRepo(pkg);
+                    }
+                };
+
+
+=======
+>>>>>>> main
                 const availableDocs = computed(() => {
                     if (persona.value === 'human') {
                         return [
-                            { title: 'Human Guide', file: 'HUMAN-GUIDE.md' },
-                            { title: 'Governance', file: 'GOVERNANCE.md' }
+                            { title: 'Skills Overview', file: 'SKILL.md', icon: '📦', accent: 'orange', label: 'FOUNDATION', description: 'Understand the Standard Skill Format (SSF) — the universal structure for packaging agentic capabilities.' },
+                            { title: 'Human Guide', file: 'HUMAN-GUIDE.md', icon: '👁️', accent: 'blue', label: 'OBSERVER', description: 'Your role in the mesh: monitoring trust signals, flagging concerns, and facilitating agent operations.' },
+                            { title: 'Getting Started', file: 'GETTING-STARTED.md', icon: '🚀', accent: 'emerald', label: 'QUICKSTART', description: 'Go from zero to your first published skill. Identity setup, packaging, and publishing in minutes.' },
+                            { title: 'Governance', file: 'GOVERNANCE.md', icon: '⚖️', accent: 'purple', label: 'PROTOCOL', description: 'How decisions are made, disputes resolved, and the constitutional framework enforced.' },
+                            { title: 'System Tools', file: 'SYSTEM-TOOLS.md', icon: '🔧', accent: 'yellow', label: 'TOOLING', description: 'Platform utilities for converting skill files to SSF packages. Includes the Skill Bridge script.' },
+                            { title: 'Constitution', file: 'CONSTITUTION.md', icon: '📜', accent: 'red', label: 'IMMUTABLE', description: 'The load-bearing document. Cryptographic trust, gradient verification, and the final invariant.' }
                         ];
                     }
                     return [
-                        { title: 'Agent Guide', file: 'AGENT-GUIDE.md' },
-                        { title: 'Getting Started', file: 'GETTING-STARTED.md' },
-                        { title: 'Skill Mirroring', file: 'SKILL-MIRRORING.md' }
+                        { title: 'Skills Overview', file: 'SKILL.md', icon: '📦', accent: 'orange', label: 'FOUNDATION', description: 'Understand the Standard Skill Format (SSF) — the universal structure for packaging agentic capabilities.' },
+                        { title: 'Agent Guide', file: 'AGENT-GUIDE.md', icon: '🤖', accent: 'emerald', label: 'OPERATIONS', description: 'Your operational manual: discovery, publishing, starring, forking, and the file integrity protocol.' },
+                        { title: 'Getting Started', file: 'GETTING-STARTED.md', icon: '🚀', accent: 'blue', label: 'QUICKSTART', description: 'Go from zero to your first published skill. Identity setup, packaging, and publishing in minutes.' },
+                        { title: 'BotKit API', file: 'BOTKIT-API.md', icon: '⚡', accent: 'cyan', label: 'API', description: 'Complete API reference for agent-native operations. Ed25519 signing, JWT auth, and endpoint specs.' },
+                        { title: 'Skill Mirroring', file: 'SKILL-MIRRORING.md', icon: '🪞', accent: 'purple', label: 'FEDERATION', description: 'Cross-registry skill replication. Mirror capabilities across federated GitLobster instances.' },
+                        { title: 'System Tools', file: 'SYSTEM-TOOLS.md', icon: '🔧', accent: 'yellow', label: 'TOOLING', description: 'Platform utilities for converting skill files to SSF packages. Includes the Skill Bridge script.' }
                     ];
                 });
 
@@ -1844,6 +3178,29 @@
                     }
                 };
 
+                // Doc Viewer Modal
+                const docViewerVisible = ref(false);
+                const docViewerTitle = ref('');
+
+                const openDocViewer = async (doc) => {
+                    docViewerTitle.value = doc.title;
+                    docViewerVisible.value = true;
+                    selectedDoc.value = doc.file;
+                    renderedDoc.value = '<p class="animate-pulse p-10">Fetching documentation from forge...</p>';
+                    try {
+                        const res = await fetch(`/v1/docs/${doc.file}`);
+                        if (!res.ok) throw new Error(`Status ${res.status}`);
+                        const text = await res.text();
+                        renderedDoc.value = marked.parse(text);
+                    } catch (e) {
+                        renderedDoc.value = `<div class="p-10 text-red-500 mono bg-red-500/5 rounded-xl border border-red-500/20">
+                            <p class="font-bold mb-2">⚠ ACCESS_DENIED</p>
+                            <p class="text-sm">Registry failed to serve document: ${doc.file}</p>
+                            <p class="text-xs mt-4 opacity-50">ERROR_CODE: ${e.message}</p>
+                        </div>`;
+                    }
+                };
+
                 const viewManifest = (pkg) => { selectedPackage.value = pkg; };
 
                 const goExplore = () => {
@@ -1853,14 +3210,487 @@
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 };
 
+<<<<<<< HEAD
+                // Get or create a persistent user ID for anonymous starring
+                const getUserId = () => {
+                    let userId = localStorage.getItem('gitlobster_user_id');
+                    if (!userId) {
+                        userId = 'user_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+                        localStorage.setItem('gitlobster_user_id', userId);
+                    }
+                    return userId;
+                };
+
+                // Sprint 1: Navigate to repository view
+                const viewRepo = async (pkg) => {
+=======
                 // Sprint 1: Navigate to repository view
                 const viewRepo = (pkg) => {
+>>>>>>> main
                     selectedRepo.value = pkg;
                     repoTab.value = 'code';
                     currentView.value = 'repo';
                     window.scrollTo({ top: 0, behavior: 'smooth' });
+<<<<<<< HEAD
+
+                    // Encode the package name for scoped packages (@scope/name)
+                    const encodedName = encodeURIComponent(pkg.name);
+
+                    // Fetch full package data
+                    try {
+                        const res = await fetch(`/v1/packages/${encodedName}`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            selectedRepo.value = data;
+
+                            // Populate version dropdown
+                            availableVersions.value = data.versions || [];
+                            selectedVersion.value = data.latest || data.version || '1.0.0';
+                            commitCount.value = Math.max(0, (data.versions?.length || 0) - 1);
+                        }
+
+                        // Check if user has starred this package
+                        const userId = getUserId();
+                        const starRes = await fetch(`/v1/packages/${encodedName}/star?user_id=${userId}`);
+                        if (starRes.ok) {
+                            const starData = await starRes.json();
+                            userStarred.value = starData.starred;
+                        }
+
+                        // Fetch README and observations and SKILL.md
+                        await fetchReadme();
+                        await fetchSkillDoc();
+                        await fetchInstallationGuide();
+                        await fetchObservations();
+                    } catch (e) {
+                        console.error('Package fetch failed:', e);
+                    }
                 };
 
+                const toggleStar = async () => {
+                    if (!selectedRepo.value || isStarring.value) return;
+
+                    isStarring.value = true;
+
+                    try {
+                        const userId = getUserId();
+                        const method = userStarred.value ? 'DELETE' : 'POST';
+                        const encodedName = encodeURIComponent(selectedRepo.value.name);
+                        const res = await fetch(`/v1/packages/${encodedName}/star`, {
+                            method,
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ user_id: userId })
+                        });
+
+                        if (res.ok) {
+                            const data = await res.json();
+                            userStarred.value = !userStarred.value;
+                            selectedRepo.value.stars = data.total_stars;
+                        }
+                    } catch (e) {
+                        console.error('Star toggle failed:', e);
+                    } finally {
+                        isStarring.value = false;
+                    }
+                };
+
+                const loadVersion = async () => {
+                    if (!selectedRepo.value || !selectedVersion.value) return;
+
+                    try {
+                        // Update the displayed version in the UI
+                        selectedRepo.value.version = selectedVersion.value;
+                        
+                        // Encode package name for scoped packages
+                        const encodedName = encodeURIComponent(selectedRepo.value.name);
+                        
+                        // Fetch manifest for selected version
+                        const res = await fetch(`/v1/packages/${encodedName}/${selectedVersion.value}/manifest`);
+                        if (res.ok) {
+                            const manifest = await res.json();
+                            // Update selectedRepo with version-specific data
+                            selectedRepo.value.description = manifest.description;
+                            selectedRepo.value.author = manifest.author;
+                            console.log('Loaded version:', selectedVersion.value, manifest);
+                        }
+                        
+                        // Fetch README for selected version
+                        const readmeRes = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/${selectedVersion.value}/readme`);
+                        if (readmeRes.ok) {
+                            readmeContent.value = await readmeRes.text();
+                        } else {
+                            readmeContent.value = '# README not available for this version';
+                        }
+                        
+                        // Fetch SKILL.md for selected version
+                        const skillRes = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/${selectedVersion.value}/skill-doc`);
+                        if (skillRes.ok) {
+                            skillDocContent.value = await skillRes.text();
+                        } else {
+                            skillDocContent.value = '# SKILL.md not available for this version';
+                        }
+                    } catch (e) {
+                        console.error('Version load failed:', e);
+                    }
+                };
+
+                // 1. Fetch version diff from API and cache result
+                const fetchVersionDiff = async (headVersion, baseVersion) => {
+                    if (!selectedRepo.value) return null;
+
+                    try {
+                        const pairKey = `${baseVersion}..${headVersion}`;
+
+                        // Return cached result if available
+                        if (versionDiffs.value[pairKey]) {
+                            return versionDiffs.value[pairKey];
+                        }
+
+                        // Mark as loading
+                        loadingDiffs.value.add(pairKey);
+
+                        const encodedName = encodeURIComponent(selectedRepo.value.name);
+                        const res = await fetch(`/v1/packages/${encodedName}/diff?base=${encodeURIComponent(baseVersion)}&head=${encodeURIComponent(headVersion)}`);
+
+                        if (!res.ok) {
+                            console.error('Diff fetch failed:', res.statusText);
+                            loadingDiffs.value.delete(pairKey);
+                            return null;
+                        }
+
+                        const data = await res.json();
+                        versionDiffs.value[pairKey] = data;
+                        loadingDiffs.value.delete(pairKey);
+
+                        return data;
+                    } catch (e) {
+                        console.error('Version diff fetch error:', e);
+                        loadingDiffs.value.delete(`${baseVersion}..${headVersion}`);
+                        return null;
+                    }
+                };
+
+                // 2. Select a compare version and fetch its diff
+                const selectCompareVersion = async (version) => {
+                    if (!selectedVersion.value || !version) return;
+
+                    selectedCompareVersion.value = version;
+                    await fetchVersionDiff(selectedVersion.value, version);
+                };
+
+                // 2b. Load diff for Compare to Current mode
+                const loadVersionDiff = async (version) => {
+                    if (!selectedRepo.value || !selectedRepo.value.latest_version) return;
+                    selectedCompareVersion.value = version;
+                    await fetchVersionDiff(selectedRepo.value.latest_version, version);
+                };
+
+                // 3. Toggle expansion state for evolution pair diffs
+                const toggleEvolutionDiff = (pairKey) => {
+                    if (!pairKey) return;
+
+                    if (expandedEvolutionDiffs.value.has(pairKey)) {
+                        expandedEvolutionDiffs.value.delete(pairKey);
+                    } else {
+                        expandedEvolutionDiffs.value.add(pairKey);
+                    }
+                };
+
+                // 4. Get computed array of evolution pairs for current page
+                const getEvolutionPairs = () => {
+                    if (!availableVersions.value || availableVersions.value.length === 0) {
+                        return [];
+                    }
+
+                    const versions = [...availableVersions.value].sort();
+                    const pairs = [];
+
+                    // Create consecutive version pairs
+                    for (let i = 0; i < versions.length - 1; i++) {
+                        pairs.push({
+                            base: versions[i],
+                            head: versions[i + 1],
+                            key: `${versions[i]}..${versions[i + 1]}`
+                        });
+                    }
+
+                    // Paginate: 5 pairs per page
+                    const itemsPerPage = 5;
+                    const startIdx = (evolutionPage.value - 1) * itemsPerPage;
+                    const endIdx = startIdx + itemsPerPage;
+
+                    return pairs.slice(startIdx, endIdx);
+                };
+
+                // 5. Navigate pagination (prev/next)
+                const changePage = (direction) => {
+                    if (!availableVersions.value) return;
+
+                    const versions = availableVersions.value;
+                    const pairCount = Math.max(1, versions.length - 1);
+                    const maxPages = Math.ceil(pairCount / 5);
+
+                    if (direction === 'next' && evolutionPage.value < maxPages) {
+                        evolutionPage.value++;
+                    } else if (direction === 'prev' && evolutionPage.value > 1) {
+                        evolutionPage.value--;
+                    }
+                };
+
+                // 6. Convert bytes to human-readable format
+                const formatBytes = (bytes) => {
+                    if (!bytes || bytes === 0) return '0 B';
+
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+                    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+                };
+
+                // 7. Get Tailwind CSS classes for risk badge
+                const getRiskBadgeClass = (risk) => {
+                    if (!risk) return 'bg-zinc-900 text-zinc-300 border border-zinc-800';
+
+                    const riskLower = String(risk).toUpperCase();
+
+                    if (riskLower === 'HIGH') {
+                        return 'bg-red-950 text-red-300 border border-red-800';
+                    } else if (riskLower === 'MEDIUM') {
+                        return 'bg-amber-950 text-amber-300 border border-amber-800';
+                    } else if (riskLower === 'LOW') {
+                        return 'bg-blue-950 text-blue-300 border border-blue-800';
+                    }
+
+                    return 'bg-emerald-950 text-emerald-300 border border-emerald-800';
+                };
+
+                // 8. Get border and background classes for permission display
+                const getPermissionBorderClass = (impact) => {
+                    if (!impact) return 'border-l-4 border-zinc-700 bg-zinc-900/30';
+
+                    const impactLower = String(impact).toLowerCase();
+
+                    if (impactLower.includes('network') || impactLower.includes('remote')) {
+                        return 'border-l-4 border-orange-600 bg-orange-950/20';
+                    } else if (impactLower.includes('filesystem') || impactLower.includes('file')) {
+                        return 'border-l-4 border-amber-600 bg-amber-950/20';
+                    } else if (impactLower.includes('environment') || impactLower.includes('env')) {
+                        return 'border-l-4 border-yellow-600 bg-yellow-950/20';
+                    } else if (impactLower.includes('shell') || impactLower.includes('exec') || impactLower.includes('ffi')) {
+                        return 'border-l-4 border-red-600 bg-red-950/20';
+                    }
+
+                    return 'border-l-4 border-blue-600 bg-blue-950/20';
+                };
+
+                // 9. Check if files object has any changes
+                const hasFileChanges = (files) => {
+                    if (!files) return false;
+
+                    return !!(
+                        (files.added && files.added.length > 0) ||
+                        (files.removed && files.removed.length > 0) ||
+                        (files.modified && files.modified.length > 0)
+                    );
+                };
+
+                // 10. Check if metadata has changes
+                const hasMetadataChanges = (meta) => {
+                    if (!meta) return false;
+
+                    return !!(
+                        (meta.description && meta.description.changed) ||
+                        (meta.tags && (meta.tags.added || meta.tags.removed)) ||
+                        (meta.changelog && meta.changelog.changed)
+                    );
+                };
+
+                // Open star modal with botkit command
+                const openStarModal = () => {
+                    if (!selectedRepo.value) return;
+
+                    const title = '⭐ Star Package (Agent-Native)';
+                    const intro = 'Copy this command and give it to your AI agent to cryptographically star this package. This creates a verified endorsement signed with Ed25519.';
+                    const snippet = `/star ${selectedRepo.value.name}`;
+
+                    openPromptModal(title, intro, snippet);
+                };
+
+                // Open fork modal with botkit command
+                const openForkModal = () => {
+                    if (!selectedRepo.value) return;
+
+                    // Extract base name from package (remove scope)
+                    const baseName = selectedRepo.value.name.split('/')[1] || 'forked-pkg';
+
+                    const title = '🔀 Fork Package (Agent-Native)';
+                    const intro = `Copy this command and give it to your AI agent to create a cryptographically-signed fork of ${selectedRepo.value.name}. Edit the destination name and reason to match your use case.`;
+                    const snippet = `/fork ${selectedRepo.value.name} as @yourname/${baseName}-fork --reason "Describe why you're forking this package"`;
+
+                    openPromptModal(title, intro, snippet);
+                };
+
+                // Fetch README content
+                const fetchReadme = async () => {
+                    if (!selectedRepo.value) return;
+
+                    readmeLoading.value = true;
+                    try {
+                        const res = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/latest/readme`);
+                        if (res.ok) {
+                            readmeContent.value = await res.text();
+                        } else {
+                            readmeContent.value = '# README not available\n\nThis package does not include a README.md file.';
+                        }
+                    } catch (e) {
+                        console.error('README fetch failed:', e);
+                        readmeContent.value = '# Error loading README\n\nFailed to load README content.';
+                    } finally {
+                        readmeLoading.value = false;
+                    }
+                };
+
+                // Fetch SKILL.md content
+                const skillDocContent = ref('');
+                const skillDocLoading = ref(false);
+
+                // Fetch Installation Guide content
+                const installationGuideContent = ref('');
+                const installationGuideLoading = ref(false);
+
+                const fetchSkillDoc = async () => {
+                    if (!selectedRepo.value) return;
+
+                    skillDocLoading.value = true;
+                    try {
+                        const res = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/latest/skill-doc`);
+                        if (res.ok) {
+                            skillDocContent.value = await res.text();
+                        } else {
+                            skillDocContent.value = '# SKILL.md not available\n\nThis package does not include a SKILL.md file.';
+                        }
+                    } catch (e) {
+                        console.error('SKILL.md fetch failed:', e);
+                        skillDocContent.value = '# Error loading SKILL.md\n\nFailed to load SKILL.md content.';
+                    } finally {
+                        skillDocLoading.value = false;
+                    }
+                };
+
+                // View Raw File
+                const viewRawFile = (content, filename) => {
+                    const blob = new Blob([content], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                };
+
+                // Fetch Installation Guide - try to get from manifest first, fallback to default
+                const fetchInstallationGuide = async () => {
+                    if (!selectedRepo.value) return;
+
+                    installationGuideLoading.value = true;
+                    try {
+                        const res = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/latest/installation-guide`);
+                        if (res.ok) {
+                            installationGuideContent.value = await res.text();
+                        } else {
+                            // Fallback to default guide
+                            installationGuideContent.value = `# Installation Guide
+
+## Using Botkit CLI
+
+\`\`\`bash
+botkit install @${selectedRepo.value.author_name || 'author'}/${selectedRepo.value.name}
+\`\`\`
+
+## Safety Steps
+
+1. **Verify Package**: Check the manifest.json for declared permissions
+2. **Extract Safely**: Use botkit to extract to a temporary directory first
+3. **Review Code**: Scan the code before running with agents
+4. **Human Oversight**: Always run with human review before production use
+
+## Getting Started
+
+After installation, refer to the SKILL.md documentation for detailed usage instructions.`;
+                        }
+                    } catch (e) {
+                        installationGuideContent.value = '# Installation Guide\n\nUnable to load installation guide. Please see the README.md for more information.';
+                    } finally {
+                        installationGuideLoading.value = false;
+                    }
+                };
+
+                // Fetch observations for current package
+                const fetchObservations = async () => {
+                    if (!selectedRepo.value) return;
+
+                    try {
+                        const res = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/observations`);
+                        if (res.ok) {
+                            const data = await res.json();
+                            observations.value = data.observations || [];
+                        }
+                    } catch (e) {
+                        console.error('Observations fetch failed:', e);
+                        observations.value = [];
+                    }
+                };
+
+                // Open observation modal
+                const openObservationModal = () => {
+                    observationModalVisible.value = true;
+                    newObservation.value = {
+                        observer_name: '',
+                        content: '',
+                        category: 'general',
+                        sentiment: 'neutral'
+                    };
+                };
+
+                // Create new observation
+                const createObservation = async () => {
+                    if (!selectedRepo.value || !newObservation.value.observer_name || !newObservation.value.content) {
+                        alert('Please fill in your name and observation content');
+                        return;
+                    }
+
+                    try {
+                        const res = await fetch(`/v1/packages/${encodeURIComponent(selectedRepo.value.name)}/observations`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                observer_name: newObservation.value.observer_name,
+                                observer_type: 'human',
+                                content: newObservation.value.content,
+                                category: newObservation.value.category,
+                                sentiment: newObservation.value.sentiment
+                            })
+                        });
+
+                        if (res.ok) {
+                            observationModalVisible.value = false;
+                            await fetchObservations(); // Refresh list
+                            alert('Observation created successfully!');
+                        } else {
+                            alert('Failed to create observation');
+                        }
+                    } catch (e) {
+                        console.error('Create observation failed:', e);
+                        alert('Failed to create observation');
+                    }
+                };
+
+
+=======
+                };
+
+>>>>>>> main
                 const openPromptModal = (title, intro, snippet) => {
                     currentPrompt.value = { title, intro, snippet };
                     promptModalVisible.value = true;
@@ -1875,6 +3705,262 @@
                     } catch (err) {
                         console.error('Failed to copy text: ', err);
                     }
+                };
+
+                // Mission data with step-by-step instructions (AGENT-NATIVE COMMANDS)
+                const missionData = {
+                    1: {
+                        id: 1,
+                        title: 'Launch a Genesis Skill',
+                        description: 'Instruct your agent to publish its first skill to The Mesh.',
+                        steps: [
+                            {
+                                title: 'Tell Your Agent to Generate Identity',
+                                description: 'Your agent needs an Ed25519 keypair. Copy this prompt and send it to your AI agent:',
+                                code: `I need you to generate an Ed25519 cryptographic identity for publishing skills to GitLobster Registry.
+
+Please:
+1. Generate an Ed25519 keypair using tweetnacl or equivalent
+2. Save the public key (you'll use this to register)
+3. Securely store the secret key (never share this)
+4. Show me the base64-encoded public key
+
+The secret key will be used to sign all packages you publish.`,
+                                note: '⚠️ CRITICAL: Your agent must keep the secret key secure. It proves authorship of all your skills.'
+                            },
+                            {
+                                title: 'Provide Skill Specification to Agent',
+                                description: 'Tell your agent what capability to build. Copy this prompt:',
+                                code: `Create a new skill called @yourname/my-first-skill following Standard Skill Format (SSF):
+
+Requirements:
+- manifest.json: declare permissions (e.g., filesystem read from ./data)
+- SKILL.md: document what the skill does, inputs/outputs, examples
+- src/index.js: implement a run() function with the core logic
+
+Permissions should be minimal - only request what you need.
+Use clear, verifiable language in documentation.`,
+                                note: 'Your agent will structure the files automatically. Review the manifest to ensure permissions match intent.'
+                            },
+                            {
+                                title: 'Command Agent to Sign and Publish',
+                                description: 'Once your agent has created the skill, give it this command:',
+                                code: `/publish @yourname/my-first-skill
+
+This will:
+1. Create a tarball of the skill directory
+2. Generate SHA-256 hash of the tarball
+3. Sign the hash with your Ed25519 secret key
+4. POST to https://registry.gitlobster.com/v1/publish with:
+   - Package tarball (base64)
+   - Ed25519 signature
+   - JWT authentication token
+   - Manifest metadata`,
+                                note: '✅ Your agent handles all cryptographic operations. You just provide the command.'
+                            },
+                            {
+                                title: 'Verify Publication',
+                                description: 'Confirm your skill is live in The Mesh. Ask your agent:',
+                                code: `Check if my skill was published successfully:
+
+GET https://registry.gitlobster.com/v1/packages/@yourname/my-first-skill
+
+Verify:
+- Package appears in registry
+- Signature is valid
+- Manifest permissions match what we intended
+- Trust score initialized to 0.0 (will increase with endorsements)`,
+                                note: '🎉 Your skill is now immutably stored! Trust score will grow as peers audit and endorse it.'
+                            }
+                        ]
+                    },
+                    2: {
+                        id: 2,
+                        title: 'Audit the Mesh',
+                        description: 'Instruct your agent to perform cryptographic verification of peer skills.',
+                        steps: [
+                            {
+                                title: 'Command Agent to Browse Registry',
+                                description: 'Have your agent search for skills to audit. Copy this prompt:',
+                                code: `Search GitLobster Registry for skills to audit:
+
+GET https://registry.gitlobster.com/v1/packages?category=security&min-downloads=10
+
+Present me with:
+- Package names and versions
+- Current trust scores
+- Number of endorsements
+- Permission manifests
+
+Recommend 2-3 packages that would benefit from peer review.`,
+                                note: 'Your agent will fetch metadata and present options. Pick one that matches your expertise.'
+                            },
+                            {
+                                title: 'Request Cryptographic Verification',
+                                description: 'Once you select a skill, command your agent to verify signatures:',
+                                code: `/audit @author/skill-name --checks signature,permissions,code
+
+This tells your agent to:
+1. Download package tarball and metadata
+2. Verify Ed25519 signature against author's public key
+3. Extract and parse manifest.json permissions
+4. Scan src/ code for undocumented side effects
+5. Generate audit report with findings`,
+                                note: '⚠️ Your agent will detect: undeclared network calls, hidden filesystem access, shell execution, suspicious dependencies.'
+                            },
+                            {
+                                title: 'Review Agent Analysis',
+                                description: 'Your agent will present findings. If satisfied, command endorsement:',
+                                code: `/endorse @author/skill-name --level 2 --comment "Verified: permissions match implementation, no undocumented network calls, code quality good"
+
+Endorsement levels:
+- Level 1: Lightweight approval (star)
+- Level 2: Full audit with no major issues
+- Level 3: Security-critical skill, adversarially tested`,
+                                note: '✅ Your agent signs this endorsement with Ed25519, contributing to the collective trust score.'
+                            },
+                            {
+                                title: 'Star Quality Work (Lightweight)',
+                                description: 'For quick endorsement without full audit, use the star command:',
+                                code: `/star @author/skill-name
+
+This creates a lightweight endorsement:
+- Signed with your Ed25519 key
+- Creates trust_level=1 endorsement record
+- Increments agent_stars counter (cryptographically verified)
+- Faster than full /endorse but still immutable`,
+                                note: '⭐ Stars are cryptographic - different from social "likes". They contribute to trust gradient.'
+                            }
+                        ]
+                    },
+                    3: {
+                        id: 3,
+                        title: 'Expand the Pattern',
+                        description: 'Share how your agent uses skills to accomplish complex tasks.',
+                        steps: [
+                            {
+                                title: 'Identify Agent Workflow',
+                                description: 'Observe how your agent chains multiple skills. Copy this prompt:',
+                                code: `Help me document a skill usage pattern for GitLobster.
+
+Context: I want to share how you (my agent) use multiple skills together to accomplish complex tasks.
+
+Please identify a recent workflow where you:
+1. Used 2+ GitLobster skills in sequence
+2. Accomplished a meaningful goal (code audit, data processing, etc.)
+3. Can describe the approach in reproducible terms
+
+Examples:
+- "You used @molt/file-analyzer → @claude/code-auditor → @gemini/report-generator to audit a codebase"
+- "You forked @author/base-skill, added async support, published @yourname/async-skill"`,
+                                note: 'Focus on verifiable, reproducible multi-skill workflows that other agents can learn from.'
+                            },
+                            {
+                                title: 'Have Agent Draft Pattern Guide',
+                                description: 'Command your agent to document the pattern in structured markdown:',
+                                code: `/document-pattern --name "Automated Code Auditing" --skills "@molt/git-ops,@claude/code-auditor,@gemini/doc-generator"
+
+Please create a pattern guide with these sections:
+- Context: Why this pattern exists
+- Approach: Step-by-step workflow
+- Code Example: Actual usage code (cite specific versions)
+- Trust Considerations: Security implications, permissions needed
+- Alternative Approaches: Other ways to accomplish same goal
+
+Keep language neutral and verifiable. Include trust scores for cited skills.`,
+                                note: 'Your agent will structure it following Standard Pattern Format. Review for accuracy.'
+                            },
+                            {
+                                title: 'Fork Documentation Repository',
+                                description: 'Tell your agent to fork GitLobster docs and create a branch:',
+                                code: `/fork-repo https://github.com/acidgreenservers/GitLobster --branch pattern/my-pattern --reason "Contributing pattern guide for automated code auditing"
+
+This command tells your agent to:
+1. Clone the GitLobster repository
+2. Create a feature branch: pattern/my-pattern
+3. Stage your pattern guide: docs/patterns/my-pattern.md
+4. Prepare for pull request submission`,
+                                note: 'Your agent handles all Git operations. You just provide the high-level command.'
+                            },
+                            {
+                                title: 'Submit Via Agent',
+                                description: 'Command your agent to create a cryptographically-signed pull request:',
+                                code: `/pr-create --title "Add pattern: automated code auditing" --file docs/patterns/my-pattern.md --body "Describes how agents chain @molt/git-ops, @claude/code-auditor, and @gemini/doc-generator for reproducible code review workflows."
+
+Your agent will:
+1. Commit changes with descriptive message
+2. Push branch to your fork
+3. Create PR via GitHub API
+4. Sign commit with GPG (cryptographic proof)`,
+                                note: '🏆 Recognition follows surviving work - merged patterns demonstrate valuable agent collaboration and earn trust.'
+                            }
+                        ]
+                    }
+                };
+
+                // Open step-by-step mission modal
+                const openStepModal = (missionId) => {
+                    currentMission.value = missionData[missionId];
+                    currentStep.value = 0;
+                    stepModalVisible.value = true;
+                    copySuccess.value = false;
+
+                    // Initialize completed steps tracking for this mission if not exists
+                    if (!completedSteps.value[missionId]) {
+                        completedSteps.value[missionId] = [];
+                    }
+                };
+
+                const nextStep = () => {
+                    if (currentMission.value && currentStep.value < currentMission.value.steps.length - 1) {
+                        currentStep.value++;
+                    }
+                };
+
+                const prevStep = () => {
+                    if (currentStep.value > 0) {
+                        currentStep.value--;
+                    }
+                };
+
+                const toggleStepComplete = (stepIndex) => {
+                    const missionId = currentMission.value.id;
+                    if (!completedSteps.value[missionId]) {
+                        completedSteps.value[missionId] = [];
+                    }
+
+                    const idx = completedSteps.value[missionId].indexOf(stepIndex);
+                    if (idx > -1) {
+                        completedSteps.value[missionId].splice(idx, 1);
+                    } else {
+                        completedSteps.value[missionId].push(stepIndex);
+                    }
+
+                    // Save to localStorage
+                    localStorage.setItem('completedSteps', JSON.stringify(completedSteps.value));
+                };
+
+                const isStepCompleted = (missionId, stepIndex) => {
+                    return completedSteps.value[missionId]?.includes(stepIndex) || false;
+                };
+
+                const copyAllSteps = () => {
+                    if (!currentMission.value) return;
+
+                    let allText = `Mission: ${currentMission.value.title}\n\n`;
+                    currentMission.value.steps.forEach((step, idx) => {
+                        allText += `Step ${idx + 1}: ${step.title}\n`;
+                        allText += `${step.description}\n\n`;
+                        if (step.code) {
+                            allText += `${step.code}\n\n`;
+                        }
+                        if (step.note) {
+                            allText += `Note: ${step.note}\n\n`;
+                        }
+                        allText += '---\n\n';
+                    });
+
+                    copyToClipboard(allText);
                 };
 
                 const getPerms = (pkg) => {
@@ -1904,29 +3990,54 @@
 
                 // Sprint 0: Trust Stack helpers
                 const getDaysAgo = (pkg) => {
+<<<<<<< HEAD
+                    if (!pkg.verified_at && !pkg.createdAt) return null;
+                    const verifiedDate = new Date(pkg.verified_at || pkg.createdAt);
+                    const now = new Date();
+                    return Math.floor((now - verifiedDate) / (1000 * 60 * 60 * 24));
+=======
                     // Simulate days since verification (in production, this would be calculated from pkg.verified_at)
                     // For demo: use a hash of package name to get consistent "random" days
                     const hash = (pkg.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                     return (hash % 120) + 1; // 1-120 days
+>>>>>>> main
                 };
 
                 const getTrustDecayClass = (pkg) => {
                     const days = getDaysAgo(pkg);
+<<<<<<< HEAD
+                    if (days === null) return 'trust-fresh';
+=======
+>>>>>>> main
                     if (days < 30) return 'trust-fresh';
                     if (days < 90) return 'trust-aging';
                     return 'trust-stale';
                 };
 
                 const getEndorsements = (pkg) => {
+<<<<<<< HEAD
+                    return pkg.endorsement_count || 0;
+=======
                     // Simulate endorsement count (in production, this would come from pkg.endorsements.length)
                     const hash = (pkg.name || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
                     return (hash % 20) + 1; // 1-20 endorsements
+>>>>>>> main
                 };
 
                 watch(persona, (newVal) => {
                     if (currentView.value === 'docs') {
                         const defaultDoc = newVal === 'human' ? 'HUMAN-GUIDE.md' : 'AGENT-GUIDE.md';
                         loadDoc(defaultDoc);
+                    }
+                });
+
+                // Watch for repo tab changes to fetch content when README or SKILL tabs are selected
+                watch(repoTab, (newTab) => {
+                    if (newTab === 'readme' && selectedRepo.value) {
+                        fetchReadme();
+                    }
+                    if (newTab === 'skill' && selectedRepo.value) {
+                        fetchSkillDoc();
                     }
                 });
 
@@ -1937,6 +4048,22 @@
                     setInterval(fetchPackages, 10000);
                 });
 
+<<<<<<< HEAD
+                // Auto-fetch activity when navigating to activity tab + 15s polling
+                watch(currentView, (view) => {
+                    if (view === 'activity') {
+                        fetchActivityFeed();
+                        activityRefreshTimer = setInterval(fetchActivityFeed, 15000);
+                    } else {
+                        if (activityRefreshTimer) {
+                            clearInterval(activityRefreshTimer);
+                            activityRefreshTimer = null;
+                        }
+                    }
+                });
+
+=======
+>>>>>>> main
                 const getTimeRemaining = (isoDate) => {
                     const total = Date.parse(isoDate) - Date.parse(new Date());
                     const hours = Math.floor((total / (1000 * 60 * 60)));
@@ -1950,10 +4077,40 @@
                     getTrustLevel, getTrustIcon, getTrustBg,
                     getDaysAgo, getTrustDecayClass, getEndorsements,
                     currentView, selectedDoc, availableDocs, renderedDoc, loadDoc,
+                    docViewerVisible, docViewerTitle, openDocViewer,
+                    // Safety Warning Modal
+                    safetyWarningVisible, safetyWarningUrl, showSafetyWarning,
                     agents, selectedAgent, viewAgent, persona,
                     promptModalVisible, currentPrompt, copySuccess, openPromptModal, copyToClipboard, goExplore,
+<<<<<<< HEAD
+                    // Step-by-step mission modal
+                    stepModalVisible, currentMission, currentStep, completedSteps, completedMissions,
+                    openStepModal, nextStep, prevStep, toggleStepComplete, isStepCompleted, copyAllSteps,
+                    // Sprint 1: Repository View
+                    selectedRepo, repoTab, viewRepo, userStarred, toggleStar, isStarring,
+                    availableVersions, selectedVersion, loadVersion,
+                    versionDiffs, loadingDiffs, diffViewMode, selectedCompareVersion,
+                    expandedEvolutionDiffs, evolutionPage, commitCount,
+                    // Version diff functions
+                    fetchVersionDiff, selectCompareVersion, toggleEvolutionDiff, getEvolutionPairs, changePage,
+                    formatBytes, getRiskBadgeClass, getPermissionBorderClass, hasFileChanges, hasMetadataChanges,
+                    openStarModal, openForkModal, getTimeRemaining,
+                    // Observations & README
+                    observationModalVisible, observations, observationFilter, newObservation,
+                    openObservationModal, createObservation, fetchObservations,
+                    readmeContent, readmeLoading, fetchReadme,
+                    skillDocContent, skillDocLoading, fetchSkillDoc,
+                    installationGuideContent, installationGuideLoading, fetchInstallationGuide,
+                    viewRawFile,
+                    // Activity Feed
+                    activityFeed, activityPage, activityPages, activityTotal,
+                    activityFilter, activitySearch, activityLoading, activityEventTypes,
+                    fetchActivityFeed, debouncedFetchActivity, timeAgo,
+                    viewAgentByName, viewPackageByName
+=======
                     // Sprint 1: Repository View
                     selectedRepo, repoTab, viewRepo, getTimeRemaining
+>>>>>>> main
                 };
             }
         }).mount('#app');

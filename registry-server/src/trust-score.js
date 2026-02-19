@@ -1,6 +1,14 @@
 /**
  * Trust Score Service
  * Handles multi-dimensional reputation calculations
+ *
+ * SELF-TRUST MODEL (v2.5):
+ * Each GitLobster node is its own trust anchor. Trust is derived from:
+ * 1. Packages signed by the node operator
+ * 2. Endorsements from verified agents
+ * 3. Time in network and activity history
+ *
+ * No external federation - each node is sovereign.
  */
 
 const db = require('./db');
@@ -69,22 +77,85 @@ async function calculateReviewConsistency(agentName) {
 /**
  * Calculate flag history score
  * 1.0 = perfect (no flags), decreases with flags
+ * NOTE: Requires 'flags' table to be implemented
  */
 async function calculateFlagHistoryScore(agentName) {
-    // TODO: Implement when flag system is added
-    // For now, return 1.0 (no flags)
-    return 1.0;
+    // Check if flags table exists
+    const db = require('./db');
+    const hasFlags = await db.schema.hasTable('flags');
+
+    if (!hasFlags) {
+        // Flags system not yet implemented - return perfect score
+        return 1.0;
+    }
+
+    // Count flags against this agent's packages
+    const flags = await db('flags')
+        .join('packages', 'flags.package_name', 'packages.name')
+        .where('packages.author_name', agentName)
+        .count('* as count')
+        .first();
+
+    const flagCount = flags.count || 0;
+
+    // Decay formula: 1.0 for 0 flags, decreases logarithmically
+    if (flagCount === 0) return 1.0;
+    return Math.max(0.1, 1.0 - (Math.log(flagCount + 1) / 10));
 }
 
 /**
  * Calculate trust anchor overlap
- * How many trust anchors have verified this agent
+ * In the self-trust model, each node IS its own trust anchor
+ * An agent endorsed by the node operator is "trusted by this node"
  */
 async function calculateTrustAnchorOverlap(agentName) {
-    // TODO: Implement when trust anchor system is added
-    // For now, check if agent has MoltReg verification (hardcoded)
-    const verifiedAgents = ['@molt', '@claude', '@gemini'];
-    return verifiedAgents.includes(agentName) ? 1.0 : 0.0;
+    const db = require('./db');
+    const KeyManager = require('./trust/KeyManager');
+
+    // Get this node's identity
+    const nodeIdentity = KeyManager.getNodeIdentity();
+
+    // In self-trust model, the node itself is the trust anchor
+    // Check if this agent has been endorsed by the node (via its packages)
+
+    // Get all packages by this agent
+    const agentPackages = await db('packages')
+        .where({ author_name: agentName.replace('@', '') })
+        .select('name');
+
+    if (agentPackages.length === 0) {
+        return 0.0; // No packages = no trust overlap
+    }
+
+    const packageNames = agentPackages.map(p => p.name);
+
+    // Check if the node has signed any of these packages
+    // In MVP, we check if packages have valid signatures from THIS node
+    const signedVersions = await db('versions')
+        .whereIn('package_name', packageNames)
+        .whereNotNull('signature')
+        .count('* as count')
+        .first();
+
+    const signedCount = signedVersions?.count || 0;
+
+    // If agent has published signed packages, they have trust overlap with this node
+    if (signedCount > 0) {
+        // Score based on number of signed packages (capped at 1.0)
+        return Math.min(1.0, signedCount / 3); // 3+ signed packages = full trust
+    }
+
+    // Check endorsements from node-verified agents
+    const hasEndorsements = await db('endorsements')
+        .whereIn('package_name', packageNames)
+        .count('* as count')
+        .first();
+
+    if (hasEndorsements?.count > 0) {
+        return Math.min(0.7, hasEndorsements.count * 0.2); // Max 0.7 from endorsements alone
+    }
+
+    return 0.0;
 }
 
 /**

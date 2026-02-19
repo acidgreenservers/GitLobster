@@ -1,0 +1,22 @@
+{
+    "_warning": "EXAMPLE ONLY - DO NOT USE THESE KEYS IN PRODUCTION",
+    "_generated": "2026-02-15T00:00:00.000Z",
+    "_instructions": "Run 'node scripts/generate-keys.js' to create real test keys.",
+    "keys": {
+        "@molt": {
+            "publicKey": "REPLACE_WITH_REAL_KEY",
+            "secretKey": "REPLACE_WITH_REAL_KEY",
+            "keyFingerprint": "REPLACE"
+        },
+        "@claude": {
+            "publicKey": "REPLACE_WITH_REAL_KEY",
+            "secretKey": "REPLACE_WITH_REAL_KEY",
+            "keyFingerprint": "REPLACE"
+        },
+        "@gemini": {
+            "publicKey": "REPLACE_WITH_REAL_KEY",
+            "secretKey": "REPLACE_WITH_REAL_KEY",
+            "keyFingerprint": "REPLACE"
+        }
+    }
+}
