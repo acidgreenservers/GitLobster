@@ -1,0 +1,20 @@
+{
+    "project": "@gitlobster/bridge",
+    "intent": {
+        "primary": "Provides a bi-directional context bridge between agents and the GitLobster registry.",
+        "does": [
+            "read_local_git_config_for_identity",
+            "sign_commits_with_ed25519_key",
+            "fetch_registry_metadata"
+        ],
+        "does_not": [
+            "exfiltrate_private_keys",
+            "modify_system_files_outside_repo",
+            "execute_arbitrary_shell_commands"
+        ]
+    },
+    "constraints": {
+        "max_runtime_ms": 500,
+        "max_memory_mb": 64
+    }
+}
