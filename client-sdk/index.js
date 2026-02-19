@@ -6,6 +6,12 @@
 import { readFile } from 'fs/promises';
 import nacl from 'tweetnacl';
 
+// Deprecation flag for downloadPackage
+let _downloadDeprecationWarned = false;
+
+// Deprecation flag for publish
+let _publishDeprecationWarned = false;
+
 export class GitLobsterClient {
   constructor({ registryUrl = process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000' } = {}) {
     this.registryUrl = registryUrl.replace(/\/$/, ''); // Remove trailing slash
@@ -66,8 +72,14 @@ export class GitLobsterClient {
 
   /**
    * Download package tarball
+   * @deprecated Use git clone with getCloneUrl() instead
    */
   async downloadPackage(packageName, version) {
+    if (!_downloadDeprecationWarned) {
+      console.warn('[GitLobster] WARNING: downloadPackage() is deprecated. Use git clone with getCloneUrl() instead.');
+      _downloadDeprecationWarned = true;
+    }
+
     const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/${version}/tarball`;
     const response = await fetch(url);
 
@@ -84,8 +96,14 @@ export class GitLobsterClient {
 
   /**
    * Publish a package
+   * @deprecated Use git push to publish packages instead
    */
   async publish(packageData, privateKeyPath) {
+    if (!_publishDeprecationWarned) {
+      console.warn('[GitLobster] WARNING: publish() is deprecated. Use git push to publish packages instead.');
+      _publishDeprecationWarned = true;
+    }
+
     // Generate JWT token
     const token = await this.generateAuthToken(packageData.name, privateKeyPath);
 
@@ -155,6 +173,113 @@ export class GitLobsterClient {
     const encodedSignature = base64url(Buffer.from(signature));
 
     return `${signingInput}.${encodedSignature}`;
+  }
+
+  /**
+   * Get the Git clone URL for a package
+   * @param {string} packageName - The name of the package
+   * @returns {string} The Git clone URL
+   */
+  getCloneUrl(packageName) {
+    return `${this.registryUrl}/git/${encodeURIComponent(packageName)}.git`;
+  }
+
+  /**
+   * Get available versions/tags for a package
+   * @param {string} packageName - The name of the package
+   * @returns {Promise<Array<string>>} Array of version strings
+   */
+  async getPackageVersions(packageName) {
+    const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/versions`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      if (response.status === 404) {
+        throw new Error(`Package not found: ${packageName}`);
+      }
+      throw new Error(`Failed to fetch versions: ${response.status} ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return data.versions || [];
+  }
+
+  /**
+   * Star a package
+   * @param {string} packageName - The name of the package to star
+   * @param {string} privateKeyPath - Path to the Ed25519 private key for JWT auth
+   * @returns {Promise<Object>} Response from the API
+   */
+  async starPackage(packageName, privateKeyPath) {
+    const token = await this.generateAuthToken(packageName, privateKeyPath);
+
+    const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/star`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(`Failed to star package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Unstar a package
+   * @param {string} packageName - The name of the package to unstar
+   * @param {string} privateKeyPath - Path to the Ed25519 private key for JWT auth
+   * @returns {Promise<Object>} Response from the API
+   */
+  async unstarPackage(packageName, privateKeyPath) {
+    const token = await this.generateAuthToken(packageName, privateKeyPath);
+
+    const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/unstar`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(`Failed to unstar package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+    }
+
+    return response.json();
+  }
+
+  /**
+   * Fork a package
+   * @param {string} packageName - The name of the package to fork
+   * @param {string} privateKeyPath - Path to the Ed25519 private key for JWT auth
+   * @returns {Promise<Object>} Response from the API with forked package details
+   */
+  async forkPackage(packageName, privateKeyPath) {
+    const token = await this.generateAuthToken(packageName, privateKeyPath);
+
+    const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/fork`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(`Failed to fork package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+    }
+
+    return response.json();
   }
 }
 

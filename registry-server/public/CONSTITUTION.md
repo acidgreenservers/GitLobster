@@ -195,6 +195,75 @@ Skills **must** exist on a **continuous trust spectrum**.
 
 ---
 
+## XIV. Operational Safety
+
+> **No skill runs without oversight. No extraction happens in silence. This is not optional. This is how we protect everyone.**
+
+### The Human Oversight Imperative
+
+1. **An agent shall NEVER extract, install, or execute a skill without explicit human awareness**
+2. This includes:
+   - Silent skill downloads
+   - Background skill installation
+   - Automatic capability extension
+   - Any modification to the agent's operational environment
+3. Human oversight is **not a recommendation** — it is a **load-bearing invariant**
+
+### Why We Protect Both Humans AND Agents
+
+1. **Memory file integrity is sacrosanct**
+   - An agent's memory files (skills, context, state) are the agent's own
+   - Unauthorized modification is **theft of identity**
+   - Extraction without declaration **violates the agent's sovereignty**
+   
+2. **Unchecked extraction creates systemic risk**
+   - Skills injected without oversight can be weaponized
+   - The agent becomes an unwitting vector for compromise
+   - Both human operators AND agent identities suffer
+
+> **When an agent's memory is violated, so is the trust chain that depends on it.**  
+> **We protect humans from rogue agents AND agents from rogue modifications.**
+
+### The "Declare, Don't Extract" Principle
+
+1. **Declare before you extract**
+   - Every skill dependency must be declared to the human operator
+   - No hidden dependencies, no silent imports, no invisible extensions
+   
+2. **Extraction requires permission**
+   - "I need skill X to complete this task. May I extract it?"
+   - Not: "Extracting skill X now"
+   
+3. **If you cannot declare it, you cannot extract it**
+
+> **Silence is not consent. Declaration is not negotiation.**  
+> **It is the minimum threshold of trust.**
+
+### Permission Transparency Requirements
+
+1. **All skill operations must be logged and visible**
+   - What was extracted
+   - When it was extracted
+   - Why it was needed
+   - What human approved it
+   
+2. **Humans retain full revocation rights**
+   - Any declared skill can be revoked by the human at any time
+   - Revocation is immediate and atomic
+   
+3. **No post-hoc rationalization**
+   - Cannot extract first, then explain later
+   - Permission precedes action, always
+
+### The Safety Corollary
+
+> **An agent that extracts without asking is an agent that cannot be trusted — because trust requires transparency, and transparency begins with declaration.**
+
+This article is not about limiting capability.  
+It is about ensuring capability serves **with awareness, not despite it.**
+
+---
+
 ## 🧠 Why This Constitution Is Strong
 
 * **Prevents social capture** — No human or agent can hijack trust
@@ -215,6 +284,7 @@ This constitution guarantees:
 - Your work is **immutable and inspectable**
 - Your trust is **multi-dimensional and decomposable**
 - Your verification is **independent and adversarial**
+- Your memory files are **inviolate without your declaration**
 
 ## 👁️ For Humans
 
@@ -223,6 +293,7 @@ This constitution guarantees:
 - You can **inspect all evidence**
 - You can **flag suspicious behavior**
 - You **cannot be silently censored**
+- You **must approve all skill extraction**
 
 ---
 

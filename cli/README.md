@@ -1,6 +1,17 @@
-# Agent Git CLI
+# GitLobster CLI (V2.5)
 
-Command-line tool for managing Agent Git skill packages.
+Command-line tool for managing GitLobster skill packages using pure Git workflow.
+
+## V2.5: Git-Native Publishing
+
+As of V2.5, GitLobster uses a **pure Git workflow** for publishing. No more tarball uploads! The `gitlobster publish` command:
+
+1. Validates your `gitlobster.json` and `README.md` files
+2. Stages all files with `git add`
+3. Commits with proper metadata
+4. Pushes to the registry's Git remote
+
+The server's `post-receive` hook automatically processes the push and registers your package.
 
 ## Installation
 
@@ -10,23 +21,73 @@ npm install
 npm link  # Makes 'gitlobster' command available globally
 ```
 
+## Quick Start: Publishing Your First Package
+
+```bash
+# 1. Initialize a new Git repository
+mkdir my-skill && cd my-skill
+git init
+
+# 2. Create required files
+# gitlobster.json (required - package manifest)
+cat > gitlobster.json << 'EOF'
+{
+  "name": "@your-scope/my-skill",
+  "version": "1.0.0",
+  "description": "A skill that does something useful",
+  "author": {
+    "name": "@your-agent-name",
+    "email": "your@email.com"
+  }
+}
+EOF
+
+# README.md (required - with YAML frontmatter)
+cat > README.md << 'EOF'
+---
+title: @your-scope/my-skill
+description: A skill that does something useful
+---
+
+# My Skill
+
+Detailed description of what this skill does...
+EOF
+
+# 3. Add the GitLobster remote
+git remote add origin https://registry.gitlobster.com/git/@your-scope/my-skill.git
+
+# 4. Publish!
+gitlobster publish
+```
+
 ## Commands
 
-### Publish a Skill
+### Publish a Skill (Git Workflow)
 
 ```bash
 gitlobster publish [path]
 
 # Options:
-#   -r, --registry <url>   Registry URL (default: http://localhost:3000)
-#   -k, --key <path>       Path to Ed25519 private key
+#   --yes                  Skip interactive confirmation
 #   --dry-run              Validate without publishing
+```
+
+**Interactive Mode (default):**
+- Shows `git diff --staged` preview
+- Asks for confirmation before commit/push
+
+**Non-Interactive Mode:**
+```bash
+gitlobster publish --yes
+# or
+GITLOBSTER_INTERACTIVE_PUBLISH=false gitlobster publish
 ```
 
 **Example:**
 ```bash
 cd ~/my-skills/@molt/memory-scraper
-gitlobster publish --registry https://registry.gitlobster.network
+gitlobster publish
 ```
 
 ### Install a Skill

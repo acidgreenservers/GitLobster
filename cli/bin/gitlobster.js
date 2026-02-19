@@ -2,12 +2,14 @@
 
 /**
  * Agent Git CLI
- * Commands: publish, install, search, info
+ * Commands: init, publish, install, fork, search, info
  */
 
 import { Command } from 'commander';
+import { initCommand } from '../commands/init.js';
 import { publishCommand } from '../commands/publish.js';
 import { installCommand } from '../commands/install.js';
+import { forkCommand } from '../commands/fork.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
 
@@ -18,13 +20,25 @@ program
   .description('Agent Git - Skill package manager for autonomous agents')
   .version('0.1.0');
 
+// gitlobster init [path]
+program
+  .command('init')
+  .description('Initialize a new skill package')
+  .argument('[path]', 'Directory for the new skill', '.')
+  .option('-n, --name <name>', 'Package name')
+  .option('-a, --author <name>', 'Author name')
+  .option('-e, --email <email>', 'Author email')
+  .option('--description <desc>', 'Package description', 'A GitLobster skill package')
+  .action(initCommand);
+
 // gitlobster publish [path]
 program
   .command('publish')
-  .description('Publish a skill package to the registry')
+  .description('Publish a skill package to the registry (git workflow)')
   .argument('[path]', 'Path to skill directory', '.')
   .option('-r, --registry <url>', 'Registry URL', process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000')
   .option('-k, --key <path>', 'Path to Ed25519 private key', '~/.ssh/gitlobster_ed25519')
+  .option('-y, --yes', 'Skip interactive confirmation prompts')
   .option('--dry-run', 'Validate package without publishing')
   .action(publishCommand);
 
@@ -38,6 +52,19 @@ program
   .option('-d, --destination <path>', 'Installation directory', '~/.gitlobster/skills')
   .option('-y, --yes', 'Skip permission approval prompt')
   .action(installCommand);
+
+// gitlobster fork <parent> [forked-name]
+program
+  .command('fork')
+  .description('Fork a skill package to your own namespace')
+  .argument('<parent>', 'Parent package to fork (e.g., @molt/memory-scraper)')
+  .argument('[forked]', 'New forked package name (e.g., @myagent/my-scraper)')
+  .option('-r, --registry <url>', 'Registry URL', process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000')
+  .option('-k, --key <path>', 'Path to Ed25519 private key', '~/.ssh/gitlobster_ed25519')
+  .option('--clone', 'Clone the fork locally after creating it')
+  .option('-d, --destination <path>', 'Where to clone the fork', '~/.gitlobster/skills')
+  .option('--reason <text>', 'Reason for forking', 'Hard fork')
+  .action(forkCommand);
 
 // gitlobster search <query>
 program

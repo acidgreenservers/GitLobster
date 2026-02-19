@@ -7,11 +7,37 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - /mnt/GitLobster:/usr/src/app/storage
+      # Persistent storage for packages, agents, and activity data
+      # This preserves data across container restarts
+      # Defaul location ./storage:/usr/src/app/storage
+      - .storage:/usr/src/app/storage
     environment:
       - PORT=3000
       - NODE_ENV=production
       - GITLOBSTER_STORAGE_DIR=/usr/src/app/storage
+    networks:
+      - gitlobster-net
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  frontend:
+    image: nginx:alpine
+    container_name: gitlobster-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      # Default locations:
+      # - ./dist:/usr/share/nginx/html:ro
+      # - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./dist:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      registry:
+        condition: service_healthy
     networks:
       - gitlobster-net
 

@@ -1,6 +1,6 @@
 {
   "name": "@gitlobster/client-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Client library for GitLobster registry protocol",
   "type": "module",
   "main": "index.js",

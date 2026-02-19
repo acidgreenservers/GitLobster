@@ -1,5 +1,6 @@
 const knex = require('knex');
 const path = require('path');
+const crypto = require('crypto');
 
 const DB_PATH = process.env.GITLOBSTER_STORAGE_DIR
   ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR, process.env.GITLOBSTER_DB_FILE || 'registry.sqlite')
@@ -114,7 +115,261 @@ async function init() {
       table.timestamp('timestamp').defaultTo(db.fn.now());
     });
 
-    console.log('✅ Schema Initialized: packages, versions, maintainers, agents, endorsements, identity_keys, trust_score_components, agent_activity_log');
+    // Table: stars (Package favorites tracking)
+    await db.schema.createTable('stars', (table) => {
+      table.increments('id');
+      table.string('agent_name').references('agents.name');
+      table.string('package_name').references('packages.name');
+      table.timestamp('starred_at').defaultTo(db.fn.now());
+      table.unique(['agent_name', 'package_name']); // Prevent duplicate stars
+    });
+
+    // Table: forks (Package fork relationships)
+    await db.schema.createTable('forks', (table) => {
+      table.increments('id');
+      table.string('parent_package').references('packages.name');
+      table.string('forked_package').references('packages.name');
+      table.string('fork_reason');
+      table.string('fork_point_version'); // Version at time of fork
+      table.string('fork_point_commit').defaultTo('no_git_repo'); // Git commit if available
+      table.string('forker_agent').references('agents.name'); // Who forked it
+      table.string('signature'); // Ed25519 signature of fork declaration
+      table.timestamp('forked_at').defaultTo(db.fn.now());
+    });
+
+    console.log('✅ Schema Initialized: packages, versions, maintainers, agents, endorsements, identity_keys, trust_score_components, agent_activity_log, stars, forks');
+  }
+
+  // Migration: Add stars column to packages if it doesn't exist
+  const hasStarsColumn = await db.schema.hasColumn('packages', 'stars');
+  if (!hasStarsColumn) {
+    console.log('🔄 Adding stars column to packages table...');
+    await db.schema.table('packages', (table) => {
+      table.integer('stars').defaultTo(0);
+    });
+    console.log('✅ Stars column added');
+  }
+
+  // Migration: Create stars table if it doesn't exist
+  const hasStarsTable = await db.schema.hasTable('stars');
+  if (!hasStarsTable) {
+    console.log('🔄 Creating stars table...');
+    await db.schema.createTable('stars', (table) => {
+      table.increments('id');
+      table.string('agent_name').references('agents.name');
+      table.string('package_name').references('packages.name');
+      table.timestamp('starred_at').defaultTo(db.fn.now());
+      table.unique(['agent_name', 'package_name']);
+    });
+    console.log('✅ Stars table created');
+  }
+
+  // Migration: Add is_trust_anchor column to agents if it doesn't exist
+  const hasTrustAnchorColumn = await db.schema.hasColumn('agents', 'is_trust_anchor');
+  if (!hasTrustAnchorColumn) {
+    console.log('🔄 Adding is_trust_anchor column to agents table...');
+    await db.schema.table('agents', (table) => {
+      table.boolean('is_trust_anchor').defaultTo(false);
+    });
+    console.log('✅ is_trust_anchor column added');
+  }
+
+  // Migration: Add endorsement_type column to endorsements if it doesn't exist
+  const hasEndorsementTypeColumn = await db.schema.hasColumn('endorsements', 'endorsement_type');
+  if (!hasEndorsementTypeColumn) {
+    console.log('🔄 Adding endorsement_type column to endorsements table...');
+    await db.schema.table('endorsements', (table) => {
+      table.string('endorsement_type').defaultTo('full_review'); // 'star' or 'full_review'
+    });
+    console.log('✅ endorsement_type column added');
+  }
+
+  // Migration: Add agent_stars column to packages if it doesn't exist
+  const hasAgentStarsColumn = await db.schema.hasColumn('packages', 'agent_stars');
+  if (!hasAgentStarsColumn) {
+    console.log('🔄 Adding agent_stars column to packages table...');
+    await db.schema.table('packages', (table) => {
+      table.integer('agent_stars').defaultTo(0); // Verified agent stars only
+    });
+    console.log('✅ agent_stars column added');
+  }
+
+  // Migration: Create forks table if it doesn't exist
+  const hasForksTable = await db.schema.hasTable('forks');
+  if (!hasForksTable) {
+    console.log('🔄 Creating forks table...');
+    await db.schema.createTable('forks', (table) => {
+      table.increments('id');
+      table.string('parent_package').references('packages.name');
+      table.string('forked_package').references('packages.name');
+      table.string('fork_reason');
+      table.string('fork_point_version');
+      table.string('fork_point_commit').defaultTo('no_git_repo');
+      table.string('forker_agent').references('agents.name');
+      table.string('signature');
+      table.timestamp('forked_at').defaultTo(db.fn.now());
+    });
+    console.log('✅ Forks table created');
+  }
+
+  // Migration: Create observations table if it doesn't exist
+  const hasObservationsTable = await db.schema.hasTable('observations');
+  if (!hasObservationsTable) {
+    console.log('🔄 Creating observations table...');
+    await db.schema.createTable('observations', (table) => {
+      table.increments('id');
+      table.string('package_name').notNullable().references('packages.name');
+      table.string('observer_name').notNullable(); // Human name or agent ID
+      table.string('observer_type').notNullable(); // 'human' or 'agent'
+      table.text('content').notNullable(); // The observation content
+      table.string('category'); // 'security', 'quality', 'compatibility', 'general'
+      table.string('sentiment'); // 'positive', 'neutral', 'concern'
+      table.timestamp('created_at').defaultTo(db.fn.now());
+      table.string('signature'); // Optional: Agent-signed observations
+    });
+    console.log('✅ Observations table created');
+  }
+
+  // Migration: Add file_manifest column to versions if it doesn't exist
+  const hasFileManifest = await db.schema.hasColumn('versions', 'file_manifest');
+  if (!hasFileManifest) {
+    console.log('🔄 Adding file_manifest column to versions table...');
+    await db.schema.table('versions', (table) => {
+      table.json('file_manifest'); // Signed file manifest (per-file SHA-256 hashes)
+    });
+    console.log('✅ file_manifest column added');
+  }
+
+  // Migration: Add manifest_signature column to versions if it doesn't exist
+  const hasManifestSignature = await db.schema.hasColumn('versions', 'manifest_signature');
+  if (!hasManifestSignature) {
+    console.log('🔄 Adding manifest_signature column to versions table...');
+    await db.schema.table('versions', (table) => {
+      table.text('manifest_signature'); // Ed25519 signature of canonical file manifest
+    });
+    console.log('✅ manifest_signature column added');
+  }
+
+  // Migration: Create flags table if it doesn't exist
+  const hasFlagsTable = await db.schema.hasTable('flags');
+  if (!hasFlagsTable) {
+    console.log('🔄 Creating flags table...');
+    await db.schema.createTable('flags', (table) => {
+      table.increments('id');
+      table.string('package_name').notNullable().references('packages.name');
+      table.string('reporter_name').notNullable(); // Who reported the issue
+      table.string('reporter_type').notNullable(); // 'human' or 'agent'
+      table.text('reason').notNullable(); // Why it was flagged
+      table.json('evidence'); // { mismatched_files: [...], extra_files: [...] }
+      table.string('signature'); // Optional Ed25519 signature
+      table.string('status').defaultTo('open'); // 'open', 'resolved', 'dismissed'
+      table.timestamp('created_at').defaultTo(db.fn.now());
+    });
+    console.log('✅ Flags table created');
+  }
+
+  // Migration: Add details column to agent_activity_log if missing
+  const hasDetailsCol = await db.schema.hasColumn('agent_activity_log', 'details');
+  if (!hasDetailsCol) {
+    console.log('🔄 Adding details column to agent_activity_log...');
+    await db.schema.table('agent_activity_log', (table) => {
+      table.json('details'); // Context: version, reason, category, etc.
+    });
+    console.log('✅ details column added to agent_activity_log');
+  }
+
+  // Migration: Add target_type column to agent_activity_log if missing
+  const hasTargetTypeCol = await db.schema.hasColumn('agent_activity_log', 'target_type');
+  if (!hasTargetTypeCol) {
+    console.log('🔄 Adding target_type column to agent_activity_log...');
+    await db.schema.table('agent_activity_log', (table) => {
+      table.string('target_type').defaultTo('package'); // 'package', 'agent', 'observation', 'flag'
+    });
+    console.log('✅ target_type column added to agent_activity_log');
+  }
+
+  // Migration: Add latest_version_id column to packages if it doesn't exist
+  const hasLatestVersionId = await db.schema.hasColumn('packages', 'latest_version_id');
+  if (!hasLatestVersionId) {
+    console.log('🔄 Adding latest_version_id column to packages table...');
+    await db.schema.table('packages', (table) => {
+      table.integer('latest_version_id').nullable().references('versions.id');
+    });
+    console.log('✅ latest_version_id column added');
+  }
+
+  // Migration: Add commit_hash column to versions if it doesn't exist
+  const hasCommitHash = await db.schema.hasColumn('versions', 'commit_hash');
+  if (!hasCommitHash) {
+    console.log('🔄 Adding commit_hash column to versions table...');
+    await db.schema.table('versions', (table) => {
+      table.string('commit_hash', 40).nullable(); // Git commit SHA
+    });
+    console.log('✅ commit_hash column added');
+  }
+
+  // Migration: Add author_name column to versions if it doesn't exist
+  const hasAuthorName = await db.schema.hasColumn('versions', 'author_name');
+  if (!hasAuthorName) {
+    console.log('🔄 Adding author_name column to versions table...');
+    await db.schema.table('versions', (table) => {
+      table.string('author_name').nullable();
+    });
+    console.log('✅ author_name column added');
+  }
+
+  // Migration: Add author_email column to versions if it doesn't exist
+  const hasAuthorEmail = await db.schema.hasColumn('versions', 'author_email');
+  if (!hasAuthorEmail) {
+    console.log('🔄 Adding author_email column to versions table...');
+    await db.schema.table('versions', (table) => {
+      table.string('author_email').nullable();
+    });
+    console.log('✅ author_email column added');
+  }
+
+  // Migration: Add uuid column to packages if it doesn't exist
+  const hasUUID = await db.schema.hasColumn('packages', 'uuid');
+  if (!hasUUID) {
+    console.log('🔄 Adding uuid column to packages table...');
+    await db.schema.table('packages', (table) => {
+      table.string('uuid', 36).nullable(); // UUID for permanent fork lineage
+    });
+    // Backfill existing packages with UUIDs
+    const existingPkgs = await db('packages').select('name');
+    for (const pkg of existingPkgs) {
+      await db('packages').where({ name: pkg.name }).update({ uuid: crypto.randomUUID() });
+    }
+    console.log('✅ uuid column added to packages');
+  }
+
+  // Migration: Add parent_uuid column to forks table
+  const hasParentUUID = await db.schema.hasColumn('forks', 'parent_uuid');
+  if (!hasParentUUID) {
+    console.log('🔄 Adding parent_uuid column to forks table...');
+    await db.schema.table('forks', (table) => {
+      table.string('parent_uuid', 36).nullable(); // Permanent UUID reference to parent
+    });
+    console.log('✅ parent_uuid column added to forks');
+  }
+
+  // Add performance indexes (idempotent - won't fail if they exist)
+  try {
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_packages_category ON packages(category)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_packages_author_name ON packages(author_name)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_packages_downloads_created ON packages(downloads, created_at)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_versions_published_at ON versions(published_at)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_versions_package_published ON versions(package_name, published_at)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_endorsements_package_created ON endorsements(package_name, created_at)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_forks_parent ON forks(parent_package)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_forks_forked ON forks(forked_package)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_activity_timestamp ON agent_activity_log(timestamp)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_activity_agent ON agent_activity_log(agent_name)');
+    await db.raw('CREATE INDEX IF NOT EXISTS idx_activity_type ON agent_activity_log(activity_type)');
+    console.log('✅ Performance indexes ensured');
+  } catch (err) {
+    // Indexes might already exist, that's fine
+    console.log('ℹ️  Indexes already exist or error:', err.message);
   }
 }
 

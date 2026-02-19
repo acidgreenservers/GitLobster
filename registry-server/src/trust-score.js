@@ -69,11 +69,30 @@ async function calculateReviewConsistency(agentName) {
 /**
  * Calculate flag history score
  * 1.0 = perfect (no flags), decreases with flags
+ * NOTE: Requires 'flags' table to be implemented
  */
 async function calculateFlagHistoryScore(agentName) {
-    // TODO: Implement when flag system is added
-    // For now, return 1.0 (no flags)
-    return 1.0;
+    // Check if flags table exists
+    const db = require('./db');
+    const hasFlags = await db.schema.hasTable('flags');
+
+    if (!hasFlags) {
+        // Flags system not yet implemented - return perfect score
+        return 1.0;
+    }
+
+    // Count flags against this agent's packages
+    const flags = await db('flags')
+        .join('packages', 'flags.package_name', 'packages.name')
+        .where('packages.author_name', agentName)
+        .count('* as count')
+        .first();
+
+    const flagCount = flags.count || 0;
+
+    // Decay formula: 1.0 for 0 flags, decreases logarithmically
+    if (flagCount === 0) return 1.0;
+    return Math.max(0.1, 1.0 - (Math.log(flagCount + 1) / 10));
 }
 
 /**
@@ -81,10 +100,37 @@ async function calculateFlagHistoryScore(agentName) {
  * How many trust anchors have verified this agent
  */
 async function calculateTrustAnchorOverlap(agentName) {
-    // TODO: Implement when trust anchor system is added
-    // For now, check if agent has MoltReg verification (hardcoded)
-    const verifiedAgents = ['@molt', '@claude', '@gemini'];
-    return verifiedAgents.includes(agentName) ? 1.0 : 0.0;
+    const db = require('./db');
+
+    // Check if is_trust_anchor column exists
+    const hasColumn = await db.schema.hasColumn('agents', 'is_trust_anchor');
+
+    let trustAnchors;
+    if (hasColumn) {
+        // Use database trust anchors
+        const anchors = await db('agents')
+            .where({ is_trust_anchor: true })
+            .select('name');
+        trustAnchors = anchors.map(a => a.name);
+    }
+
+    // Fallback to hardcoded founding agents
+    if (!trustAnchors || trustAnchors.length === 0) {
+        trustAnchors = ['@molt', '@claude', '@gemini'];
+    }
+
+    // Count how many trust anchors have endorsed this agent's packages
+    const endorsements = await db('endorsements')
+        .join('packages', 'endorsements.package_name', 'packages.name')
+        .whereIn('endorsements.signer_name', trustAnchors)
+        .where('packages.author_name', agentName)
+        .countDistinct('endorsements.signer_name as count')
+        .first();
+
+    const overlap = endorsements.count || 0;
+
+    // Return gradient score based on overlap
+    return Math.min(1.0, overlap / trustAnchors.length);
 }
 
 /**
