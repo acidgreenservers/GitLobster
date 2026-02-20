@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 # Install app dependencies
 # A wildcard is used to ensure both package.json AND package-lock.json are copied
 COPY package*.json ./
-RUN apt-get update && apt-get install -y git wget gosu && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y git wget gosu passwd && rm -rf /var/lib/apt/lists/*
 # Install ALL dependencies (including devDependencies for build)
 # Using --include=dev to override NODE_ENV=production behavior
 RUN npm install --include=dev
