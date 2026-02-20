@@ -88,6 +88,17 @@ function getNodeIdentity() {
 }
 
 /**
+ * Get the node's private signing key (base64)
+ * SECURITY: Use only for signing tokens or system messages
+ */
+function getSigningKey() {
+    if (!identity) {
+        initNodeIdentity();
+    }
+    return encodeBase64(identity.secretKey);
+}
+
+/**
  * Generate a visual fingerprint (short hash) from public key
  */
 function generateFingerprint(publicKey) {
@@ -97,5 +108,6 @@ function generateFingerprint(publicKey) {
 
 module.exports = {
     initNodeIdentity,
-    getNodeIdentity
+    getNodeIdentity,
+    getSigningKey
 };

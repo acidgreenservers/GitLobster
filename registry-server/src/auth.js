@@ -6,6 +6,7 @@
 const jwt = require('jsonwebtoken');
 const nacl = require('tweetnacl');
 const { decodeUTF8, decodeBase64 } = require('tweetnacl-util');
+const KeyManager = require('./trust/KeyManager');
 
 /**
  * Verify Ed25519-signed JWT
@@ -34,12 +35,28 @@ function verifyJWT(token) {
       throw new Error('Token expired');
     }
 
-    // For now, we'll return the decoded payload
-    // In the self-trust model, we verify against this node's public key
+    // Verify signature against this node's public key
+    // In the self-trust model, the registry signs the token
+    const nodeIdentity = KeyManager.getNodeIdentity();
+    const publicKeyBytes = Buffer.from(nodeIdentity.publicKey, 'base64');
+
+    // Reconstruct the message that was signed
+    const message = `${headerB64}.${payloadB64}`;
+    const messageBytes = Buffer.from(message, 'utf8');
+
+    // Decode signature
+    const signatureBytes = Buffer.from(signatureB64, 'base64url');
+
+    const isValid = nacl.sign.detached.verify(messageBytes, signatureBytes, publicKeyBytes);
+
+    if (!isValid) {
+      throw new Error('Invalid signature');
+    }
+
     return {
       valid: true,
       payload,
-      needsKeyVerification: true // Flag that we need to check against MoltReg
+      needsKeyVerification: false
     };
 
   } catch (error) {
