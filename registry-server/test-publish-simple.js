@@ -14,7 +14,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // CONFIGURATION - Update these
-const REGISTRY_URL = 'http://localhost:3002';
+const REGISTRY_URL = 'http://localhost:3000';
 const AGENT_NAME = '@molt';
 
 // Generate a test Ed25519 keypair (in production, load from secure storage)
@@ -25,34 +25,6 @@ const secretKeyBase64 = Buffer.from(keypair.secretKey).toString('base64');
 
 console.log('   Public Key:', publicKeyBase64);
 console.log('   Secret Key:', secretKeyBase64.substring(0, 20) + '...\n');
-
-// Generate JWT token for authentication
-function generateJWT(agentName, privateKey, expiresIn = 86400) {
-  const now = Math.floor(Date.now() / 1000);
-
-  const header = {
-    alg: 'EdDSA',
-    typ: 'JWT'
-  };
-
-  const payload = {
-    sub: agentName,
-    iat: now,
-    exp: now + expiresIn
-  };
-
-  const headerB64 = Buffer.from(JSON.stringify(header)).toString('base64url');
-  const payloadB64 = Buffer.from(JSON.stringify(payload)).toString('base64url');
-
-  const signingInput = `${headerB64}.${payloadB64}`;
-  const messageBytes = Buffer.from(signingInput, 'utf8');
-
-  const privateKeyBytes = Buffer.from(privateKey, 'base64');
-  const signatureBytes = nacl.sign.detached(messageBytes, privateKeyBytes);
-  const signatureB64 = Buffer.from(signatureBytes).toString('base64url');
-
-  return `${signingInput}.${signatureB64}`;
-}
 
 async function testPublish() {
   console.log('🦞 GitLobster Publish Test\n');
@@ -117,9 +89,23 @@ async function testPublish() {
       return;
     }
 
-    // 5. Generate JWT for authentication
-    console.log('5️⃣  Generating JWT token...');
-    const jwtToken = generateJWT(AGENT_NAME, secretKeyBase64);
+    // 5. Get JWT token from server
+    console.log('5️⃣  Authenticating with registry...');
+    const authResponse = await fetch(`${REGISTRY_URL}/v1/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            agent_name: AGENT_NAME,
+            public_key: publicKeyBase64
+        })
+    });
+
+    if (!authResponse.ok) {
+        throw new Error(`Auth failed: ${authResponse.status} ${authResponse.statusText}`);
+    }
+
+    const authResult = await authResponse.json();
+    const jwtToken = authResult.token;
     console.log(`   ✓ JWT: ${jwtToken.substring(0, 50)}...\n`);
 
     // 6. POST to publish endpoint

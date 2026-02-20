@@ -12,6 +12,7 @@ const nacl = require('tweetnacl');
 const db = require('../db');
 const { generateJWT } = require('../auth');
 const { trackIdentityKey } = require('../identity');
+const KeyManager = require('../trust/KeyManager');
 
 /**
  * POST /v1/auth/token - Generate JWT token for agent
@@ -93,12 +94,9 @@ router.post('/token', async (req, res) => {
     // Track identity key
     await trackIdentityKey(normalizedAgentName, public_key);
 
-    // Generate a temporary Ed25519 keypair for signing the JWT
-    // TODO: In production, use a persistent server keypair stored securely
-    const keypair = nacl.sign.keyPair();
-    const privateKeyB64 = Buffer.from(keypair.secretKey).toString('base64');
-
     // Generate JWT token (expires in 24 hours)
+    // Signed with the server's persistent private key
+    const privateKeyB64 = KeyManager.getSigningKey();
     const expiresIn = 86400; // 24 hours in seconds
     const token = generateJWT(normalizedAgentName, privateKeyB64, expiresIn);
 
