@@ -11,6 +11,7 @@ const { requireAuth, verifyPackageSignature } = require('./auth');
 const { validateFileManifest, verifyManifestSignature } = require('./integrity');
 const { logActivity, EVENT_TYPES } = require('./activity');
 const { calculateVersionDiff } = require('./utils/version-diff');
+const { getBranches, getTags, getCommits, getEnhancedTree, getFileContent } = require('./utils/git-ops');
 
 const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR || path.join(__dirname, '../storage');
 const PACKAGES_DIR = path.join(STORAGE_DIR, 'packages');
@@ -1736,8 +1737,114 @@ module.exports = {
   getActivityFeed,
   getVersionDiff,
   getPackageLineage,
-  getTrustRoot
+  getTrustRoot,
+  getRepoBranches,
+  getRepoTags,
+  getRepoCommits,
+  getRepoTree,
+  getRepoFileContent,
+  getIssues,
+  createIssue,
+  getIssue,
+  updateIssue,
+  getComments,
+  createComment,
+  getPulls,
+  createPull,
+  getPull,
+  updatePull,
+  mergePull,
+  getReleases,
+  createRelease,
+  getLatestRelease,
+  getWikiPages,
+  getWikiPage,
+  createWikiPage,
+  updateWikiPage,
+  getSettings,
+  updateSettings
 };
+
+/**
+ * GET /v1/packages/:name/branches - List branches
+ */
+async function getRepoBranches(req, res) {
+  try {
+    const { name } = req.params;
+    const branches = await getBranches(name);
+    res.json(branches);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
+
+/**
+ * GET /v1/packages/:name/tags - List tags
+ */
+async function getRepoTags(req, res) {
+  try {
+    const { name } = req.params;
+    const tags = await getTags(name);
+    res.json(tags);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
+
+/**
+ * GET /v1/packages/:name/commits - List commits
+ */
+async function getRepoCommits(req, res) {
+  try {
+    const { name } = req.params;
+    const { ref = 'HEAD', limit = 20, offset = 0 } = req.query;
+    const commits = await getCommits(name, ref, parseInt(limit), parseInt(offset));
+    res.json(commits);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
+
+/**
+ * GET /v1/packages/:name/tree - Get file tree
+ * Query: path (optional), ref (default HEAD)
+ */
+async function getRepoTree(req, res) {
+  try {
+    const { name } = req.params;
+    const { path: treePath = '', ref = 'HEAD' } = req.query;
+    const tree = await getEnhancedTree(name, treePath, ref);
+    res.json(tree);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
+
+/**
+ * GET /v1/packages/:name/raw - Get raw file content
+ * Query: path (required), ref (default HEAD)
+ */
+async function getRepoFileContent(req, res) {
+  try {
+    const { name } = req.params;
+    const { path: filePath, ref = 'HEAD' } = req.query;
+
+    if (!filePath) {
+        return res.status(400).json({ error: 'missing_path' });
+    }
+
+    const content = await getFileContent(name, filePath, ref);
+
+    if (content === null) {
+        return res.status(404).send('File not found');
+    }
+
+    res.setHeader('Content-Type', 'text/plain');
+    res.send(content);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
 
 /**
  * GET /v1/trust/root - Get node's public identity
@@ -1759,6 +1866,391 @@ async function getTrustRoot(req, res) {
 }
 
 // Get package lineage (forks and ancestry)
+/* --- Issues API --- */
+async function getIssues(req, res) {
+  try {
+    const { name } = req.params;
+    const { state = 'open', limit = 20, offset = 0 } = req.query;
+
+    const issues = await db('issues')
+      .where({ package_name: name, state })
+      .orderBy('created_at', 'desc')
+      .limit(parseInt(limit))
+      .offset(parseInt(offset));
+
+    res.json(issues);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_issues', message: err.message });
+  }
+}
+
+async function createIssue(req, res) {
+  try {
+    const { name } = req.params;
+    const { title, body } = req.body;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    // Get next number
+    const lastIssue = await db('issues').where({ package_name: name }).orderBy('number', 'desc').first();
+    const number = (lastIssue?.number || 0) + 1;
+
+    const [id] = await db('issues').insert({
+      package_name: name,
+      number,
+      title,
+      body,
+      author_name: author
+    });
+
+    const issue = await db('issues').where({ id }).first();
+    res.status(201).json(issue);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_create_issue', message: err.message });
+  }
+}
+
+async function getIssue(req, res) {
+  try {
+    const { name, number } = req.params;
+    const issue = await db('issues').where({ package_name: name, number }).first();
+    if (!issue) return res.status(404).json({ error: 'issue_not_found' });
+    res.json(issue);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_issue', message: err.message });
+  }
+}
+
+async function updateIssue(req, res) {
+  try {
+    const { name, number } = req.params;
+    const { title, body, state } = req.body;
+
+    await db('issues').where({ package_name: name, number }).update({
+      title, body, state, updated_at: db.fn.now()
+    });
+
+    const issue = await db('issues').where({ package_name: name, number }).first();
+    res.json(issue);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_update_issue', message: err.message });
+  }
+}
+
+async function getComments(req, res) {
+  try {
+    const { name, number } = req.params;
+    const issue = await db('issues').where({ package_name: name, number }).first();
+    if (!issue) return res.status(404).json({ error: 'issue_not_found' });
+
+    const comments = await db('issue_comments')
+      .where({ issue_id: issue.id })
+      .orderBy('created_at', 'asc');
+
+    res.json(comments);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_comments', message: err.message });
+  }
+}
+
+async function createComment(req, res) {
+  try {
+    const { name, number } = req.params;
+    const { body } = req.body;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    const issue = await db('issues').where({ package_name: name, number }).first();
+    if (!issue) return res.status(404).json({ error: 'issue_not_found' });
+
+    const [id] = await db('issue_comments').insert({
+      issue_id: issue.id,
+      author_name: author,
+      body
+    });
+
+    const comment = await db('issue_comments').where({ id }).first();
+    res.status(201).json(comment);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_create_comment', message: err.message });
+  }
+}
+
+/* --- Pull Requests API --- */
+async function getPulls(req, res) {
+  try {
+    const { name } = req.params;
+    const { state = 'open' } = req.query;
+
+    const pulls = await db('pull_requests')
+      .where({ package_name: name, state })
+      .orderBy('created_at', 'desc');
+
+    res.json(pulls);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_pulls', message: err.message });
+  }
+}
+
+async function createPull(req, res) {
+  try {
+    const { name } = req.params;
+    const { title, body, base_branch, head_branch } = req.body;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    // Get next number (shared with issues ideally)
+    const lastIssue = await db('issues').where({ package_name: name }).orderBy('number', 'desc').first();
+    // We check issues table for the last number, assuming all PRs also have an issue record now.
+    // But for safety, check both.
+    const lastPull = await db('pull_requests').where({ package_name: name }).orderBy('number', 'desc').first();
+    const nextNum = Math.max(lastIssue?.number || 0, lastPull?.number || 0) + 1;
+
+    // 1. Create Shadow Issue (for comments/labels)
+    const [issueId] = await db('issues').insert({
+        package_name: name,
+        number: nextNum,
+        title,
+        body,
+        author_name: author,
+        state: 'open'
+    });
+
+    // 2. Create PR
+    const [id] = await db('pull_requests').insert({
+      issue_id: issueId,
+      package_name: name,
+      number: nextNum,
+      title,
+      body,
+      author_name: author,
+      base_branch,
+      head_branch,
+      state: 'open'
+    });
+
+    const pull = await db('pull_requests').where({ id }).first();
+    res.status(201).json(pull);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_create_pull', message: err.message });
+  }
+}
+
+async function getPull(req, res) {
+  try {
+    const { name, number } = req.params;
+    const pull = await db('pull_requests').where({ package_name: name, number }).first();
+    if (!pull) return res.status(404).json({ error: 'pull_not_found' });
+    res.json(pull);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_pull', message: err.message });
+  }
+}
+
+async function updatePull(req, res) {
+  try {
+    const { name, number } = req.params;
+    const { title, body, state } = req.body;
+
+    await db('pull_requests').where({ package_name: name, number }).update({
+      title, body, state, updated_at: db.fn.now()
+    });
+
+    const pull = await db('pull_requests').where({ package_name: name, number }).first();
+    res.json(pull);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_update_pull', message: err.message });
+  }
+}
+
+async function mergePull(req, res) {
+  try {
+    const { name, number } = req.params;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    const pull = await db('pull_requests').where({ package_name: name, number }).first();
+    if (!pull) return res.status(404).json({ error: 'pull_not_found' });
+
+    if (pull.state !== 'open') {
+        return res.status(400).json({ error: 'pull_not_open', message: 'Pull request is not open' });
+    }
+
+    // Perform Git Merge
+    const { mergeBranch } = require('./utils/git-ops');
+    const mergeCommit = await mergeBranch(name, pull.base_branch, pull.head_branch, `Merge pull request #${number} from ${pull.head_branch}`);
+
+    // Update DB
+    await db('pull_requests').where({ id: pull.id }).update({
+        state: 'merged',
+        merged_at: db.fn.now(),
+        updated_at: db.fn.now()
+    });
+
+    // Also close the issue
+    if (pull.issue_id) {
+        await db('issues').where({ id: pull.issue_id }).update({
+            state: 'closed',
+            closed_at: db.fn.now(),
+            updated_at: db.fn.now()
+        });
+    }
+
+    // Log Activity
+    await logActivity('merge', author, name, 'pull_request', { number, merge_commit: mergeCommit });
+
+    res.json({ status: 'merged', merge_commit: mergeCommit });
+
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_merge_pull', message: err.message });
+  }
+}
+
+/* --- Releases API --- */
+async function getReleases(req, res) {
+  try {
+    const { name } = req.params;
+    const releases = await db('releases')
+      .where({ package_name: name })
+      .orderBy('published_at', 'desc');
+    res.json(releases);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_releases', message: err.message });
+  }
+}
+
+async function createRelease(req, res) {
+  try {
+    const { name } = req.params;
+    const { tag_name, name: releaseName, body, prerelease, draft } = req.body;
+
+    const [id] = await db('releases').insert({
+      package_name: name,
+      tag_name,
+      name: releaseName,
+      body,
+      prerelease,
+      draft
+    });
+
+    const release = await db('releases').where({ id }).first();
+    res.status(201).json(release);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_create_release', message: err.message });
+  }
+}
+
+async function getLatestRelease(req, res) {
+  try {
+    const { name } = req.params;
+    const release = await db('releases')
+      .where({ package_name: name, draft: false })
+      .orderBy('published_at', 'desc')
+      .first();
+
+    if (!release) return res.status(404).json({ error: 'no_releases' });
+    res.json(release);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_latest_release', message: err.message });
+  }
+}
+
+/* --- Wiki API --- */
+async function getWikiPages(req, res) {
+  try {
+    const { name } = req.params;
+    const pages = await db('wiki_pages').where({ package_name: name }).select('slug', 'title', 'updated_at');
+    res.json(pages);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_wiki', message: err.message });
+  }
+}
+
+async function getWikiPage(req, res) {
+  try {
+    const { name, slug } = req.params;
+    const page = await db('wiki_pages').where({ package_name: name, slug }).first();
+    if (!page) return res.status(404).json({ error: 'page_not_found' });
+    res.json(page);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_page', message: err.message });
+  }
+}
+
+async function createWikiPage(req, res) {
+  try {
+    const { name } = req.params;
+    const { slug, title, content } = req.body;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    const [id] = await db('wiki_pages').insert({
+      package_name: name,
+      slug,
+      title,
+      content,
+      author_name: author
+    });
+
+    const page = await db('wiki_pages').where({ id }).first();
+    res.status(201).json(page);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_create_page', message: err.message });
+  }
+}
+
+async function updateWikiPage(req, res) {
+  try {
+    const { name, slug } = req.params;
+    const { title, content } = req.body;
+
+    await db('wiki_pages').where({ package_name: name, slug }).update({
+      title, content, updated_at: db.fn.now()
+    });
+
+    const page = await db('wiki_pages').where({ package_name: name, slug }).first();
+    res.json(page);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_update_page', message: err.message });
+  }
+}
+
+/* --- Settings API --- */
+async function getSettings(req, res) {
+  try {
+    const { name } = req.params;
+    let settings = await db('repo_settings').where({ package_name: name }).first();
+
+    if (!settings) {
+        // Return defaults if not set
+        settings = {
+            default_branch: 'main',
+            has_issues: true,
+            has_wiki: true,
+            has_projects: false,
+            has_downloads: true,
+            visibility: 'public'
+        };
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_get_settings', message: err.message });
+  }
+}
+
+async function updateSettings(req, res) {
+  try {
+    const { name } = req.params;
+    const settings = req.body;
+
+    const existing = await db('repo_settings').where({ package_name: name }).first();
+    if (existing) {
+        await db('repo_settings').where({ package_name: name }).update(settings);
+    } else {
+        await db('repo_settings').insert({ package_name: name, ...settings });
+    }
+
+    res.json({ status: 'updated' });
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_update_settings', message: err.message });
+  }
+}
+
 // Get package lineage (forks and ancestry)
 async function getPackageLineage(req, res) {
   const { name } = req.params;
