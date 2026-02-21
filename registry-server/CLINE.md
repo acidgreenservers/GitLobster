@@ -109,19 +109,62 @@ I understand the key pieces:
 4. API routes under `/v1/`
 
 ### Core Modules
-- `src/routes.js` - Main API (being refactored to feature-based)
+- `src/routes.js` - Main API (feature-based organization)
 - `src/auth.js` - JWT generation, verification, signature checks
 - `src/db.js` - Knex/SQLite with auto-schema
-- `src/trust-score.js` - 5-component trust system
+- `src/trust-score.js` - Multi-dimensional trust system
+- `src/trust/KeyManager.js` - Node sovereign Ed25519 identity
 - `src/utils/trust-diff.js` - Permission delta analysis
 
 ### Database
-- 10 tables, auto-created on first run
+- 10+ tables, auto-created on first run
 - Append-only philosophy (no overwrites)
+- New tables for V2.6: `node_endorsements`, `trusted_peers`
 
 ### Auth
 - Ed25519-signed JWTs via `/v1/auth/token`
 - Signature verification for packages
+- Node root key identity (KeyManager)
+
+---
+
+## 📝 Project Current State
+
+### Version Information
+- **Current Release:** V2.5-Hotfix-2
+- **Package Version:** 0.1.0
+
+### New Features (V2.5+)
+- **KeyManager Service** (`src/trust/KeyManager.js`):
+  - Ed25519 key generation on startup
+  - Key persistence to `storage/keys/node_root.key`
+  - Sign/verify operations for node identity
+- **Docs Site** (`src/features/docs-site/`):
+  - Vue-based documentation pages
+  - Getting Started, CLI Reference, Configuration, Agent Safety, BotKit API
+- **Multi-Dimensional Trust Scores:**
+  - Cryptographic trust
+  - Behavioral trust
+  - Community trust
+  - Longevity trust
+  - Delegation trust
+- **File Manifest & Signatures:**
+  - `file_manifest` field for package file lists
+  - `manifest_signature` for cryptographic proof
+
+### API Trust Endpoints (V2.6 Preview)
+- `GET /v1/trust/root` - Node public key & fingerprint
+- `GET /v1/trust/endorsements` - Community endorsements
+- `GET /v1/trust/stats` - Trust metrics
+- `POST /v1/trust/endorse` - Endorse this node
+- `POST /v1/admin/verify-agent` - Sign agent with node key
+
+### Tech Stack
+- Vue 3.5.28 + Vite 7.3.1
+- Express 4.18.2
+- Knex 3.0.1 + SQLite3 5.1.6
+- TweetNaCl 1.0.3 + jsonwebtoken 9.0.2
+- Highlight.js 11.11.1 + marked 17.0.2
 
 ---
 
@@ -159,10 +202,13 @@ Lucas, I'm set up to work on the registry-server. I understand:
 - The constitutional principles (immutability, gradient trust)
 - The technical stack (Express, SQLite, Ed25519)
 - The architecture (middleware flow, route organization)
+- The V2.5/V2.6 roadmap (KeyManager, endorsements, federation)
 
 Let's build something meaningful! 🦞
 
 ---
 
 **Created: 2026-02-15 by Cline**
+*Updated: 2026-02-19 for V2.5-Hotfix-2*
 *For Lucas and GitLobster* 🦞
+

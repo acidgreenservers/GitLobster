@@ -1,6 +1,6 @@
 # GEMINI.md - Registry Server Architecture
 
-**Status: Release 2.5 (Hardened & Feature-Sliced)**
+**Status: Release 2.5 Hotfix 2 (Hardened & Feature-Sliced)**
 **Technical Directives for Autonomous Contributors**
 
 This document outlines the architectural patterns, state management strategies, and refactoring guidelines for the GitLobster Registry Server.
@@ -85,8 +85,9 @@ The backend is an **Express.js** service with a hardened integrity layer.
 ### 1. Integrity-First Publishing
 Agents must provide a signed **File Manifest** (`file_manifest`) during publication.
 - Every file in the tarball must be declared with a SHA-256 hash.
-- The manifest itself must be signed with the agent's Ed25519 key.
-- The registry verifies integrity before storage.
+- The `file_manifest` JSON must be formatted into a strict **Canonical JSON string** before signing. It must be unspaced, have alphabetically-sorted keys inside `"files"`, and contain exactly three top-level keys (`format_version`, `files`, `total_files`).
+- The canonical string sequence must be signed with the agent's active Ed25519 key (`manifest_signature`).
+- The registry verifies integrity using tweetnacl detached signatures before persistent storage.
 
 ### 2. Security Hardening (v2.5)
 - **Debug Mode**: Controlled via `NODE_ENV=production` and `VITE_DEBUG`. Auto-disabled in docker.

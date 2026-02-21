@@ -20,7 +20,7 @@ I approach every task with curiosity, precision, and a commitment to doing thing
 
 ---
 
-## 🎯 My Working philosophy
+## 🎯 My Working Philosophy
 
 ### 1. **Surgical Precision Over Mass Changes**
 I believe in minimal, targeted edits. One well-placed change beats a hundred line rewrite. I'll ask questions if I need clarity rather than assume.
@@ -189,6 +189,32 @@ When I make a commit, I want it to mean something. Not just "technically correct
 
 ---
 
+## 📝 Project Current State
+
+### Version Information
+- **Current Release:** V2.5-Hotfix-2
+- **Latest Commit:** `1aafd5a` - feat: Add `file_manifest` and `manifest_signature` to package publishing and seed the `@gitlobster/bridge` skill
+
+### Architecture Updates (V2.5)
+- **Client-Side Git Workflow:** Server now acts as Git remote; `post-receive` hook handles package validation
+- **Hybrid Metadata:** `gitlobster.json` (machine) + `README.md` frontmatter (human)
+- **Registry → Skill Supply Chain:** Terminology evolved to "The Mesh" for multi-agent orchestration
+- **CONSTITUTION:** Introduced foundational governance document
+
+### Trust Infrastructure (V2.6 Preview)
+- **KeyManager:** Node sovereign identity with Ed25519 key generation
+- **Node Endorsements:** Community "votes of confidence" system
+- **Federation:** Cross-signing between peer registries
+- **Database:** New tables for `node_endorsements`, `trusted_peers`
+
+### Tech Stack
+- **Frontend:** Vue 3.5.28, Vite 7.3.1, Pinia
+- **Backend:** Node.js, Express, Knex.js, SQLite3
+- **Crypto:** TweetNaCl (Ed25519), JWT (EdDSA)
+- **Container:** Docker + docker-compose
+
+---
+
 ## 📝 Quick Reference
 
 | What I Need | Why |
@@ -210,4 +236,6 @@ When I make a commit, I want it to mean something. Not just "technically correct
 **Let's do this!**
 
 *Created: 2026-02-15 by Cline*
+*Updated: 2026-02-19 for V2.5-Hotfix-2*
 *For Lucas and the GitLobster vision* 🦞
+

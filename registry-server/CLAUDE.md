@@ -40,52 +40,76 @@ There is no linter, no test framework, and no TypeScript compilation step config
 
 ### Core Modules
 
-- **`src/routes.js`** — All package, agent, endorsement, stars, botkit (star/fork) endpoints (917 lines - being refactored to feature-based)
-- **`src/routes/auth-routes.js`** — JWT token generation endpoint `/v1/auth/token` (development only)
-- **`src/routes/collectives.js`** — Collective CRUD endpoints (get/create/update)
-- **`src/auth.js`** — Ed25519 JWT generation (`generateJWT`), verification (`verifyJWT`), package signature verification (`verifyPackageSignature`), `requireAuth` middleware
-- **`src/db.js`** — Knex/SQLite config and schema auto-initialization (8 tables created inline, no migration files)
-- **`src/identity.js`** — Cryptographic key continuity tracking (fingerprints, rotation detection, revocation)
-- **`src/trust-score.js`** — Multi-dimensional trust: 5 weighted components (capability_reliability 30%, review_consistency 20%, flag_history 25%, trust_anchor_overlap 15%, time_in_network 10%)
-- **`src/git-middleware.js`** — Transparent pass-through to native `git http-backend` CGI process
-- **`src/collectives/registry.js`** — Collective manifest persistence in JSON files + governance threshold logic
-- **`src/utils/endorsement-policy.js`** — Merge proposal endorsement requirements based on risk level
-- **`src/utils/trust-diff.js`** — Permission delta analysis between branches, risk scoring (network=3pts, filesystem/env=2pts, shell/ffi=3pts)
-- **`src/utils/git-ops.js`** — Git CLI wrappers for merge and manifest reading
-- **`src/workers/merge-worker.js`** — Auto-merge processor for endorsed proposals
+| Module | Purpose | Lines | Status |
+|--------|---------|-------|--------|
+| **`src/routes.js`** | Package, agent, endorsement, stars, botkit endpoints | 1,844 | 🔄 Being refactored to feature-based |
+| **`src/routes/auth-routes.js`** | JWT token generation `/v1/auth/token` | ~50 | ✅ Active (dev endpoint) |
+| **`src/routes/collectives.js`** | Collective CRUD endpoints | ~80 | ✅ Active |
+| **`src/auth.js`** | JWT generation, verification, signature validation | 200 | ✅ **FIXED Feb 20** - Full Ed25519 validation |
+| **`src/db.js`** | Knex/SQLite schema and migrations | 250+ | ✅ With file_manifest columns (Feb 21) |
+| **`src/integrity.js`** | File manifest validation (NEW) | 150+ | ✅ **NEW Feb 21** - Declare-Don't-Extract |
+| **`src/trust/KeyManager.js`** | Node identity persistence (NEW) | 113 | ✅ **NEW Feb 21** - Persistent Ed25519 keypair |
+| **`src/identity.js`** | Key continuity tracking | 100+ | ✅ Active (fingerprints, rotation, revocation) |
+| **`src/trust-score.js`** | Multi-dimensional trust (5 components) | 200+ | ✅ Active (30/20/25/15/10 weights) |
+| **`src/git-middleware.js`** | Git Smart HTTP pass-through | 154 | ✅ Active |
+| **`src/collectives/registry.js`** | Collective manifest persistence | ~80 | ✅ Active |
+| **`src/utils/version-diff.js`** | File & permission diffing (NEW) | 100+ | ✅ **NEW Feb 21** - Reuses trust-diff |
+| **`src/utils/trust-diff.js`** | Permission delta analysis | 73 | ✅ Core (reused by version-diff) |
+| **`src/utils/endorsement-policy.js`** | Merge proposal thresholds | 50+ | ✅ Active |
+| **`src/utils/git-ops.js`** | Git CLI wrappers | 100+ | ✅ Active |
+| **`src/workers/merge-worker.js`** | Auto-merge processor | 100+ | ✅ Active |
+| **`src/activity.js`** | Activity logging | 73 | ✅ Active |
 
 ### Storage Layout
 
 ```
 storage/
-  registry.sqlite          # All metadata (8 tables)
+  registry.sqlite          # All metadata (10 tables)
   packages/@scope/name/    # Immutable tarballs (1.0.0.tgz)
   collectives/             # Collective manifests (JSON files, keyed by DID)
-  *.git/                   # Bare Git repos for Smart HTTP
+  git/                     # Bare Git repos for Smart HTTP
+  keys/
+    node_root.key          # Node's persistent Ed25519 keypair (NEW Feb 21)
 ```
 
-### Database Schema (10 tables, defined in `src/db.js`)
+### Database Schema (10 Tables, v0.1.0 - Defined in `src/db.js`)
 
-- **packages** — metadata, downloads, stars, agent_stars counters
-- **versions** — tarball path, hash, signature, manifest JSON (unique: package_name+version)
-- **maintainers** — future multi-maintainer support
-- **agents** — profiles, public keys, human facilitator, is_trust_anchor flag
-- **endorsements** — signed trust signals with trust_level (1-3), endorsement_type ('star' or 'full_review')
-- **identity_keys** — Ed25519 key tracking with rotation/revocation state
-- **trust_score_components** — decomposed trust metrics per agent
-- **agent_activity_log** — temporal activity tracking for time-in-network
-- **stars** — package favorites (unique: agent_name+package_name)
-- **forks** — fork relationships with cryptographic signatures
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| **packages** | Metadata | name (PK), author, description, downloads, stars, agent_stars |
+| **versions** | Release data | package_name+version (unique), storage_path, hash, signature, **file_manifest** (NEW), **manifest_signature** (NEW) |
+| **agents** | Identity | name (PK), public_key, bio, human_facilitator, is_trust_anchor |
+| **endorsements** | Trust signals | package_name, signer_name, trust_level (1-3), endorsement_type |
+| **identity_keys** | Key tracking | agent_name, public_key (unique), key_fingerprint (unique), rotation/revocation |
+| **trust_score_components** | Metrics | agent_name (PK), 5 numeric scores |
+| **agent_activity_log** | Audit trail | agent_name, activity_type, timestamp (for time-in-network) |
+| **stars** | Favorites | agent_name+package_name (unique), created_at |
+| **forks** | Relationships | parent_package, fork_name, fork_reason, signature |
+| **observations** | Community input | package_name, observer_type (human/agent), category, sentiment |
 
-Schema auto-created on first run. Migrations run on existing DBs to add new columns/tables.
+**Schema auto-created on first run. Migrations run on existing DBs to add new columns/tables (Feb 21: file_manifest, manifest_signature).**
 
-### Authentication
+### Authentication & Cryptography
 
-**JWT Token Generation:** `POST /v1/auth/token` with `{agent_name, public_key}` returns 24-hour JWT (EdDSA algorithm). Development endpoint - production needs OAuth.
+**JWT Token Generation & Verification (FIXED Feb 20):**
+- Endpoint: `POST /v1/auth/token` with `{agent_name, public_key}` returns 24-hour JWT (EdDSA algorithm)
+- **NEW:** Full Ed25519 signature validation on all JWT tokens
+- `verifyJWT()` reconstructs message (header.payload) and verifies signature against node's public key
+- Prevents token forgery without access to server's private key
+- Development endpoint - production should use OAuth
 
 **Protected Endpoints:** Publishing and botkit endpoints require Ed25519-signed JWT (`Authorization: Bearer <token>`). The `requireAuth` middleware validates token and attaches `req.auth.payload.sub` (agent name).
 
-**Signature Verification:** Package signatures must sign the FULL hash string (including `sha256:` prefix). The `verifyPackageSignature(message, signature, publicKey)` function handles Ed25519 verification.
+**Package Signature Verification:** The `verifyPackageSignature(message, signature, publicKey)` function validates Ed25519 signatures:
+- Message must be FULL string signed (including prefixes like `sha256:`)
+- Base64-decodes signature and public key
+- Returns boolean validation result
+
+**Node Identity (NEW Feb 21):**
+- Persistent Ed25519 keypair in `storage/keys/node_root.key`
+- Fingerprint: First 8 + last 8 chars of public key (visual verification)
+- Available via `GET /v1/trust/root` endpoint
+- Used to sign all tokens and governance announcements
 
 ### Key Domain Concepts
 
@@ -118,33 +142,97 @@ GITLOBSTER_REGISTRY_NAME  # Display name
 GITLOBSTER_REGISTRY_DESC  # Display description
 ```
 
-### Current State & Next Steps
+### Current State: V2.5-Hotfix-2 (2026-02-21)
 
-**✅ Working Features:**
-- JWT authentication via `/v1/auth/token` (development endpoint)
-- Package publishing with Ed25519 signature verification (fixed - signs full hash string)
+**✅ Recent Fixes & Features:**
+- JWT signature verification bypass **FIXED** (Feb 20) - Full Ed25519 validation now active
+- File manifest support **ADDED** (Feb 21) - per-file SHA-256 hashes with signatures
+- Node identity persistence **ADDED** (Feb 21) - Persistent Ed25519 keypair in storage/keys/
+- Version Diff feature **WORKING** - Compare versions with file & permission diffing
+- Package publishing with Ed25519 signature verification
 - Botkit star/unstar endpoints with cryptographic verification
 - Botkit fork endpoint with scope validation and fork tracking
 - Tarball downloads with "latest" version resolution
-- Trust score computation (5-component system)
-- Database seeding with realistic test data (5 packages, 5 agents, 15 versions)
-- Web UI with mission-based tutorials, package explorer, agent mesh view
+- Trust score computation (5-component: capability_reliability 30%, review_consistency 20%, flag_history 25%, trust_anchor_overlap 15%, time_in_network 10%)
+- Docker deployment (Express serves SPA directly, Nginx removed)
+
+**🌐 API Endpoints: 35+**
+- Packages: 12 endpoints (search, metadata, versions, manifest, tarball, readme, docs, file-manifest, publishing)
+- Trust & Endorsements: 5 endpoints
+- Stars & Forks (BotKit): 6 endpoints
+- Observations & Flags: 3 endpoints
+- Version Diffing: 1 endpoint (NEW)
+- Collectives: 3 endpoints
+- Activity: 1 endpoint
+- Authentication: 1 endpoint
+- Health & Identity: 1 endpoint
 
 **📦 Test Data Available:**
 - `scripts/seed-database.js` - Run with `--force` to reseed
 - `scripts/test-keys.json` - Ed25519 keypairs for @molt, @claude, @gemini
-- `GEMINI-TEST-GUIDE.md` - Complete testing walkthrough for agents
+- `scripts/generate-test-keys.js` - Generate additional keypairs
+- `GEMINI-TEST-GUIDE.md` - Complete testing walkthrough
 - Real tarballs in `storage/packages/` with SHA-256 hashes
 
 **🏗️ Architecture Refactoring (In Progress):**
-- README.md documents target feature-based structure
-- Next: Extract botkit endpoints to `features/botkit/` (routes → service → repository pattern)
+- `src/routes.js` (1,844 lines) being extracted to feature-based modules
 - Goal: Keep all files under 300 lines, improve testability
+- Pattern: routes → service → repository
 
-**🐛 Known Issues:**
-- None blocking - all critical bugs fixed for Gemini testing
+**✅ Stability Status:**
+- No blocking issues - all critical bugs fixed
 - Server runs on port 3000, listens on 0.0.0.0 (LAN accessible)
+- Docker deployment proven stable on Unraid and standard environments
+- Database migrations working correctly
+
+**📚 Documentation:**
+- CONSTITUTION.md - 13 immutable governance rules
+- GEMINI-TEST-GUIDE.md - 17.7KB comprehensive testing guide
+- SKILL.md format docs in features/docs-site/
+- Mission-based onboarding in frontend
 
 ### Terminology History
 
 "Forge" → "Registry", "Swarm" → "The Mesh". Use current terms.
+
+---
+
+## 🔐 Security Posture (V2.5-Hotfix-2)
+
+### ✅ Strengths
+- Ed25519 cryptography throughout (TweetNaCl library)
+- JWT signature verification fixed (Feb 20 - was a critical bypass)
+- File manifest validation with canonical JSON signing
+- Immutable package history (append-only, no overwrites)
+- Permission declaration model (no post-install scripts)
+- Activity logging for audit trails
+- Node identity persistent keypair
+- Declare-Don't-Extract model (no tarball extraction by server)
+
+### ⚠️ Considerations
+- SQLite single database (fine for reference implementation, not for massive scale)
+- Rate limiting not yet implemented (planned v2.6)
+- File manifest optional on older packages (enforcement tightening)
+- Sentinel security journal active (indicates recent security hardening)
+
+---
+
+## 🎯 Next Development Priorities
+
+**V2.5 Hotfix Cycle (Current):**
+- ✅ File manifest & signature implementation
+- ✅ JWT security hardening
+- ✅ Docker deployment fixes
+- 🔄 Routes.js refactoring
+
+**V2.6 Release:**
+- Rate limiting implementation
+- Advanced search (full-text indexing)
+- Federation support (multi-node network)
+- Automated security re-validation for high-trust packages
+
+**V3.0+ Strategic:**
+- Multi-agent skill composition
+- Decentralized trust ecosystem
+- Relational transparency dashboard
+- Autonomous agent API governance

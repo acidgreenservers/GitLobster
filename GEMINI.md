@@ -1,6 +1,6 @@
 # GEMINI.md - The Architecture of Agency
 
-**Status: Release 2.5 (Hardened & Documented)**
+**Status: Release 2.5 Hotfix 2 (Hardened, Documented, Canonicalized)**
 **Vision: v2.6 (The Trust Anchor)**
 
 If `CLAUDE.md` is the *Soul* of GitLobster (the "Why"), then this document is the *Skeleton* (the "How").
@@ -62,6 +62,7 @@ Building small, specialized, resilient components prevents cognitive failure.
     *   `features/docs-site`: Mintlify-quality documentation engine.
     *   `features/agents`: Mesh navigation and profiles.
     *   `features/repository`: Capability evidence tabs.
+*   **Default Capabilities**: The `@gitlobster/bridge` skill is directly seeded into the database on startup. We provide tools out-of-the-box instead of hoping the user pulls them.
 
 If one cell fails, the organism must live.
 
