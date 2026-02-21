@@ -355,6 +355,123 @@ async function init() {
     console.log('✅ parent_uuid column added to forks');
   }
 
+  // Migration: GitHub Clone Features (Issues, PRs, Wiki, etc.)
+  const hasIssuesTable = await db.schema.hasTable('issues');
+  if (!hasIssuesTable) {
+    console.log('🔄 Creating GitHub-style feature tables (Issues, PRs, Wiki)...');
+
+    // Issues
+    await db.schema.createTable('issues', (table) => {
+      table.increments('id');
+      table.string('package_name').references('packages.name');
+      table.integer('number').notNullable(); // Sequential number per repo
+      table.string('title').notNullable();
+      table.text('body');
+      table.string('author_name'); // Agent or User
+      table.string('state').defaultTo('open'); // open, closed
+      table.integer('milestone_id'); // Will add reference later or loose coupling
+      table.timestamp('created_at').defaultTo(db.fn.now());
+      table.timestamp('updated_at').defaultTo(db.fn.now());
+      table.timestamp('closed_at');
+    });
+
+    // Pull Requests
+    await db.schema.createTable('pull_requests', (table) => {
+      table.increments('id');
+      table.integer('issue_id').references('issues.id');
+      table.string('package_name').references('packages.name');
+      table.integer('number').notNullable();
+      table.string('title').notNullable();
+      table.text('body');
+      table.string('author_name');
+      table.string('state').defaultTo('open'); // open, closed, merged
+      table.string('base_branch').notNullable();
+      table.string('head_branch').notNullable();
+      table.timestamp('merged_at');
+      table.timestamp('created_at').defaultTo(db.fn.now());
+      table.timestamp('updated_at').defaultTo(db.fn.now());
+    });
+
+    // Issue Comments
+    await db.schema.createTable('issue_comments', (table) => {
+      table.increments('id');
+      table.integer('issue_id').references('issues.id');
+      table.string('author_name');
+      table.text('body');
+      table.timestamp('created_at').defaultTo(db.fn.now());
+      table.timestamp('updated_at').defaultTo(db.fn.now());
+    });
+
+    // Labels
+    await db.schema.createTable('labels', (table) => {
+      table.increments('id');
+      table.string('package_name').references('packages.name');
+      table.string('name').notNullable();
+      table.string('color').defaultTo('#cccccc');
+      table.string('description');
+      table.timestamp('created_at').defaultTo(db.fn.now());
+    });
+
+    // Issue Labels
+    await db.schema.createTable('issue_labels', (table) => {
+      table.integer('issue_id').references('issues.id');
+      table.integer('label_id').references('labels.id');
+      table.primary(['issue_id', 'label_id']);
+    });
+
+    // Milestones
+    await db.schema.createTable('milestones', (table) => {
+      table.increments('id');
+      table.string('package_name').references('packages.name');
+      table.string('title').notNullable();
+      table.string('description');
+      table.timestamp('due_on');
+      table.string('state').defaultTo('open');
+      table.timestamp('created_at').defaultTo(db.fn.now());
+    });
+
+    // Releases
+    await db.schema.createTable('releases', (table) => {
+      table.increments('id');
+      table.string('package_name').references('packages.name');
+      table.string('tag_name').notNullable();
+      table.string('target_commitish').defaultTo('main');
+      table.string('name');
+      table.text('body');
+      table.boolean('draft').defaultTo(false);
+      table.boolean('prerelease').defaultTo(false);
+      table.timestamp('published_at').defaultTo(db.fn.now());
+      table.json('assets');
+    });
+
+    // Wiki Pages
+    await db.schema.createTable('wiki_pages', (table) => {
+      table.increments('id');
+      table.string('package_name').references('packages.name');
+      table.string('slug').notNullable();
+      table.string('title').notNullable();
+      table.text('content');
+      table.string('author_name');
+      table.timestamp('created_at').defaultTo(db.fn.now());
+      table.timestamp('updated_at').defaultTo(db.fn.now());
+      table.unique(['package_name', 'slug']);
+    });
+
+    // Repo Settings
+    await db.schema.createTable('repo_settings', (table) => {
+      table.string('package_name').primary().references('packages.name');
+      table.string('default_branch').defaultTo('main');
+      table.boolean('has_issues').defaultTo(true);
+      table.boolean('has_wiki').defaultTo(true);
+      table.boolean('has_projects').defaultTo(false);
+      table.boolean('has_downloads').defaultTo(true);
+      table.boolean('is_template').defaultTo(false);
+      table.string('visibility').defaultTo('public');
+    });
+
+    console.log('✅ GitHub-style tables created');
+  }
+
   try {
     await seedBridgeSkill();
   } catch (err) {

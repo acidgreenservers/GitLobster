@@ -1,8 +1,9 @@
-const { exec } = require('child_process');
+const { exec, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const util = require('util');
 const execPromise = util.promisify(exec);
+const { scopedToDirName } = require('../git-middleware');
 
 const GIT_PROJECT_ROOT = process.env.GIT_PROJECT_ROOT || path.join(__dirname, '../../storage/git');
 
@@ -151,10 +152,186 @@ async function mergeProposal(repoName, baseRef, headRef, proposalId) {
     }
 }
 
+/**
+ * Execute a git command in the repo directory using spawn
+ */
+function gitExec(repoName, args) {
+  return new Promise((resolve, reject) => {
+    // Determine dir name: if it looks like a file path (ends in .git), use as is, else convert scope
+    let dirName = repoName;
+    if (!repoName.endsWith('.git')) {
+        dirName = scopedToDirName(repoName);
+    }
+
+    const repoPath = path.join(GIT_PROJECT_ROOT, dirName);
+
+    const git = spawn('git', args, { cwd: repoPath });
+
+    let stdout = '';
+    let stderr = '';
+
+    git.stdout.on('data', (data) => {
+      stdout += data.toString();
+    });
+
+    git.stderr.on('data', (data) => {
+      stderr += data.toString();
+    });
+
+    git.on('close', (code) => {
+      if (code !== 0) {
+        // Don't reject for simple empty results or minor warnings if we can handle them
+        // But for now, reject.
+        reject(new Error(`Git command failed with code ${code}: ${stderr}`));
+      } else {
+        resolve(stdout.trim());
+      }
+    });
+
+    git.on('error', (err) => {
+        reject(err);
+    });
+  });
+}
+
+/**
+ * Get all branches
+ */
+async function getBranches(repoName) {
+  try {
+    const output = await gitExec(repoName, ['branch', '--format=%(refname:short)']);
+    return output.split('\n').filter(Boolean);
+  } catch (error) {
+    console.error(`Failed to get branches for ${repoName}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get all tags
+ */
+async function getTags(repoName) {
+  try {
+    const output = await gitExec(repoName, ['tag', '--sort=-creatordate']);
+    return output.split('\n').filter(Boolean);
+  } catch (error) {
+    console.error(`Failed to get tags for ${repoName}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get commits
+ */
+async function getCommits(repoName, ref = 'HEAD', limit = 20, offset = 0) {
+  try {
+    // Format: hash|author|date|message
+    const args = ['log', ref, `--skip=${offset}`, `-n ${limit}`, '--format=%H|%an|%aI|%s'];
+    const output = await gitExec(repoName, args);
+
+    if (!output) return [];
+
+    return output.split('\n').filter(Boolean).map(line => {
+      const [hash, author, date, message] = line.split('|');
+      return { hash, author, date, message };
+    });
+  } catch (error) {
+    console.error(`Failed to get commits for ${repoName}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get file content
+ */
+async function getFileContent(repoName, filePath, ref = 'HEAD') {
+  try {
+    return await gitExec(repoName, ['show', `${ref}:${filePath}`]);
+  } catch (error) {
+    return null; // Return null if file not found
+  }
+}
+
+/**
+ * Get directory listing (tree)
+ * Returns simplified structure: { path, mode, type, hash, name }
+ */
+async function getTree(repoName, treePath = '', ref = 'HEAD') {
+  try {
+    const target = treePath ? `${ref}:${treePath}` : ref;
+    const output = await gitExec(repoName, ['ls-tree', '-l', target]);
+
+    if (!output) return [];
+
+    return output.split('\n').filter(Boolean).map(line => {
+      const parts = line.split(/\s+/);
+      const mode = parts[0];
+      const type = parts[1];
+      const hash = parts[2];
+      const size = parts[3] === '-' ? 0 : parseInt(parts[3]);
+      const name = parts.slice(4).join(' ');
+
+      return { mode, type, hash, size, name };
+    });
+  } catch (error) {
+    console.error(`Failed to get tree for ${repoName}:`, error);
+    return [];
+  }
+}
+
+/**
+ * Get enhanced file list (with last commit info per file)
+ */
+async function getEnhancedTree(repoName, treePath = '', ref = 'HEAD') {
+    const tree = await getTree(repoName, treePath, ref);
+
+    const enhanced = await Promise.all(tree.map(async (item) => {
+        const fullPath = treePath ? `${treePath}/${item.name}` : item.name;
+        // Get last commit for this file
+        try {
+            const log = await gitExec(repoName, ['log', '-n', '1', '--format=%H|%s|%aI', ref, '--', fullPath]);
+            const [hash, message, date] = log.trim().split('|');
+            return {
+                ...item,
+                lastCommit: { hash, message, date }
+            };
+        } catch (e) {
+            return { ...item, lastCommit: null };
+        }
+    }));
+
+    // Sort directories first
+    return enhanced.sort((a, b) => {
+        if (a.type === 'tree' && b.type !== 'tree') return -1;
+        if (a.type !== 'tree' && b.type === 'tree') return 1;
+        return a.name.localeCompare(b.name);
+    });
+}
+
+/**
+ * Get README content
+ */
+async function getReadme(repoName, ref = 'HEAD') {
+    const candidates = ['README.md', 'Readme.md', 'readme.md', 'README', 'SKILL.md'];
+
+    for (const file of candidates) {
+        const content = await getFileContent(repoName, file, ref);
+        if (content) return { content, filename: file };
+    }
+    return null;
+}
+
 module.exports = {
     getManifest,
     mergeProposal,
     installPostReceiveHook,
     createBareRepo,
-    GIT_PROJECT_ROOT
+    GIT_PROJECT_ROOT,
+    getBranches,
+    getTags,
+    getCommits,
+    getFileContent,
+    getTree,
+    getEnhancedTree,
+    getReadme
 };

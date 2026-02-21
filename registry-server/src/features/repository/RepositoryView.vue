@@ -7,6 +7,14 @@ import { marked } from 'marked';
 import { formatDistanceToNow } from 'date-fns';
 import hljs from 'highlight.js';
 
+import CodeTab from './tabs/CodeTab.vue';
+import IssuesTab from './tabs/IssuesTab.vue';
+import PullRequestsTab from './tabs/PullRequestsTab.vue';
+import WikiTab from './tabs/WikiTab.vue';
+import TrustTab from './tabs/TrustTab.vue';
+import SettingsTab from './tabs/SettingsTab.vue';
+import ReleasesTab from './tabs/ReleasesTab.vue';
+
 const props = defineProps({
     repo: {
         type: Object,
@@ -422,60 +430,67 @@ const openObservationModal = () => {
                 <button @click="repoTab = 'code'"
                     :class="repoTab === 'code' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>📁</span> Code
+                    <span>ᐸ/ᐳ</span> Code
                 </button>
-                <button @click="repoTab = 'observations'"
-                    :class="repoTab === 'observations' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                <button @click="repoTab = 'issues'"
+                    :class="repoTab === 'issues' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>📋</span> Observations
-                    <span v-if="observations && observations.length > 0"
-                        class="px-2 py-0.5 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">
-                        {{ observations.length }}
-                    </span>
-                    <span v-else class="px-2 py-0.5 bg-zinc-800 rounded-full text-xs">0</span>
+                    <span>⊙</span> Issues
                 </button>
-                <button @click="repoTab = 'readme'"
-                    :class="repoTab === 'readme' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                <button @click="repoTab = 'pulls'"
+                    :class="repoTab === 'pulls' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>📖</span> README.md
+                    <span>⛙</span> Pull Requests
+                </button>
+                <button @click="repoTab = 'wiki'"
+                    :class="repoTab === 'wiki' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                    class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
+                    <span>📖</span> Wiki
                 </button>
                 <button @click="repoTab = 'skill'"
                     :class="repoTab === 'skill' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>🧠</span> SKILL.md
-                </button>
-                <button @click="repoTab = 'versions'"
-                    :class="repoTab === 'versions' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
-                    class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>🏷️</span> Versions
+                    <span>🧠</span> Skill
                 </button>
                 <button @click="repoTab = 'trust'"
                     :class="repoTab === 'trust' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
                     <span>🛡️</span> Trust
                 </button>
-                <button @click="repoTab = 'diffs'"
-                    :class="repoTab === 'diffs' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                <button @click="repoTab = 'releases'"
+                    :class="repoTab === 'releases' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>📊</span> Diffs
+                    <span>🏷️</span> Releases
                 </button>
-                <button @click="repoTab = 'lineage'"
-                    :class="repoTab === 'lineage' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
+                <button @click="repoTab = 'settings'"
+                    :class="repoTab === 'settings' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
                     class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>🔗</span> Lineage
-                </button>
-                <button @click="repoTab = 'forks'"
-                    :class="repoTab === 'forks' ? 'border-orange-500 text-white' : 'border-transparent text-zinc-500 hover:text-white'"
-                    class="px-4 py-3 border-b-2 font-bold text-sm transition-colors flex items-center gap-2">
-                    <span>🔀</span> Forks
-                    <span v-if="repo.fork_count > 0"
-                        class="px-2 py-0.5 bg-purple-500/20 text-purple-400 rounded-full text-xs font-bold">
-                        {{ repo.fork_count }}
-                    </span>
+                    <span>⚙️</span> Settings
                 </button>
             </div>
         </div>
 
+        <CodeTab v-if="repoTab === 'code'" :repo="repo" :user-starred="userStarred" @star="$emit('star')" @fork="$emit('fork')" @download="$emit('download', $event)" />
+        <IssuesTab v-if="repoTab === 'issues'" :repo="repo" />
+        <PullRequestsTab v-if="repoTab === 'pulls'" :repo="repo" />
+        <WikiTab v-if="repoTab === 'wiki'" :repo="repo" />
+
+        <!-- Skill Tab Content -->
+        <div v-if="repoTab === 'skill'" class="bg-card border border-zinc rounded-xl overflow-hidden">
+             <div v-if="skillDocLoading" class="p-8 text-center text-zinc-500">
+                <span class="animate-pulse">Loading documentation...</span>
+            </div>
+            <div v-else class="p-6 prose prose-invert prose-sm max-w-none">
+                 <div class="whitespace-pre-wrap font-mono text-sm text-zinc-300">{{ skillDocContent }}</div>
+            </div>
+        </div>
+
+        <ReleasesTab v-if="repoTab === 'releases'" :repo="repo" />
+        <TrustTab v-if="repoTab === 'trust'" :repo="repo" />
+        <SettingsTab v-if="repoTab === 'settings'" :repo="repo" />
+
+        <!-- Legacy Logic to be removed after refactor -->
+        <div v-if="false">
         <!-- Forks Tab Content -->
         <div v-if="repoTab === 'forks'" class="space-y-6">
             <div class="bg-card border border-zinc rounded-xl overflow-hidden">
@@ -1423,6 +1438,7 @@ const openObservationModal = () => {
                     <p>Lineage data not available.</p>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </template>

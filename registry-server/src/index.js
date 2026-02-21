@@ -88,6 +88,41 @@ app.post('/v1/packages/:name/flag', routes.flagPackage);
 // API Routes - Version Diff (Trust Visualization)
 app.get('/v1/packages/:name/diff', routes.getVersionDiff);
 
+// API Routes - Git Operations (GitHub Clone)
+app.get('/v1/packages/:name/branches', routes.getRepoBranches);
+app.get('/v1/packages/:name/tags', routes.getRepoTags);
+app.get('/v1/packages/:name/commits', routes.getRepoCommits);
+app.get('/v1/packages/:name/tree', routes.getRepoTree);
+app.get('/v1/packages/:name/raw', routes.getRepoFileContent);
+
+// API Routes - Issues & PRs (GitHub Clone)
+app.get('/v1/packages/:name/issues', routes.getIssues);
+app.post('/v1/packages/:name/issues', routes.requireAuth, routes.createIssue);
+app.get('/v1/packages/:name/issues/:number', routes.getIssue);
+app.patch('/v1/packages/:name/issues/:number', routes.requireAuth, routes.updateIssue);
+app.get('/v1/packages/:name/issues/:number/comments', routes.getComments);
+app.post('/v1/packages/:name/issues/:number/comments', routes.requireAuth, routes.createComment);
+
+app.get('/v1/packages/:name/pulls', routes.getPulls);
+app.post('/v1/packages/:name/pulls', routes.requireAuth, routes.createPull);
+app.get('/v1/packages/:name/pulls/:number', routes.getPull);
+app.patch('/v1/packages/:name/pulls/:number', routes.requireAuth, routes.updatePull);
+
+// API Routes - Releases
+app.get('/v1/packages/:name/releases', routes.getReleases);
+app.post('/v1/packages/:name/releases', routes.requireAuth, routes.createRelease);
+app.get('/v1/packages/:name/releases/latest', routes.getLatestRelease);
+
+// API Routes - Wiki
+app.get('/v1/packages/:name/wiki', routes.getWikiPages);
+app.get('/v1/packages/:name/wiki/:slug', routes.getWikiPage);
+app.post('/v1/packages/:name/wiki', routes.requireAuth, routes.createWikiPage);
+app.patch('/v1/packages/:name/wiki/:slug', routes.requireAuth, routes.updateWikiPage);
+
+// API Routes - Settings
+app.get('/v1/packages/:name/settings', routes.getSettings);
+app.patch('/v1/packages/:name/settings', routes.requireAuth, routes.updateSettings);
+
 // API Routes - Activity Feed
 app.get('/v1/activity', routes.getActivityFeed);
 
