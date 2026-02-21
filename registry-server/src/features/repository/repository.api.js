@@ -27,64 +27,11 @@ export const repositoryApi = {
         return await res.json();
     },
 
-    async getReadme(name, version = 'latest') {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/${version}/readme`);
-        if (!res.ok) return '# README not available\n\nThis package does not include a README.md file.';
-        return await res.text();
-    },
-
     async getSkillDoc(name, version = 'latest') {
         const encodedName = encodeURIComponent(name);
         const res = await fetch(`${API_BASE}/${encodedName}/${version}/skill-doc`);
         if (!res.ok) return '# SKILL.md not available\n\nThis package does not include a SKILL.md file.';
         return await res.text();
-    },
-
-    async getInstallationGuide(name, version = 'latest') {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/${version}/installation-guide`);
-        if (!res.ok) return null;
-        return await res.text();
-    },
-
-    async getObservations(name) {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/observations`);
-        if (!res.ok) return { observations: [] };
-        return await res.json();
-    },
-
-    async createObservation(name, observation) {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/observations`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(observation)
-        });
-        if (!res.ok) throw new Error('Failed to create observation');
-        return await res.json();
-    },
-
-    async getVersionManifest(name, version) {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/${version}/manifest`);
-        if (!res.ok) throw new Error('Failed to load version manifest');
-        return await res.json();
-    },
-
-    async getDiff(name, baseVersion, headVersion) {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/diff?base=${encodeURIComponent(baseVersion)}&head=${encodeURIComponent(headVersion)}`);
-        if (!res.ok) throw new Error('Failed to fetch diff');
-        return await res.json();
-    },
-
-    async getLineage(name, direction = 'both', depth = 5) {
-        const encodedName = encodeURIComponent(name);
-        const res = await fetch(`${API_BASE}/${encodedName}/lineage?direction=${direction}&depth=${depth}`);
-        if (!res.ok) return null;
-        return await res.json();
     },
 
     async getBranches(name) {
@@ -211,6 +158,16 @@ export const repositoryApi = {
             body: JSON.stringify(data)
         });
         if (!res.ok) throw new Error('Failed to update PR');
+        return await res.json();
+    },
+
+    async mergePull(name, number) {
+        const encodedName = encodeURIComponent(name);
+        const res = await fetch(`${API_BASE}/${encodedName}/pulls/${number}/merge`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        if (!res.ok) throw new Error('Failed to merge PR');
         return await res.json();
     },
 

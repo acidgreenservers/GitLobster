@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { repositoryApi } from '../../repository.api';
+import { repositoryApi } from '../repository.api';
 import { formatDistanceToNow } from 'date-fns';
 
 const props = defineProps({
@@ -72,13 +72,18 @@ onMounted(fetchIssues);
                 No issues found.
             </div>
             <div v-else class="divide-y divide-zinc-800 bg-black/20">
-                <div v-for="issue in issues" :key="issue.id" class="p-4 hover:bg-zinc-900/50 flex gap-3 cursor-pointer" @click="openIssue(issue)">
-                    <span class="text-emerald-500 text-lg">⊙</span>
+                <div v-for="issue in issues" :key="issue.id" class="p-4 hover:bg-zinc-900/50 flex gap-3 cursor-pointer group transition-all duration-200" @click="openIssue(issue)">
+                    <span class="text-emerald-500 text-lg group-hover:scale-110 transition-transform">⊙</span>
                     <div class="flex-1">
-                        <div class="font-bold text-white mb-1">{{ issue.title }}</div>
+                        <div class="font-bold text-white mb-1 group-hover:text-emerald-400 transition-colors">{{ issue.title }}</div>
                         <div class="text-xs text-zinc-500">
-                            #{{ issue.number }} opened {{ formatTime(issue.created_at) }} by {{ issue.author_name }}
+                            #{{ issue.number }} opened {{ formatTime(issue.created_at) }} by <span class="text-zinc-400">{{ issue.author_name }}</span>
                         </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span v-if="issue.comments > 0" class="text-xs text-zinc-600 flex items-center gap-1">
+                            💬 {{ issue.comments }}
+                        </span>
                     </div>
                 </div>
             </div>

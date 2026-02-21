@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { repositoryApi } from '../../repository.api';
+import { repositoryApi } from '../repository.api';
 import { formatDistanceToNow } from 'date-fns';
 
 const props = defineProps({
@@ -14,6 +14,7 @@ const viewMode = ref('list');
 const selectedPull = ref(null);
 const comments = ref([]);
 const branches = ref([]);
+const merging = ref(false);
 
 const newPull = ref({ title: '', body: '', base: 'main', head: '' });
 const newComment = ref('');
@@ -48,6 +49,23 @@ const submitComment = async () => {
     const comment = await repositoryApi.createComment(props.repo.name, selectedPull.value.number, newComment.value);
     comments.value.push(comment);
     newComment.value = '';
+};
+
+const mergePull = async () => {
+    if (!selectedPull.value) return;
+    merging.value = true;
+    try {
+        await repositoryApi.mergePull(props.repo.name, selectedPull.value.number);
+        selectedPull.value.state = 'merged'; // Optimistic update
+        // Optionally refresh
+        await fetchPulls();
+        viewMode.value = 'list';
+    } catch (e) {
+        console.error(e);
+        alert('Merge failed: ' + e.message);
+    } finally {
+        merging.value = false;
+    }
 };
 
 const formatTime = (iso) => {
@@ -155,7 +173,9 @@ onMounted(async () => {
                             <h4 class="font-bold text-white">This branch has no conflicts with the base branch</h4>
                             <p class="text-xs text-zinc-500">Merging can be performed automatically.</p>
                         </div>
-                        <button class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Merge Pull Request</button>
+                        <button @click="mergePull" :disabled="merging" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white disabled:opacity-50">
+                            {{ merging ? 'Merging...' : 'Merge Pull Request' }}
+                        </button>
                     </div>
                 </div>
 

@@ -107,6 +107,7 @@ app.get('/v1/packages/:name/pulls', routes.getPulls);
 app.post('/v1/packages/:name/pulls', routes.requireAuth, routes.createPull);
 app.get('/v1/packages/:name/pulls/:number', routes.getPull);
 app.patch('/v1/packages/:name/pulls/:number', routes.requireAuth, routes.updatePull);
+app.post('/v1/packages/:name/pulls/:number/merge', routes.requireAuth, routes.mergePull);
 
 // API Routes - Releases
 app.get('/v1/packages/:name/releases', routes.getReleases);

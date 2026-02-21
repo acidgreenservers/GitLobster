@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { repositoryApi } from '../../repository.api';
+import { repositoryApi } from '../repository.api';
 
 const props = defineProps({
     repo: { type: Object, required: true }

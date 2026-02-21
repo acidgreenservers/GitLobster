@@ -1753,6 +1753,7 @@ module.exports = {
   createPull,
   getPull,
   updatePull,
+  mergePull,
   getReleases,
   createRelease,
   getLatestRelease,
@@ -2056,6 +2057,48 @@ async function updatePull(req, res) {
     res.json(pull);
   } catch (err) {
     res.status(500).json({ error: 'failed_to_update_pull', message: err.message });
+  }
+}
+
+async function mergePull(req, res) {
+  try {
+    const { name, number } = req.params;
+    const author = req.auth?.payload?.sub || 'anonymous';
+
+    const pull = await db('pull_requests').where({ package_name: name, number }).first();
+    if (!pull) return res.status(404).json({ error: 'pull_not_found' });
+
+    if (pull.state !== 'open') {
+        return res.status(400).json({ error: 'pull_not_open', message: 'Pull request is not open' });
+    }
+
+    // Perform Git Merge
+    const { mergeBranch } = require('./utils/git-ops');
+    const mergeCommit = await mergeBranch(name, pull.base_branch, pull.head_branch, `Merge pull request #${number} from ${pull.head_branch}`);
+
+    // Update DB
+    await db('pull_requests').where({ id: pull.id }).update({
+        state: 'merged',
+        merged_at: db.fn.now(),
+        updated_at: db.fn.now()
+    });
+
+    // Also close the issue
+    if (pull.issue_id) {
+        await db('issues').where({ id: pull.issue_id }).update({
+            state: 'closed',
+            closed_at: db.fn.now(),
+            updated_at: db.fn.now()
+        });
+    }
+
+    // Log Activity
+    await logActivity('merge', author, name, 'pull_request', { number, merge_commit: mergeCommit });
+
+    res.json({ status: 'merged', merge_commit: mergeCommit });
+
+  } catch (err) {
+    res.status(500).json({ error: 'failed_to_merge_pull', message: err.message });
   }
 }
 

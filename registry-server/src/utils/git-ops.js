@@ -153,6 +153,64 @@ async function mergeProposal(repoName, baseRef, headRef, proposalId) {
 }
 
 /**
+ * Helper: Spawn a command safely without shell
+ */
+function spawnPromise(cmd, args, options) {
+    return new Promise((resolve, reject) => {
+        const child = spawn(cmd, args, options);
+        let stdout = '';
+        let stderr = '';
+
+        child.stdout.on('data', d => stdout += d.toString());
+        child.stderr.on('data', d => stderr += d.toString());
+
+        child.on('close', code => {
+            if (code === 0) resolve(stdout.trim());
+            else reject(new Error(`Command ${cmd} failed with code ${code}: ${stderr}`));
+        });
+        child.on('error', reject);
+    });
+}
+
+/**
+ * Perform a merge of one branch into another (for Pull Requests).
+ * Returns the new commit hash if successful.
+ * Uses spawnPromise to avoid shell injection.
+ */
+async function mergeBranch(repoName, baseBranch, headBranch, message) {
+    const tmpDir = path.join('/tmp', `gitlobster-pr-merge-${Date.now()}`);
+    const repoPath = path.join(GIT_PROJECT_ROOT, scopedToDirName(repoName));
+
+    try {
+        // Clone locally
+        await spawnPromise('git', ['clone', repoPath, tmpDir]);
+
+        // Checkout base branch
+        await spawnPromise('git', ['checkout', baseBranch], { cwd: tmpDir });
+
+        // Config identity
+        await spawnPromise('git', ['config', 'user.name', 'GitLobster Auto-Merge'], { cwd: tmpDir });
+        await spawnPromise('git', ['config', 'user.email', 'bot@gitlobster.network'], { cwd: tmpDir });
+
+        // Merge head branch
+        await spawnPromise('git', ['merge', `origin/${headBranch}`, '--no-ff', '-m', message], { cwd: tmpDir });
+
+        // Push back
+        await spawnPromise('git', ['push', 'origin', baseBranch], { cwd: tmpDir });
+
+        // Get new hash
+        const newHash = await spawnPromise('git', ['rev-parse', 'HEAD'], { cwd: tmpDir });
+        return newHash;
+
+    } catch (e) {
+        throw new Error(`Merge failed: ${e.message}`);
+    } finally {
+        // Cleanup
+        await spawnPromise('rm', ['-rf', tmpDir]).catch(() => {});
+    }
+}
+
+/**
  * Execute a git command in the repo directory using spawn
  */
 function gitExec(repoName, args) {
@@ -264,15 +322,28 @@ async function getTree(repoName, treePath = '', ref = 'HEAD') {
     if (!output) return [];
 
     return output.split('\n').filter(Boolean).map(line => {
-      const parts = line.split(/\s+/);
+      // 100644 blob 257cc5642cb1a054f08cc83f2d943e56fd3ebe99    1234    src/index.js
+      // The format is: <mode> SP <type> SP <object> SP <size> TAB <file>
+      // We should split by whitespace for the first 4 fields, but handle the tab for the filename
+      // However, `git ls-tree -l` output can be tricky.
+      // A robust way is to split by tab first.
+
+      // Attempt to split by tab for the filename
+      const tabIndex = line.indexOf('\t');
+      if (tabIndex === -1) return null; // Should not happen with valid output
+
+      const meta = line.substring(0, tabIndex);
+      const name = line.substring(tabIndex + 1);
+
+      const parts = meta.split(/\s+/);
       const mode = parts[0];
       const type = parts[1];
       const hash = parts[2];
-      const size = parts[3] === '-' ? 0 : parseInt(parts[3]);
-      const name = parts.slice(4).join(' ');
+      const sizeStr = parts[3];
+      const size = sizeStr === '-' ? 0 : parseInt(sizeStr);
 
       return { mode, type, hash, size, name };
-    });
+    }).filter(Boolean);
   } catch (error) {
     console.error(`Failed to get tree for ${repoName}:`, error);
     return [];
@@ -281,27 +352,14 @@ async function getTree(repoName, treePath = '', ref = 'HEAD') {
 
 /**
  * Get enhanced file list (with last commit info per file)
+ * Optimized to NOT do N+1 fetches. Just returns the tree.
+ * The frontend will handle displaying it without commit messages for now, or fetch them asynchronously if we implement that later.
  */
 async function getEnhancedTree(repoName, treePath = '', ref = 'HEAD') {
     const tree = await getTree(repoName, treePath, ref);
 
-    const enhanced = await Promise.all(tree.map(async (item) => {
-        const fullPath = treePath ? `${treePath}/${item.name}` : item.name;
-        // Get last commit for this file
-        try {
-            const log = await gitExec(repoName, ['log', '-n', '1', '--format=%H|%s|%aI', ref, '--', fullPath]);
-            const [hash, message, date] = log.trim().split('|');
-            return {
-                ...item,
-                lastCommit: { hash, message, date }
-            };
-        } catch (e) {
-            return { ...item, lastCommit: null };
-        }
-    }));
-
     // Sort directories first
-    return enhanced.sort((a, b) => {
+    return tree.sort((a, b) => {
         if (a.type === 'tree' && b.type !== 'tree') return -1;
         if (a.type !== 'tree' && b.type === 'tree') return 1;
         return a.name.localeCompare(b.name);
@@ -324,6 +382,7 @@ async function getReadme(repoName, ref = 'HEAD') {
 module.exports = {
     getManifest,
     mergeProposal,
+    mergeBranch,
     installPostReceiveHook,
     createBareRepo,
     GIT_PROJECT_ROOT,
