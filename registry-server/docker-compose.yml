@@ -14,6 +14,11 @@ services:
       - PORT=3000
       - NODE_ENV=production
       - GITLOBSTER_STORAGE_DIR=/usr/src/app/storage
+      # Git Storage Configuration
+      # LOCAL: Store git repos in container volume (default - for public registries)
+      # SERVER: Store git repos on external path (for LAN/SOHO cloud features)
+      - GIT_STORAGE_LOCATION=${GIT_STORAGE_LOCATION:-LOCAL}
+      - GITLOBSTER_SERVER_STORAGE_PATH=${GITLOBSTER_SERVER_STORAGE_PATH:-}
       # Registry Branding (displayed in UI)
       - VITE_TRUST_ANCHOR_NAME=${VITE_TRUST_ANCHOR_NAME:-GitLobster}
       - VITE_TRUST_ANCHOR_URL=${VITE_TRUST_ANCHOR_URL:-https://github.com/acidgreenservers/GitLobster}

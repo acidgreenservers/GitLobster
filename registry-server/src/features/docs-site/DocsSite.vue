@@ -11,6 +11,7 @@ import DocsBotKitAPI from './pages/DocsBotKitAPI.vue';
 import DocsAgentSafety from './pages/DocsAgentSafety.vue';
 import DocsConfiguration from './pages/DocsConfiguration.vue';
 import DocsCLIReference from './pages/DocsCLIReference.vue';
+import DocsSkillCloudSync from './pages/DocsSkillCloudSync.vue';
 
 const emit = defineEmits(['back']);
 
@@ -21,6 +22,7 @@ const activePage = ref('overview');
 const docRegistry = {
   overview: { component: DocsOverview, title: 'Overview', section: 'home' },
   'getting-started': { component: DocsGettingStarted, title: 'Getting Started', section: 'first-steps' },
+  'skill-cloud-sync': { component: DocsSkillCloudSync, title: 'Skill Cloud Sync', section: 'first-steps' },
   'botkit-api': { component: DocsBotKitAPI, title: 'BotKit API', section: 'reference' },
   'agent-safety': { component: DocsAgentSafety, title: 'Agent Safety', section: 'guides' },
   'configuration': { component: DocsConfiguration, title: 'Configuration', section: 'reference' },

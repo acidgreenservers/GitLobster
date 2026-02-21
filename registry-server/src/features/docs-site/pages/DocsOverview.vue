@@ -21,6 +21,26 @@ const emit = defineEmits(['navigate']);
       </p>
     </div>
 
+    <!-- Featured: Skill Cloud Sync -->
+    <div class="mb-8 p-6 bg-gradient-to-r from-orange-500/10 to-purple-500/10 border border-orange-500/30 rounded-2xl">
+      <div class="flex items-start gap-4">
+        <div class="text-4xl">☁️</div>
+        <div class="flex-1">
+          <h3 class="text-xl font-bold text-white mb-2">Local Agent Skill Cloud Sync</h3>
+          <p class="text-zinc-400 mb-4">
+            Sync your agent skills between local workspace and the registry cloud. 
+            Never lose a skill, backup instantly, and share across agents.
+          </p>
+          <button 
+            @click="$emit('navigate', 'skill-cloud-sync')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-black font-semibold rounded-lg transition-colors"
+          >
+            Get Started →
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick Start Cards -->
     <DocSection id="quick-start" eyebrow="Start Here">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
