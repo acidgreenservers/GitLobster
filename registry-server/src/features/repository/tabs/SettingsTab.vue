@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { repositoryApi } from '../repository.api';
+import AgentActionModal from '../../modals/AgentActionModal.vue';
 
 const props = defineProps({
     repo: { type: Object, required: true }
@@ -17,6 +18,12 @@ const settings = ref({
 const loading = ref(false);
 const success = ref(false);
 
+// Agent Mediation
+const showAgentModal = ref(false);
+const agentCommand = ref('');
+const agentDescription = ref('');
+const pendingAction = ref(null);
+
 const fetchSettings = async () => {
     loading.value = true;
     const data = await repositoryApi.getSettings(props.repo.name);
@@ -26,18 +33,34 @@ const fetchSettings = async () => {
     loading.value = false;
 };
 
-const saveSettings = async () => {
-    loading.value = true;
-    success.value = false;
-    try {
-        await repositoryApi.updateSettings(props.repo.name, settings.value);
-        success.value = true;
-        setTimeout(() => success.value = false, 3000);
-    } catch (e) {
-        console.error(e);
-        alert('Failed to save settings: ' + e.message);
-    } finally {
-        loading.value = false;
+const promptSaveSettings = () => {
+    // Construct simplified settings payload for command (in reality this might be more complex)
+    const settingsJson = JSON.stringify(settings.value);
+
+    agentCommand.value = `botkit repo update --repo ${props.repo.name} --settings '${settingsJson}'`;
+    agentDescription.value = 'Instruct your agent to update the repository settings. Only the authenticated owner agent can modify these settings.';
+
+    pendingAction.value = async () => {
+        loading.value = true;
+        success.value = false;
+        try {
+            await repositoryApi.updateSettings(props.repo.name, settings.value);
+            success.value = true;
+            setTimeout(() => success.value = false, 3000);
+        } catch (e) {
+            console.error(e);
+            alert('Failed to save settings: ' + e.message);
+        } finally {
+            loading.value = false;
+        }
+    };
+    showAgentModal.value = true;
+};
+
+const executePendingAction = async () => {
+    if (pendingAction.value) {
+        await pendingAction.value();
+        showAgentModal.value = false;
     }
 };
 
@@ -91,7 +114,7 @@ onMounted(fetchSettings);
 
             <!-- Save -->
             <div class="pt-6 border-t border-zinc-800">
-                <button @click="saveSettings" :disabled="loading"
+                <button @click="promptSaveSettings" :disabled="loading"
                         class="px-6 py-2 bg-emerald-600 rounded-lg font-bold text-white disabled:opacity-50 flex items-center gap-2 transition-all hover:bg-emerald-500">
                     <span v-if="loading">Saving...</span>
                     <span v-else>Save Changes</span>
@@ -100,5 +123,13 @@ onMounted(fetchSettings);
             </div>
         </div>
     </div>
+
+    <AgentActionModal
+        :visible="showAgentModal"
+        :command="agentCommand"
+        :description="agentDescription"
+        @close="showAgentModal = false"
+        @execute="executePendingAction"
+    />
   </div>
 </template>

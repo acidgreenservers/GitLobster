@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import { repositoryApi } from '../repository.api';
 import { formatDistanceToNow } from 'date-fns';
+import AgentActionModal from '../../modals/AgentActionModal.vue';
 
 const props = defineProps({
     repo: { type: Object, required: true }
@@ -18,6 +19,12 @@ const comments = ref([]);
 const newIssue = ref({ title: '', body: '' });
 const newComment = ref('');
 
+// Agent Mediation
+const showAgentModal = ref(false);
+const agentCommand = ref('');
+const agentDescription = ref('');
+const pendingAction = ref(null);
+
 const fetchIssues = async () => {
     loading.value = true;
     issues.value = await repositoryApi.getIssues(props.repo.name, stateFilter.value);
@@ -30,28 +37,47 @@ const openIssue = async (issue) => {
     comments.value = await repositoryApi.getComments(props.repo.name, issue.number);
 };
 
-const createIssue = async () => {
+const promptCreateIssue = () => {
     if (!newIssue.value.title) return;
-    try {
+
+    // Construct CLI command
+    const safeTitle = JSON.stringify(newIssue.value.title);
+    const safeBody = JSON.stringify(newIssue.value.body);
+    agentCommand.value = `botkit issue create --repo ${props.repo.name} --title ${safeTitle} --body ${safeBody}`;
+    agentDescription.value = 'Instruct your agent to open this issue. This ensures the issue is cryptographically signed by your agent identity.';
+
+    pendingAction.value = async () => {
         const issue = await repositoryApi.createIssue(props.repo.name, newIssue.value.title, newIssue.value.body);
         newIssue.value = { title: '', body: '' };
         viewMode.value = 'list';
         fetchIssues();
-    } catch (e) {
-        console.error(e);
-        alert('Failed to create issue: ' + e.message);
-    }
+    };
+    showAgentModal.value = true;
 };
 
-const submitComment = async () => {
+const promptSubmitComment = () => {
     if (!newComment.value || !selectedIssue.value) return;
-    try {
+
+    const safeBody = JSON.stringify(newComment.value);
+    agentCommand.value = `botkit issue comment --repo ${props.repo.name} --number ${selectedIssue.value.number} --body ${safeBody}`;
+    agentDescription.value = 'Instruct your agent to post this comment. The comment will be verified and attributed to your agent.';
+
+    pendingAction.value = async () => {
         const comment = await repositoryApi.createComment(props.repo.name, selectedIssue.value.number, newComment.value);
         comments.value.push(comment);
         newComment.value = '';
-    } catch (e) {
-        console.error(e);
-        alert('Failed to submit comment: ' + e.message);
+    };
+    showAgentModal.value = true;
+};
+
+const executePendingAction = async () => {
+    if (pendingAction.value) {
+        try {
+            await pendingAction.value();
+        } catch (e) {
+            console.error(e);
+            alert('Action failed: ' + e.message);
+        }
     }
 };
 
@@ -67,6 +93,14 @@ onMounted(fetchIssues);
 
 <template>
   <div>
+    <AgentActionModal
+        :visible="showAgentModal"
+        :command="agentCommand"
+        :description="agentDescription"
+        @close="showAgentModal = false"
+        @execute="executePendingAction"
+    />
+
     <!-- List View -->
     <div v-if="viewMode === 'list'">
         <div class="flex items-center justify-between mb-4">
@@ -108,7 +142,7 @@ onMounted(fetchIssues);
             <textarea v-model="newIssue.body" placeholder="Leave a comment" rows="10" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-emerald-500 text-white"></textarea>
             <div class="flex justify-end gap-2">
                 <button @click="viewMode = 'list'" class="px-4 py-2 text-zinc-400 hover:text-white">Cancel</button>
-                <button @click="createIssue" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Submit New Issue</button>
+                <button @click="promptCreateIssue" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Submit New Issue</button>
             </div>
         </div>
     </div>
@@ -153,7 +187,7 @@ onMounted(fetchIssues);
                 <div class="border border-zinc-800 rounded-lg overflow-hidden bg-black/20 p-4">
                     <textarea v-model="newComment" placeholder="Leave a comment" rows="4" class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-4 py-2 mb-4 focus:outline-none focus:border-emerald-500 text-white"></textarea>
                     <div class="flex justify-end">
-                        <button @click="submitComment" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Comment</button>
+                        <button @click="promptSubmitComment" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Comment</button>
                     </div>
                 </div>
             </div>

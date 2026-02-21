@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { repositoryApi } from '../repository.api';
 import { marked } from 'marked';
 import { formatDistanceToNow } from 'date-fns';
+import AgentActionModal from '../../modals/AgentActionModal.vue';
 
 const props = defineProps({
     repo: { type: Object, required: true }
@@ -14,6 +15,12 @@ const viewMode = ref('list'); // 'list', 'view', 'edit', 'new'
 const loading = ref(false);
 
 const form = ref({ title: '', content: '' });
+
+// Agent Mediation
+const showAgentModal = ref(false);
+const agentCommand = ref('');
+const agentDescription = ref('');
+const pendingAction = ref(null);
 
 const fetchPages = async () => {
     loading.value = true;
@@ -36,26 +43,44 @@ const startEdit = () => {
     viewMode.value = 'edit';
 };
 
-const savePage = async () => {
+const promptSavePage = () => {
     if (!form.value.title || !form.value.content) return;
 
-    loading.value = true;
-    try {
-        if (viewMode.value === 'new') {
-            const slug = form.value.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-            await repositoryApi.createWikiPage(props.repo.name, { ...form.value, slug });
-            // Refresh pages list and open the new page
-            await fetchPages();
-            await openPage(slug);
-        } else {
-            await repositoryApi.updateWikiPage(props.repo.name, currentPage.value.slug, form.value);
-            await fetchPages();
-            await openPage(currentPage.value.slug);
+    // Construct slug for command prediction
+    const slug = viewMode.value === 'new'
+        ? form.value.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+        : currentPage.value.slug;
+
+    const safeTitle = JSON.stringify(form.value.title);
+
+    agentCommand.value = `botkit wiki update --repo ${props.repo.name} --slug ${slug} --title ${safeTitle}`;
+    agentDescription.value = 'Instruct your agent to update this wiki page. Content should be provided via file or pipe to the agent.';
+
+    pendingAction.value = async () => {
+        loading.value = true;
+        try {
+            if (viewMode.value === 'new') {
+                await repositoryApi.createWikiPage(props.repo.name, { ...form.value, slug });
+                await fetchPages();
+                await openPage(slug);
+            } else {
+                await repositoryApi.updateWikiPage(props.repo.name, currentPage.value.slug, form.value);
+                await fetchPages();
+                await openPage(currentPage.value.slug);
+            }
+        } catch (e) {
+            console.error(e);
+            alert('Failed to save page: ' + e.message);
+            loading.value = false;
         }
-    } catch (e) {
-        console.error(e);
-        alert('Failed to save page: ' + e.message);
-        loading.value = false;
+    };
+    showAgentModal.value = true;
+};
+
+const executePendingAction = async () => {
+    if (pendingAction.value) {
+        await pendingAction.value();
+        showAgentModal.value = false;
     }
 };
 
@@ -129,10 +154,18 @@ onMounted(fetchPages);
                 </div>
                 <div class="flex justify-end gap-3">
                     <button @click="viewMode = currentPage ? 'view' : 'list'" class="px-4 py-2 text-zinc-400 hover:text-white">Cancel</button>
-                    <button @click="savePage" class="px-6 py-2 bg-emerald-600 rounded-lg font-bold text-white">Save Page</button>
+                    <button @click="promptSavePage" class="px-6 py-2 bg-emerald-600 rounded-lg font-bold text-white">Save Page</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <AgentActionModal
+        :visible="showAgentModal"
+        :command="agentCommand"
+        :description="agentDescription"
+        @close="showAgentModal = false"
+        @execute="executePendingAction"
+    />
   </div>
 </template>

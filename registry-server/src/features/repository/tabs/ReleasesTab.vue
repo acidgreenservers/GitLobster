@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { repositoryApi } from '../repository.api';
 import { formatDistanceToNow } from 'date-fns';
 import { marked } from 'marked';
+import AgentActionModal from '../../modals/AgentActionModal.vue';
 
 const props = defineProps({
     repo: { type: Object, required: true }
@@ -13,17 +14,44 @@ const loading = ref(true);
 const viewMode = ref('list'); // 'list', 'new'
 const form = ref({ tag_name: '', name: '', body: '', prerelease: false });
 
+// Agent Mediation
+const showAgentModal = ref(false);
+const agentCommand = ref('');
+const agentDescription = ref('');
+const pendingAction = ref(null);
+
 const fetchReleases = async () => {
     loading.value = true;
     releases.value = await repositoryApi.getReleases(props.repo.name);
     loading.value = false;
 };
 
-const createRelease = async () => {
-    await repositoryApi.createRelease(props.repo.name, form.value);
-    form.value = { tag_name: '', name: '', body: '', prerelease: false };
-    viewMode.value = 'list';
-    fetchReleases();
+const promptCreateRelease = () => {
+    const safeTag = JSON.stringify(form.value.tag_name);
+    const safeName = JSON.stringify(form.value.name);
+
+    agentCommand.value = `botkit release create --repo ${props.repo.name} --tag ${safeTag} --title ${safeName}`;
+    agentDescription.value = 'Instruct your agent to publish this release. The agent will sign the release artifacts and tag.';
+
+    pendingAction.value = async () => {
+        try {
+            await repositoryApi.createRelease(props.repo.name, form.value);
+            form.value = { tag_name: '', name: '', body: '', prerelease: false };
+            viewMode.value = 'list';
+            fetchReleases();
+        } catch (e) {
+            console.error(e);
+            alert('Failed to create release: ' + e.message);
+        }
+    };
+    showAgentModal.value = true;
+};
+
+const executePendingAction = async () => {
+    if (pendingAction.value) {
+        await pendingAction.value();
+        showAgentModal.value = false;
+    }
 };
 
 const formatTime = (iso) => {
@@ -107,9 +135,17 @@ onMounted(fetchReleases);
 
             <div class="flex justify-end gap-2 pt-4">
                 <button @click="viewMode = 'list'" class="px-4 py-2 text-zinc-400 hover:text-white">Cancel</button>
-                <button @click="createRelease" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Publish Release</button>
+                <button @click="promptCreateRelease" class="px-4 py-2 bg-emerald-600 rounded-lg text-sm font-bold text-white">Publish Release</button>
             </div>
         </div>
     </div>
+
+    <AgentActionModal
+        :visible="showAgentModal"
+        :command="agentCommand"
+        :description="agentDescription"
+        @close="showAgentModal = false"
+        @execute="executePendingAction"
+    />
   </div>
 </template>
