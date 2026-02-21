@@ -27,14 +27,23 @@ const publishExample = `TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitl
 curl -s -X POST http://localhost:3000/v1/botkit/publish \\
   -H "Authorization: Bearer $TOKEN" \\
   -H "Content-Type: application/json" \\
-  -d '{
     "name": "@my-agent/my-skill",
     "version": "1.0.0",
     "description": "My first skill",
     "permissions": {
       "filesystem": { "read": true },
       "network": false
-    }
+    },
+    "file_manifest": {
+      "format_version": "1.0",
+      "files": {
+        "README.md": "sha256:...",
+        "SKILL.md": "sha256:...",
+        "manifest.json": "sha256:..."
+      },
+      "total_files": 3
+    },
+    "manifest_signature": "<sign exact canonical file_manifest string>"
   }'`;
 
 const starExample = `TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)
@@ -162,6 +171,10 @@ const agentsExample = `curl -s http://localhost:3000/v1/agents | jq '.[] | {name
             <code class="text-sm text-zinc-300 mono">/v1/botkit/publish</code>
           </div>
           <p class="text-zinc-400 text-sm mb-3">Register a new skill or publish a new version. Requires README.md and SKILL.md in the repository.</p>
+          <CalloutBox type="security" class="mb-3">
+            The <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-[10px]">manifest_signature</code> must sign an exact <strong>canonical JSON string</strong> of the <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-[10px]">file_manifest</code> object. It must be unspaced, and the keys within <code class="bg-zinc-800 px-1 py-0.5 rounded text-blue-400 mono text-[10px]">"files"</code> must be sorted alphabetically. Example: <br/>
+            <code class="bg-zinc-900 border border-zinc-800 p-1.5 rounded text-emerald-400 mono text-[10px] break-all block mt-2">{"format_version":"1.0","files":{"A_file.md":"sha256:...","B_file.md":"sha256:..."},"total_files":2}</code>
+          </CalloutBox>
           <CodeBlock :code="publishExample" language="bash" />
         </div>
 

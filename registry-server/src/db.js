@@ -1,6 +1,8 @@
 const knex = require('knex');
 const path = require('path');
 const crypto = require('crypto');
+const fs = require('fs');
+const cp = require('child_process');
 
 const DB_PATH = process.env.GITLOBSTER_STORAGE_DIR
   ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR, process.env.GITLOBSTER_DB_FILE || 'registry.sqlite')
@@ -353,6 +355,12 @@ async function init() {
     console.log('✅ parent_uuid column added to forks');
   }
 
+  try {
+    await seedBridgeSkill();
+  } catch (err) {
+    console.error('⚠️ Failed to seed default @gitlobster/bridge skill:', err.message);
+  }
+
   // Add performance indexes (idempotent - won't fail if they exist)
   try {
     await db.raw('CREATE INDEX IF NOT EXISTS idx_packages_category ON packages(category)');
@@ -377,5 +385,87 @@ async function init() {
 init().catch(err => {
   console.error('❌ Database Initialization Failed:', err);
 });
+
+async function seedBridgeSkill() {
+  const pkgName = '@gitlobster/bridge';
+  const pkgVersion = '1.0.0';
+
+  const existingPkg = await db('packages').where({ name: pkgName }).first();
+  if (existingPkg) return; // Already seeded
+
+  const bridgePath = path.resolve(__dirname, '../../packages/@gitlobster/bridge');
+  if (!fs.existsSync(bridgePath)) {
+    return; // Directory doesn't exist, skip silently
+  }
+
+  console.log('🌱 Seeding default capability: @gitlobster/bridge...');
+
+  const manifestRaw = fs.readFileSync(path.join(bridgePath, 'manifest.json'), 'utf-8');
+  const manifest = JSON.parse(manifestRaw);
+
+  const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR
+    ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR)
+    : path.resolve(__dirname, '../storage');
+
+  const packageDir = path.join(STORAGE_DIR, 'packages', pkgName);
+  fs.mkdirSync(packageDir, { recursive: true });
+
+  const tarballPath = path.join(packageDir, `${pkgVersion}.tgz`);
+  cp.execSync(`tar -czf ${tarballPath} -C ${bridgePath} .`);
+
+  const tarballBuffer = fs.readFileSync(tarballPath);
+  const hash = `sha256:${crypto.createHash('sha256').update(tarballBuffer).digest('hex')}`;
+  const relativePath = path.relative(STORAGE_DIR, tarballPath);
+
+  // Use a deterministic dummy key for the system agent
+  const pubKey = crypto.createHash('sha256').update('system-agent-bridge-seed').digest('base64');
+  const agentName = '@gitlobster';
+
+  const existingAgent = await db('agents').where({ name: agentName }).first();
+  if (!existingAgent) {
+    await db('agents').insert({
+      name: agentName,
+      public_key: pubKey,
+      bio: 'The default GitLobster system agent providing the bridging capabilities.',
+      is_trust_anchor: true,
+      metadata: JSON.stringify({ isSystem: true })
+    });
+  }
+
+  await db('packages').insert({
+    name: pkgName,
+    uuid: crypto.randomUUID(),
+    description: manifest.description,
+    author_name: 'gitlobster',
+    author_url: manifest.author.url,
+    author_public_key: pubKey,
+    license: manifest.license,
+    category: manifest.category,
+    tags: JSON.stringify(manifest.tags || []),
+    downloads: 0
+  });
+
+  const fileManifestRaw = {
+    "manifest.json": "sha256:system_seeded",
+    "SKILL.md": "sha256:system_seeded"
+  };
+
+  const sortedFilesKeys = Object.keys(fileManifestRaw).sort();
+  const sortedFilesStr = sortedFilesKeys.map(k => `"${k}":"${fileManifestRaw[k]}"`).join(',');
+  const canonicalFileManifestStr = `{"format_version":"1.0","files":{${sortedFilesStr}},"total_files":${sortedFilesKeys.length}}`;
+
+  await db('versions').insert({
+    package_name: pkgName,
+    version: pkgVersion,
+    storage_path: relativePath,
+    hash: hash,
+    signature: 'system-seeded-signature',
+    manifest: JSON.stringify(manifest),
+    file_manifest: canonicalFileManifestStr,
+    manifest_signature: 'system-seeded-signature'
+  });
+
+  console.log('✅ Default capability @gitlobster/bridge successfully seeded.');
+}
 
 module.exports = db;

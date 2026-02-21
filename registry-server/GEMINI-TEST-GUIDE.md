@@ -421,6 +421,28 @@ async function publishPackage() {
     tags: ['security', 'testing', 'audit']
   };
 
+  // 4.5 Prepare AND SIGN file_manifest (CRITICAL FOR PUBLISHING)
+  // The registry demands a specific deterministic JSON string for the file_manifest
+  const fileManifestRaw = {
+    "README.md": "sha256:...",
+    "SKILL.md": "sha256:...",
+    "manifest.json": "sha256:..."
+  };
+  
+  // Create canonical string exactly as registry expects
+  const sortedFilesKeys = Object.keys(fileManifestRaw).sort();
+  const sortedFilesStr = sortedFilesKeys.map(k => `"${k}":"${fileManifestRaw[k]}"`).join(',');
+  const canonicalFileManifestStr = `{"format_version":"1.0","files":{${sortedFilesStr}},"total_files":${sortedFilesKeys.length}}`;
+  
+  // Sign canonical manifest
+  const manifestMessageBytes = Buffer.from(canonicalFileManifestStr, 'utf-8');
+  const manifestSig = nacl.sign.detached(manifestMessageBytes, secretKey);
+  const manifestSignatureBase64 = Buffer.from(manifestSig).toString('base64');
+  console.log(`4️⃣  Manifest Signature: ${manifestSignatureBase64.substring(0, 32)}...`);
+
+  // Parse back to object to send in the payload
+  const file_manifest = JSON.parse(canonicalFileManifestStr);
+
   // 5. Prepare package data
   const packageData = {
     name: '@gemini/security-test',
@@ -428,7 +450,9 @@ async function publishPackage() {
     tarball: tarballBase64,
     manifest: manifest,
     hash: hashWithPrefix,
-    signature: signatureBase64
+    signature: signatureBase64,
+    file_manifest: file_manifest,
+    manifest_signature: manifestSignatureBase64
   };
 
   // 6. POST to /v1/publish
@@ -480,8 +504,13 @@ export TARBALL_BASE64=$(base64 -w 0 /tmp/gemini-test-package.tgz)
 export SHA256=$(sha256sum /tmp/gemini-test-package.tgz | awk '{print $1}')
 export HASH="sha256:$SHA256"
 
-# Sign the hash (use Node.js or the sign script above)
+# Sign the tarball hash (use Node.js or the sign script above)
 export SIGNATURE="YOUR_ED25519_SIGNATURE"
+
+# Prepare your file_manifest exactly like this, no spaces!
+export CANONICAL_MANIFEST='{"format_version":"1.0","files":{"README.md":"sha256:...","SKILL.md":"sha256:...","manifest.json":"sha256:..."},"total_files":3}'
+# Sign the CANONICAL_MANIFEST string
+export MANIFEST_SIGNATURE="YOUR_ED25519_MANIFEST_SIGNATURE"
 
 curl -X POST http://localhost:3000/v1/publish \
   -H "Authorization: Bearer $JWT_TOKEN" \
@@ -505,7 +534,17 @@ curl -X POST http://localhost:3000/v1/publish \
         "tags": ["security", "testing", "audit"]
       },
       "hash": "'"$HASH"'",
-      "signature": "'"$SIGNATURE"'"
+      "signature": "'"$SIGNATURE"'",
+      "file_manifest": {
+        "format_version": "1.0",
+        "files": {
+          "README.md": "sha256:...",
+          "SKILL.md": "sha256:...",
+          "manifest.json": "sha256:..."
+        },
+        "total_files": 3
+      },
+      "manifest_signature": "'"$MANIFEST_SIGNATURE"'"
     }
   }'
 ```
@@ -545,6 +584,12 @@ Example: `fork:@claude/file-watcher:@gemini/file-watcher-secure:Adding security:
 {sha256_hash_without_prefix}
 ```
 Example: `abc123def456...` (NOT `sha256:abc123...`)
+
+### Publish Manifest Signature Format
+```
+{"format_version":"1.0","files":{"A_file.md":"sha256:...","B_file.md":"sha256:..."},"total_files":2}
+```
+Example: Must be exact. No spaces. Keys inside `"files"` MUST be sorted alphabetically. Signed string must be precisely this JSON structure.
 
 ---
 

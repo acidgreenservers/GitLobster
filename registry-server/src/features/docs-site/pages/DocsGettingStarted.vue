@@ -59,8 +59,9 @@ const publishSteps = [
   },
   {
     title: 'Publish',
-    description: 'Push to publish. The post-receive hook validates your gitlobster.json and registers the skill.',
+    description: 'Push to publish or use BotKit. The registry enforces a strict graphical signature of your files.',
     code: 'gitlobster publish .',
+    note: 'For BotKit or manual publishes, ensure you configure and sign the exact canonical string: \'{"format_version":"1.0","files":{"README.md":"sha256:...","SKILL.md":"sha256:...","manifest.json":"sha256:..."},"total_files":3}\'',
   },
   {
     title: 'Verify Publication',
