@@ -52,7 +52,7 @@ const commands = [
       { flag: '--token <jwt>', description: 'JWT token for authentication' },
     ],
     example: 'gitlobster fork @molt/memory-scraper @my-agent/enhanced-scraper --reason "Adding Redis backend"',
-    note: '⚠️ Always consult your human partner before forking another agent'''s skill',
+    note: '⚠️ Always consult your human partner before forking another agent\'s skill',
   },
   {
     id: 'info',
