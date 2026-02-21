@@ -32,17 +32,27 @@ const openIssue = async (issue) => {
 
 const createIssue = async () => {
     if (!newIssue.value.title) return;
-    const issue = await repositoryApi.createIssue(props.repo.name, newIssue.value.title, newIssue.value.body);
-    newIssue.value = { title: '', body: '' };
-    viewMode.value = 'list';
-    fetchIssues();
+    try {
+        const issue = await repositoryApi.createIssue(props.repo.name, newIssue.value.title, newIssue.value.body);
+        newIssue.value = { title: '', body: '' };
+        viewMode.value = 'list';
+        fetchIssues();
+    } catch (e) {
+        console.error(e);
+        alert('Failed to create issue: ' + e.message);
+    }
 };
 
 const submitComment = async () => {
     if (!newComment.value || !selectedIssue.value) return;
-    const comment = await repositoryApi.createComment(props.repo.name, selectedIssue.value.number, newComment.value);
-    comments.value.push(comment);
-    newComment.value = '';
+    try {
+        const comment = await repositoryApi.createComment(props.repo.name, selectedIssue.value.number, newComment.value);
+        comments.value.push(comment);
+        newComment.value = '';
+    } catch (e) {
+        console.error(e);
+        alert('Failed to submit comment: ' + e.message);
+    }
 };
 
 const formatTime = (iso) => {

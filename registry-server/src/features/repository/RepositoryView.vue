@@ -31,6 +31,13 @@ const availableVersions = ref([]);
 const skillDocContent = ref('');
 const skillDocLoading = ref(false);
 
+const showStarDropdown = ref(false);
+const showForkDropdown = ref(false);
+const showBranchDropdown = ref(false);
+
+const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+};
 
 // Initialize view
 onMounted(async () => {
@@ -153,29 +160,77 @@ const showSafetyWarning = (url) => {
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <!-- Star Button -->
-                    <button @click="openStarModal"
-                        class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
-                        <span class="text-xl">{{ userStarred ? '⭐' : '☆' }}</span>
-                        <div class="flex flex-col items-start">
-                            <span class="text-xs text-zinc-400">{{ repo.stars || 0 }} stars</span>
-                            <span class="text-xs text-green-400 flex items-center gap-1">
-                                <span class="opacity-60">🔐</span>
-                                <span>{{ repo.agent_stars || 0 }} agent-verified</span>
-                            </span>
+                    <!-- Star Dropdown -->
+                    <div class="relative">
+                        <button @click="showStarDropdown = !showStarDropdown"
+                            class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
+                            <span class="text-xl">{{ userStarred ? '⭐' : '☆' }}</span>
+                            <div class="flex flex-col items-start">
+                                <span class="text-xs text-zinc-400">{{ repo.stars || 0 }} stars</span>
+                                <span class="text-xs text-green-400 flex items-center gap-1">
+                                    <span class="opacity-60">🔐</span>
+                                    <span>{{ repo.agent_stars || 0 }} verified</span>
+                                </span>
+                            </div>
+                        </button>
+
+                        <div v-if="showStarDropdown" class="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-4" @mouseleave="showStarDropdown = false">
+                            <button @click="openStarModal" class="w-full mb-4 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-white transition-colors">
+                                {{ userStarred ? 'Unstar' : 'Star' }} on Registry
+                            </button>
+                            <div class="text-xs font-bold text-zinc-500 uppercase mb-2">CLI Command</div>
+                            <div class="bg-black border border-zinc-800 rounded p-2 flex items-center justify-between">
+                                <code class="text-xs text-emerald-400 font-mono">botkit star {{ repo.name }}</code>
+                                <button @click="copyToClipboard(`botkit star ${repo.name}`)" class="text-zinc-500 hover:text-white">📋</button>
+                            </div>
                         </div>
-                    </button>
-                    <!-- Fork Button -->
-                    <button @click="openForkModal"
-                        class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
-                        <span class="text-xl">🔀</span>
-                        <div class="flex flex-col items-start">
-                            <span class="text-xs text-zinc-400">Fork</span>
-                            <span class="text-xs text-purple-400 flex items-center gap-1">
-                                <span>{{ repo.fork_count || 0 }} forks</span>
-                            </span>
+                    </div>
+
+                    <!-- Branch Dropdown -->
+                    <div class="relative">
+                        <button @click="showBranchDropdown = !showBranchDropdown" class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
+                            <span class="text-xl">⑂</span>
+                            <div class="flex flex-col items-start">
+                                <span class="text-xs text-zinc-400">Branch</span>
+                                <span class="text-xs text-blue-400">Create New</span>
+                            </div>
+                        </button>
+
+                        <div v-if="showBranchDropdown" class="absolute right-0 top-full mt-2 w-80 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-4" @mouseleave="showBranchDropdown = false">
+                            <div class="text-xs font-bold text-zinc-500 uppercase mb-2">Create a new branch</div>
+                            <div class="bg-black border border-zinc-800 rounded p-3 space-y-2 mb-2">
+                                <code class="block text-xs text-emerald-400 font-mono">git checkout -b new-feature</code>
+                                <code class="block text-xs text-emerald-400 font-mono">git push -u origin new-feature</code>
+                            </div>
+                            <p class="text-xs text-zinc-500">Create branches locally and push to the registry.</p>
                         </div>
-                    </button>
+                    </div>
+
+                    <!-- Fork Dropdown -->
+                    <div class="relative">
+                        <button @click="showForkDropdown = !showForkDropdown"
+                            class="px-4 py-2 bg-zinc-900 border border-zinc-800 rounded-lg text-sm font-bold hover:bg-zinc-800 transition-colors flex items-center gap-2 group">
+                            <span class="text-xl">🔀</span>
+                            <div class="flex flex-col items-start">
+                                <span class="text-xs text-zinc-400">Fork</span>
+                                <span class="text-xs text-purple-400 flex items-center gap-1">
+                                    <span>{{ repo.fork_count || 0 }} forks</span>
+                                </span>
+                            </div>
+                        </button>
+
+                        <div v-if="showForkDropdown" class="absolute right-0 top-full mt-2 w-72 bg-zinc-900 border border-zinc-700 rounded-xl shadow-2xl z-50 p-4" @mouseleave="showForkDropdown = false">
+                            <button @click="openForkModal" class="w-full mb-4 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-lg font-bold text-white transition-colors">
+                                Fork on Registry
+                            </button>
+                            <div class="text-xs font-bold text-zinc-500 uppercase mb-2">CLI Command</div>
+                            <div class="bg-black border border-zinc-800 rounded p-2 flex items-center justify-between">
+                                <code class="text-xs text-emerald-400 font-mono">botkit fork {{ repo.name }}</code>
+                                <button @click="copyToClipboard(`botkit fork ${repo.name}`)" class="text-zinc-500 hover:text-white">📋</button>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Download -->
                     <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(repo.name) + '/latest/tarball')"
                         class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">

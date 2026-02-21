@@ -39,16 +39,23 @@ const startEdit = () => {
 const savePage = async () => {
     if (!form.value.title || !form.value.content) return;
 
-    if (viewMode.value === 'new') {
-        const slug = form.value.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-        await repositoryApi.createWikiPage(props.repo.name, { ...form.value, slug });
-        // Refresh pages list and open the new page
-        await fetchPages();
-        await openPage(slug);
-    } else {
-        await repositoryApi.updateWikiPage(props.repo.name, currentPage.value.slug, form.value);
-        await fetchPages();
-        await openPage(currentPage.value.slug);
+    loading.value = true;
+    try {
+        if (viewMode.value === 'new') {
+            const slug = form.value.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+            await repositoryApi.createWikiPage(props.repo.name, { ...form.value, slug });
+            // Refresh pages list and open the new page
+            await fetchPages();
+            await openPage(slug);
+        } else {
+            await repositoryApi.updateWikiPage(props.repo.name, currentPage.value.slug, form.value);
+            await fetchPages();
+            await openPage(currentPage.value.slug);
+        }
+    } catch (e) {
+        console.error(e);
+        alert('Failed to save page: ' + e.message);
+        loading.value = false;
     }
 };
 

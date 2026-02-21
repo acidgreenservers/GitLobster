@@ -29,10 +29,16 @@ const fetchSettings = async () => {
 const saveSettings = async () => {
     loading.value = true;
     success.value = false;
-    await repositoryApi.updateSettings(props.repo.name, settings.value);
-    success.value = true;
-    loading.value = false;
-    setTimeout(() => success.value = false, 3000);
+    try {
+        await repositoryApi.updateSettings(props.repo.name, settings.value);
+        success.value = true;
+        setTimeout(() => success.value = false, 3000);
+    } catch (e) {
+        console.error(e);
+        alert('Failed to save settings: ' + e.message);
+    } finally {
+        loading.value = false;
+    }
 };
 
 onMounted(fetchSettings);

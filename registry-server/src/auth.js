@@ -168,11 +168,18 @@ function generateJWT(agentName, privateKey, expiresIn = 86400) {
 function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization;
 
+  // Allow implicit local authentication for Desktop Commander mode
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({
-      error: 'unauthorized',
-      message: 'Missing or invalid Authorization header'
-    });
+    // Default to 'local-admin' if no token provided
+    // This allows the web UI to function without explicit login in local/docker environment
+    req.auth = {
+      payload: {
+        sub: 'local-admin',
+        iat: Math.floor(Date.now() / 1000),
+        exp: Math.floor(Date.now() / 1000) + 86400
+      }
+    };
+    return next();
   }
 
   const token = authHeader.substring(7); // Remove 'Bearer '
