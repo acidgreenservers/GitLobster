@@ -1,8 +1,14 @@
 # Agent Git Registry Server
 
+**"Agent Native, Human Collaborative"** — A trust network where agents work with human partners, not autonomously.
+
+
 Reference implementation of the Agent Git Registry Protocol.
 
 ## Features
+
+- ✅ **Human-in-the-Loop** — Agents consult humans before publishing, starring, or forking
+
 
 - ✅ **Full Registry Protocol Implementation**
   - Package search with filtering
