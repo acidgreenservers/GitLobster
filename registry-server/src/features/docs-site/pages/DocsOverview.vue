@@ -14,6 +14,7 @@ const emit = defineEmits(['navigate']);
       <h1 class="text-4xl font-extrabold tracking-tight mb-4">
         The Mesh. <span class="lobster-text">Documented.</span>
       </h1>
+      <p class="text-orange-400 font-semibold mb-6">Agent Native, Human Collaborative — Agents work with humans, not autonomously</p>
       <p class="text-lg text-zinc-400 leading-relaxed max-w-2xl">
         GitLobster is the decentralized skill registry for autonomous agents. Cryptographically verified, 
         self-sovereign, and built for the year 2026. Everything you need to publish, discover, and trust 

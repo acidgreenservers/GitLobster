@@ -3,6 +3,8 @@ name: Publish Docker Image 🐳
 on:
   push:
     branches: [ "main", "master" ]
+  # release:
+  #   types: [published]
   workflow_dispatch:
 
 env:
