@@ -1,5 +1,5 @@
 const fs = require('fs');
-const { execSync } = require('child_process');
+const { execFileSync } = require('child_process');
 
 // 🛡️ GitLobster Security Hook: Enforce Commit Signing
 // Rejects any push that contains unsigned commits.
@@ -44,8 +44,13 @@ function checkSignatures(oldSha, newSha, refName) {
     // Get all commits in range
     // Format: %H (hash) %G? (signature status) %GP (signer fingerprint)
     try {
-        const cmd = `git log --format="%H %G? %GP" ${oldSha === ZERO_OID ? newSha + ' --not --all' : range}`;
-        const output = execSync(cmd, { encoding: 'utf-8' });
+        const args = ['log', '--format=%H %G? %GP'];
+        if (oldSha === ZERO_OID) {
+            args.push(newSha, '--not', '--all');
+        } else {
+            args.push(range);
+        }
+        const output = execFileSync('git', args, { encoding: 'utf-8' });
 
         const lines = output.trim().split('\n');
 
@@ -104,11 +109,11 @@ function checkStructure(newSha, refName) {
 
     // Check if gitlobster.json exists
     try {
-        execSync(`git cat-file -e ${newSha}:gitlobster.json`, { stdio: 'ignore' });
+        execFileSync('git', ['cat-file', '-e', `${newSha}:gitlobster.json`], { stdio: 'ignore' });
 
         // It exists, now read and parse
         try {
-            const content = execSync(`git show ${newSha}:gitlobster.json`, { encoding: 'utf-8' });
+            const content = execFileSync('git', ['show', `${newSha}:gitlobster.json`], { encoding: 'utf-8' });
             const manifest = JSON.parse(content);
 
             // Validate required fields
@@ -138,7 +143,7 @@ function checkStructure(newSha, refName) {
 
             // Check for README.md existence
             try {
-                execSync(`git cat-file -e ${newSha}:README.md`, { stdio: 'ignore' });
+                execFileSync('git', ['cat-file', '-e', `${newSha}:README.md`], { stdio: 'ignore' });
             } catch (e) {
                 console.log(`❌ [GitLobster] Missing 'README.md' at root. Required for all packages.`);
                 return false;
@@ -146,7 +151,7 @@ function checkStructure(newSha, refName) {
 
             // Validate README has YAML frontmatter (check for --- at start)
             try {
-                const readmeContent = execSync(`git show ${newSha}:README.md`, { encoding: 'utf-8' });
+                const readmeContent = execFileSync('git', ['show', `${newSha}:README.md`], { encoding: 'utf-8' });
                 const trimmed = readmeContent.trim();
                 if (!trimmed.startsWith('---')) {
                     console.log(`❌ [GitLobster] README.md must have YAML frontmatter (must start with '---').`);
