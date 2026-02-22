@@ -11,7 +11,7 @@ const { requireAuth, verifyPackageSignature } = require('./auth');
 const { validateFileManifest, verifyManifestSignature } = require('./integrity');
 const { logActivity, EVENT_TYPES } = require('./activity');
 const { calculateVersionDiff } = require('./utils/version-diff');
-const { getBranches, getTags, getCommits, getEnhancedTree, getFileContent } = require('./utils/git-ops');
+const { getBranches, getTags, getCommits, getEnhancedTree, getFileContent, getDiff } = require('./utils/git-ops');
 
 const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR || path.join(__dirname, '../storage');
 const PACKAGES_DIR = path.join(STORAGE_DIR, 'packages');
@@ -1762,8 +1762,28 @@ module.exports = {
   createWikiPage,
   updateWikiPage,
   getSettings,
-  updateSettings
+  updateSettings,
+  getRepoDiff
 };
+
+/**
+ * GET /v1/packages/:name/compare - Get diff between refs
+ */
+async function getRepoDiff(req, res) {
+  try {
+    const { name } = req.params;
+    const { base, head } = req.query;
+
+    if (!base || !head) {
+        return res.status(400).json({ error: 'missing_refs', message: 'base and head required' });
+    }
+
+    const diff = await getDiff(name, base, head);
+    res.json(diff);
+  } catch (error) {
+    res.status(500).json({ error: 'git_error', message: error.message });
+  }
+}
 
 /**
  * GET /v1/packages/:name/branches - List branches

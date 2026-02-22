@@ -379,6 +379,26 @@ async function getReadme(repoName, ref = 'HEAD') {
     return null;
 }
 
+/**
+ * Get diff between two refs
+ * Returns list of changed files with status
+ */
+async function getDiff(repoName, base, head) {
+    try {
+        // --name-status gives M path/to/file
+        const output = await gitExec(repoName, ['diff', '--name-status', `${base}...${head}`]);
+        if (!output) return [];
+
+        return output.split('\n').filter(Boolean).map(line => {
+            const [status, path] = line.split(/\t/);
+            return { status, path };
+        });
+    } catch (error) {
+        console.error(`Failed to get diff for ${repoName}:`, error);
+        return [];
+    }
+}
+
 module.exports = {
     getManifest,
     mergeProposal,
@@ -392,5 +412,6 @@ module.exports = {
     getFileContent,
     getTree,
     getEnhancedTree,
-    getReadme
+    getReadme,
+    getDiff
 };

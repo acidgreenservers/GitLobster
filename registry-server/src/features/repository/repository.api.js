@@ -69,6 +69,13 @@ export const repositoryApi = {
         return await res.text();
     },
 
+    async getDiff(name, base, head) {
+        const encodedName = encodeURIComponent(name);
+        const res = await fetch(`${API_BASE}/${encodedName}/compare?base=${encodeURIComponent(base)}&head=${encodeURIComponent(head)}`);
+        if (!res.ok) return [];
+        return await res.json();
+    },
+
     // Issues
     async getIssues(name, state = 'open') {
         const encodedName = encodeURIComponent(name);

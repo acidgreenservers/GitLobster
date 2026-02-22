@@ -94,6 +94,7 @@ app.get('/v1/packages/:name/tags', routes.getRepoTags);
 app.get('/v1/packages/:name/commits', routes.getRepoCommits);
 app.get('/v1/packages/:name/tree', routes.getRepoTree);
 app.get('/v1/packages/:name/raw', routes.getRepoFileContent);
+app.get('/v1/packages/:name/compare', routes.getRepoDiff);
 
 // API Routes - Issues & PRs (GitHub Clone)
 app.get('/v1/packages/:name/issues', routes.getIssues);
