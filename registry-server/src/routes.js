@@ -958,11 +958,12 @@ async function botkitUnstar(req, res) {
  * @returns {string|null} New commit hash or null on failure
  */
 async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkCommit, latestVersion, forkedAt) {
-  const { execSync } = require('child_process');
+  const { execFileSync, spawnSync } = require('child_process');
 
   try {
     // Read current gitlobster.json from HEAD
-    const currentContent = execSync(`git show HEAD:gitlobster.json`, {
+    // Use execFileSync to avoid shell
+    const currentContent = execFileSync('git', ['show', 'HEAD:gitlobster.json'], {
       cwd: forkedGitPath, encoding: 'utf-8'
     });
     const manifest = JSON.parse(currentContent);
@@ -979,17 +980,24 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
     const newContent = JSON.stringify(manifest, null, 2) + '\n';
 
     // Write new blob object into the object store
-    const blobHash = execSync(
-      `printf '%s' ${JSON.stringify(newContent)} | git hash-object -w --stdin`,
-      { cwd: forkedGitPath, encoding: 'utf-8', shell: true }
-    ).trim();
+    // Use spawnSync with input option to write to stdin, avoiding pipe and shell
+    const hashObjectResult = spawnSync('git', ['hash-object', '-w', '--stdin'], {
+      cwd: forkedGitPath,
+      input: newContent,
+      encoding: 'utf-8'
+    });
+
+    if (hashObjectResult.error) throw hashObjectResult.error;
+    if (hashObjectResult.status !== 0) throw new Error(`git hash-object failed: ${hashObjectResult.stderr}`);
+
+    const blobHash = hashObjectResult.stdout.trim();
 
     // Stage the updated file in the index
-    execSync(`git read-tree HEAD`, { cwd: forkedGitPath, stdio: 'ignore' });
-    execSync(`git update-index --cacheinfo 100644,${blobHash},gitlobster.json`, { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['read-tree', 'HEAD'], { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['update-index', '--cacheinfo', `100644,${blobHash},gitlobster.json`], { cwd: forkedGitPath, stdio: 'ignore' });
 
     // Write new tree from the updated index
-    const newTree = execSync(`git write-tree`, { cwd: forkedGitPath, encoding: 'utf-8' }).trim();
+    const newTree = execFileSync('git', ['write-tree'], { cwd: forkedGitPath, encoding: 'utf-8' }).trim();
 
     // Create a new commit on top of HEAD with the updated tree
     const env = {
@@ -1000,13 +1008,16 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
       GIT_COMMITTER_EMAIL: 'registry@gitlobster',
       GIT_DIR: forkedGitPath
     };
-    const newCommit = execSync(
-      `git commit-tree ${newTree} -p HEAD -m "fork: inject lineage metadata from ${parentPackage}"`,
+
+    // SECURITY: Use execFileSync with array args to prevent command injection via parentPackage
+    const newCommit = execFileSync(
+      'git',
+      ['commit-tree', newTree, '-p', 'HEAD', '-m', `fork: inject lineage metadata from ${parentPackage}`],
       { cwd: forkedGitPath, encoding: 'utf-8', env }
     ).trim();
 
     // Update HEAD to the new commit
-    execSync(`git update-ref HEAD ${newCommit}`, { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['update-ref', 'HEAD', newCommit], { cwd: forkedGitPath, stdio: 'ignore' });
 
     console.log(`[Fork] Injected forked_from lineage into gitlobster.json, new commit: ${newCommit}`);
     return newCommit;
@@ -1023,9 +1034,9 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
  * Performs git clone --bare + injects forked_from lineage into gitlobster.json
  */
 async function botkitFork(req, res) {
-  const { exec } = require('child_process');
+  const { execFile } = require('child_process');
   const util = require('util');
-  const execPromise = util.promisify(exec);
+  const execFilePromise = util.promisify(execFile);
 
   // Import git-middleware helpers
   const { scopedToDirName, GIT_PROJECT_ROOT: GIT_DIR } = require('./git-middleware');
@@ -1100,11 +1111,13 @@ async function botkitFork(req, res) {
         console.log(`[Fork] Parent git repo exists at ${parentGitPath}, cloning to ${forkedGitPath}`);
 
         // Clone parent bare repo to fork bare repo
-        await execPromise(`git clone --bare "${parentGitPath}" "${forkedGitPath}"`);
+        // SECURITY: Use execFile with array args to prevent command injection
+        await execFilePromise('git', ['clone', '--bare', parentGitPath, forkedGitPath]);
 
         // Get the commit hash of the HEAD after clone
-        const { stdout: headHash } = await execPromise(
-          `git rev-parse HEAD`,
+        const { stdout: headHash } = await execFilePromise(
+          'git',
+          ['rev-parse', 'HEAD'],
           { cwd: forkedGitPath }
         );
         forkCommit = headHash.trim();
