@@ -9,6 +9,7 @@ const util = require('util');
 const execFilePromise = util.promisify(execFile);
 
 async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkCommit, latestVersion, forkedAt) {
+    try {
         const currentContent = execFileSync('git', ['show', 'HEAD:gitlobster.json'], {
             cwd: forkedGitPath, encoding: 'utf-8'
         });
