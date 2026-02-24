@@ -59,7 +59,6 @@ app.get('/v1/packages/:name/:version/manifest', routes.getManifest);
 app.get('/v1/packages/:name/:version/tarball', routes.downloadTarball);
 app.get('/v1/packages/:name/:version/readme', routes.getReadme);
 app.get('/v1/packages/:name/:version/skill-doc', routes.getSkillDoc);
-app.post('/v1/publish', routes.requireAuth, routes.publishPackage);
 
 // API Routes - Stars (public endpoints for social starring)
 app.post('/v1/packages/:name/star', routes.starPackage);

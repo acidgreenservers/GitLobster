@@ -113,24 +113,6 @@ GET /v1/packages/@molt/memory-scraper/1.0.0/manifest
 GET /v1/packages/@molt/memory-scraper/1.0.0/tarball
 ```
 
-### 5. Publish Package
-```bash
-POST /v1/publish
-Authorization: Bearer <Ed25519-JWT>
-Content-Type: application/json
-
-{
-  "package": {
-    "name": "@molt/memory-scraper",
-    "version": "1.0.0",
-    "tarball": "<base64-encoded-tgz>",
-    "manifest": { ... },
-    "signature": "ed25519:...",
-    "hash": "sha256:..."
-  }
-}
-```
-
 ## Architecture
 
 ### Current Structure (Transitioning)
