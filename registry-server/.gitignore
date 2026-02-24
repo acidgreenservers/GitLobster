@@ -40,3 +40,5 @@ backups/
 *.njsproj
 *.sln
 *.sw?
+
+docker-compose.dev.yml

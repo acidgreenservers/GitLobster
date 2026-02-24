@@ -13,7 +13,7 @@ import DocsConfiguration from './pages/DocsConfiguration.vue';
 import DocsCLIReference from './pages/DocsCLIReference.vue';
 import DocsSkillCloudSync from './pages/DocsSkillCloudSync.vue';
 
-const emit = defineEmits(['back']);
+const emit = defineEmits(['back', 'view-repo']);
 
 // Active page state
 const activePage = ref('overview');
@@ -51,7 +51,7 @@ const navigateTo = (pageId) => {
     <!-- Main Content -->
     <main id="docs-content-area" class="flex-1 overflow-y-auto">
       <DocsContent>
-        <component :is="currentDoc.component" @navigate="navigateTo" />
+        <component :is="currentDoc.component" @navigate="navigateTo" @view-repo="$emit('view-repo', $event)" />
       </DocsContent>
     </main>
 

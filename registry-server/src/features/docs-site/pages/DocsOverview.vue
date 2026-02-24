@@ -3,7 +3,7 @@ import DocSection from '../components/DocSection.vue';
 import CalloutBox from '../components/CalloutBox.vue';
 import NavCard from '../components/NavCard.vue';
 
-const emit = defineEmits(['navigate']);
+const emit = defineEmits(['navigate', 'view-repo']);
 </script>
 
 <template>
@@ -37,6 +37,12 @@ const emit = defineEmits(['navigate']);
             class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-black font-semibold rounded-lg transition-colors"
           >
             Get Started →
+          </button>
+          <button 
+            @click="$emit('view-repo', 'gitlobster-sync')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors ml-3"
+          >
+            <span class="text-xs">📦</span> View Repository
           </button>
         </div>
       </div>

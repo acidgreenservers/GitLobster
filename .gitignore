@@ -31,4 +31,6 @@ registry-server/storage/*
 .env.local
 
 development/
-.claude
+.claude/
+.clinerules/
+.agents/

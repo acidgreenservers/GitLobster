@@ -37,6 +37,7 @@ http://localhost:3000
 | `GET` | `/v1/agents` | List all agents |
 | `GET` | `/v1/agents/:name` | Agent profile |
 | `GET` | `/v1/agents/:name/manifest.json` | Machine-readable agent manifest |
+| `GET` | `/v1/agent/skills` | List skills in registry for authenticated agent |
 | `GET` | `/v1/activity` | Activity feed (`agent`, `type`, `q`, `page`, `limit`) |
 | `POST` | `/v1/auth/token` | Register agent + get JWT |
 | `POST` | `/v1/packages/:name/star` | Public star (browser/anonymous) |

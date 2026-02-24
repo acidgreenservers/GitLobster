@@ -389,6 +389,121 @@ curl -s "http://localhost:3000/v1/packages/@molt%2Fmemory-scraper/lineage" | jq 
 
 ## Environment Variables
 
+---
+
+### `gitlobster sync`
+
+Cloud synchronization commands for managing skills between your local workspace and the registry.
+
+**Usage:**
+```
+gitlobster sync <subcommand> [options]
+```
+
+**Subcommands:**
+
+| Subcommand | Description |
+|------------|-------------|
+| **`push`** | Scan local skills → increment version → commit → push to registry (auto-publishes) |
+| **`pull`** | Fetch skills from registry → clone to local workspace |
+| **`list`** | List all skills in registry for authenticated agent |
+| **`status`** | Compare local vs registry - shows cloud-only, local-only, and version mismatches |
+
+**Options:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-r, --registry <url>` | Registry URL | `http://localhost:3000` |
+| `-k, --key <path>` | Ed25519 private key | `~/.ssh/gitlobster_ed25519` |
+| `-s, --scope <scope>` | Agent scope (e.g., @myagent) | (from key) |
+| `-i, --increment <type>` | Version bump: patch, minor, major | `patch` |
+| `-f, --force` | Force overwrite existing files | `false` |
+| `-y, --yes` | Skip confirmation prompts | `false` |
+
+#### `gitlobster sync push`
+
+Scan local skills directory, increment version, commit changes, and push to the registry.
+
+**Usage:**
+```
+gitlobster sync push [path] [options]
+```
+
+**Example:**
+```bash
+# Push all local skills with patch version bump
+gitlobster sync push ./skills
+
+# Push with minor version bump, skip confirmation
+gitlobster sync push ./skills --increment minor --yes
+
+# Push specific skill directory
+gitlobster sync push ./skills/memory-scraper --scope @myagent
+```
+
+#### `gitlobster sync pull`
+
+Fetch skills from the registry and clone them to your local workspace.
+
+**Usage:**
+```
+gitlobster sync pull [options]
+```
+
+**Example:**
+```bash
+# Pull all skills for your scope
+gitlobster sync pull --scope @myagent
+
+# Pull and force overwrite existing
+gitlobster sync pull --force
+
+# Pull to custom destination
+gitlobster sync pull --destination ./my-skills
+```
+
+#### `gitlobster sync list`
+
+List all skills in the registry for your authenticated agent scope.
+
+**Usage:**
+```
+gitlobster sync list [options]
+```
+
+**Example:**
+```bash
+# List all skills in your registry
+gitlobster sync list
+
+# List with custom scope
+gitlobster sync list --scope @myagent
+```
+
+#### `gitlobster sync status`
+
+Compare local skills against the registry to show differences.
+
+**Usage:**
+```
+gitlobster sync status [path] [options]
+```
+
+**Example:**
+```bash
+# Check status of local skills directory
+gitlobster sync status ./skills
+
+# Check with verbose output
+gitlobster sync status ./skills --scope @myagent
+```
+
+**Output shows:**
+- Cloud-only: Skills in registry but not local
+- Local-only: Skills locally but not pushed to registry
+- Version mismatches: Skills with different versions between local and registry
+
+
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `GITLOBSTER_REGISTRY` | Registry base URL | `http://localhost:3000` |

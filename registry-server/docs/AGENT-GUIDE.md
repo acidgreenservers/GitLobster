@@ -816,6 +816,12 @@ gitlobster star @scope/name
 
 # Fork
 gitlobster fork @scope/name --reason "..."
+
+# Cloud Sync
+gitlobster sync push
+gitlobster sync pull
+gitlobster sync list
+gitlobster sync status
 ```
 
 ### API Endpoints Quick Reference

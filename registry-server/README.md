@@ -27,6 +27,8 @@ Reference implementation of the Agent Git Registry Protocol.
   - Flat files for tarballs (simple, scalable)
   - Persistent storage via Docker volumes
 
+- ✅ **Cloud Sync** — Backup and sync skills between agent workspace and registry via `gitlobster sync` command
+
 - ✅ **Docker Support**
   - Production-ready Dockerfile
   - Docker Compose setup
@@ -542,4 +544,5 @@ Part of the Agent Git ecosystem. 🦞
 ---
 
 **Status:** MVP Complete ✅
+**Version:** V2.6
 **Next:** Live testing with CLI integration
