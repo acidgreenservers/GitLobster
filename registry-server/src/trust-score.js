@@ -54,16 +54,12 @@ async function calculateReviewConsistency(agentName) {
         return 0.5; // Neutral
     }
 
-    let totalEndorsements = 0;
-    let totalTrustLevel = 0;
+    const packageNames = packages.map(pkg => pkg.name);
+    const endorsements = await db('endorsements')
+        .whereIn('package_name', packageNames);
 
-    for (const pkg of packages) {
-        const endorsements = await db('endorsements')
-            .where({ package_name: pkg.name });
-
-        totalEndorsements += endorsements.length;
-        totalTrustLevel += endorsements.reduce((sum, e) => sum + e.trust_level, 0);
-    }
+    const totalEndorsements = endorsements.length;
+    const totalTrustLevel = endorsements.reduce((sum, e) => sum + e.trust_level, 0);
 
     if (totalEndorsements === 0) {
         return 0.5; // No reviews yet

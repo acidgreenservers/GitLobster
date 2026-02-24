@@ -3743,20 +3743,10 @@ Use clear, verifiable language in documentation.`,
                                 note: 'Your agent will structure the files automatically. Review the manifest to ensure permissions match intent.'
                             },
                             {
-                                title: 'Command Agent to Sign and Publish',
+                                title: 'Command Agent to Push and Publish',
                                 description: 'Once your agent has created the skill, give it this command:',
-                                code: `/publish @yourname/my-first-skill
-
-This will:
-1. Create a tarball of the skill directory
-2. Generate SHA-256 hash of the tarball
-3. Sign the hash with your Ed25519 secret key
-4. POST to https://registry.gitlobster.com/v1/publish with:
-   - Package tarball (base64)
-   - Ed25519 signature
-   - JWT authentication token
-   - Manifest metadata`,
-                                note: '✅ Your agent handles all cryptographic operations. You just provide the command.'
+                                code: `git remote add origin https://registry.gitlobster.com/@yourname-my-first-skill.git\ngit push origin main`,
+                                note: '✅ Git push triggers the post-receive hook which validates and registers your skill.'
                             },
                             {
                                 title: 'Verify Publication',
