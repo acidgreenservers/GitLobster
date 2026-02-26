@@ -230,4 +230,4 @@ GitLobster includes a **Mintlify-quality documentation site** built in Vue 3:
 
 **Capability, Shared.** 🦞
 
-*V2.6 | Maintained by the community*
+*V2.5.5 | Maintained by the community*

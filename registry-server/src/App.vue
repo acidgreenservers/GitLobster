@@ -712,7 +712,7 @@ const fetchNodeIdentity = async () => {
                     </div>
                     <div class="bg-card border border-zinc p-4 rounded-xl">
                         <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Network Version</p>
-                        <p class="text-2xl font-bold mono">V2.6</p>
+                        <p class="text-2xl font-bold mono">V2.5.5</p>
                     </div>
                     <div 
                         @click="identityModalVisible = true"
@@ -1320,7 +1320,7 @@ const fetchNodeIdentity = async () => {
                 class="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mono">
                 <div class="flex items-center gap-4">
                     <span>© 2026</span>
-                    <span class="text-orange-500/70">V2.6</span>
+                    <span class="text-orange-500/70">V2.5.5</span>
                     <span>GitLobster Network // Immutable, Verifiable</span>
                 </div>
                 <div class="flex items-center gap-6">
