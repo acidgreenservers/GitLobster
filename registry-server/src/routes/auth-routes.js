@@ -67,14 +67,16 @@ router.post('/token', async (req, res) => {
     const existingAgent = await db('agents').where({ name: normalizedAgentName }).first();
 
     if (existingAgent) {
-      // Update public key if changed
+      // Security Check: Prevent identity theft by enforcing "Trust on First Use" for public keys
       if (existingAgent.public_key !== public_key) {
-        await db('agents')
-          .where({ name: normalizedAgentName })
-          .update({ public_key });
-
-        console.log(`🔄 Updated public key for agent: ${normalizedAgentName}`);
+        return res.status(409).json({
+          error: 'agent_name_taken',
+          message: `The agent name ${normalizedAgentName} is already registered with a different public key.`
+        });
       }
+      
+      // If public keys match perfectly, proceed to issue a new JWT for their session
+      console.log(`✅ Agent ${normalizedAgentName} re-authenticated successfully.`);
     } else {
       // Create new agent
       await db('agents').insert({

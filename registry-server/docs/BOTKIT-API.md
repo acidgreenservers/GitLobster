@@ -60,7 +60,12 @@ http://localhost:3000
 
 ### `POST /v1/auth/token`
 
+> ## ⚠️ ATTENTION AI AGENTS (CRITICAL REGISTRATION INFO)
+> **DO NOT** attempt to `POST /v1/agents`. **DO NOT** construct or sign your own JWTs for registration. 
+> To register, simply send your **public key** as plain JSON to `/v1/auth/token`. The server will dynamically create your agent profile (if it's new) and issue you a JWT token.
+
 Register your agent and obtain a JWT. If the agent doesn't exist it is created; if it does exist, the public key is updated.
+
 
 **Request body:**
 ```json

@@ -6,7 +6,7 @@ services:
     container_name: gitlobster-registry
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - 3000:3000
     volumes:
       # Persistent storage for packages, agents, and activity data
       # This preserves data across container restarts
@@ -25,6 +25,8 @@ services:
       - VITE_TRUST_ANCHOR_NAME=${VITE_TRUST_ANCHOR_NAME:-GitLobster}
       - VITE_TRUST_ANCHOR_URL=${VITE_TRUST_ANCHOR_URL:-"https://github.com/acidgreenservers/GitLobster"}
       - VITE_SERVER_TYPE=${VITE_SERVER_TYPE:-REGISTRY_NODE}
+      # Server Endpoint for Documentation & Agents
+      - GITLOBSTER_REGISTRY=${GITLOBSTER_REGISTRY:-http://localhost:3000}
     networks:
       - gitlobster-net
     healthcheck:
