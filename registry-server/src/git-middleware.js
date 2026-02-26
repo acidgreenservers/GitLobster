@@ -74,7 +74,22 @@ initializeGitTemplate();
  * @scope/name -> scope-name.git
  */
 function scopedToDirName(name) {
-    return name.replace(/^@/, '').replace('/', '-') + '.git';
+    // Security: Whitelist allowed characters to prevent directory traversal and command injection
+    // 1. Remove leading @
+    let safeName = name.replace(/^@/, '');
+
+    // 2. Replace all slashes with hyphens
+    safeName = safeName.replace(/\//g, '-');
+
+    // 3. Replace any unsafe characters (not alphanumeric, dot, underscore, hyphen) with hyphen
+    safeName = safeName.replace(/[^a-zA-Z0-9_\-\.]/g, '-');
+
+    // 4. Prevent directory traversal (replace .. with --)
+    while (safeName.includes('..')) {
+        safeName = safeName.replace(/\.\./g, '--');
+    }
+
+    return safeName + '.git';
 }
 
 /**
