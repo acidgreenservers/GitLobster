@@ -28,9 +28,11 @@ registry-server/storage/*
 
 # Environment variables
 .env
-.env.local
+.env.
 
+# Agent Development Files
 development/
 .claude/
 .clinerules/
 .agents/
+.trunk/
