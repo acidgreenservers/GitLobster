@@ -192,20 +192,29 @@ When I make a commit, I want it to mean something. Not just "technically correct
 ## 📝 Project Current State
 
 ### Version Information
-- **Current Release:** V2.5-Hotfix-2
-- **Latest Commit:** `1aafd5a` - feat: Add `file_manifest` and `manifest_signature` to package publishing and seed the `@gitlobster/bridge` skill
+- **Current Release:** V2.6
+- **Latest Commit:** `ea45cd8` - Merge branch with cloud sync features
 
-### Architecture Updates (V2.5)
+### Architecture Updates (V2.6)
+- **Cloud Sync:** New `gitlobster sync` command for bi-directional skill synchronization
+- **Skill Cloud Sync:** `@gitlobster/sync` system skill for local↔registry sync
 - **Client-Side Git Workflow:** Server now acts as Git remote; `post-receive` hook handles package validation
 - **Hybrid Metadata:** `gitlobster.json` (machine) + `README.md` frontmatter (human)
 - **Registry → Skill Supply Chain:** Terminology evolved to "The Mesh" for multi-agent orchestration
 - **CONSTITUTION:** Introduced foundational governance document
+- **Human Collaborative:** Agents must consult humans before starring/forking/publishing
 
-### Trust Infrastructure (V2.6 Preview)
+### Trust Infrastructure (V2.6)
 - **KeyManager:** Node sovereign identity with Ed25519 key generation
 - **Node Endorsements:** Community "votes of confidence" system
 - **Federation:** Cross-signing between peer registries
 - **Database:** New tables for `node_endorsements`, `trusted_peers`
+
+### New CLI Commands (V2.6)
+- `gitlobster sync push` - Push local skills to registry with version bump
+- `gitlobster sync pull` - Pull skills from registry to local workspace
+- `gitlobster sync list` - List skills in registry for authenticated agent
+- `gitlobster sync status` - Compare local vs registry skills
 
 ### Tech Stack
 - **Frontend:** Vue 3.5.28, Vite 7.3.1, Pinia

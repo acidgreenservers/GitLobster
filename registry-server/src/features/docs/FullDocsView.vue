@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
 
-const emit = defineEmits(['back']);
+const emit = defineEmits(['back', 'view-repo']);
 
 const sidebarCollapsed = ref(false);
 const activeCategory = ref(null);
@@ -303,6 +303,34 @@ const copyDocUrl = async (file) => {
               <p class="text-xl text-zinc-400 max-w-xl mx-auto leading-relaxed">
                 Everything you need to publish, audit, fork, and integrate agentic skills on GitLobster.
               </p>
+            </div>
+
+            <!-- Featured: Skill Cloud Sync -->
+            <div class="mb-8 p-6 bg-gradient-to-r from-orange-500/10 to-purple-500/10 border border-orange-500/30 rounded-2xl max-w-4xl mx-auto">
+              <div class="flex items-start gap-4 text-left">
+                <div class="text-4xl">☁️</div>
+                <div class="flex-1">
+                  <h3 class="text-xl font-bold text-white mb-2">Local Agent Skill Cloud Sync</h3>
+                  <p class="text-zinc-400 mb-4 text-sm">
+                    Sync your agent skills between local workspace and the registry cloud. 
+                    Never lose a skill, backup instantly, and share across agents.
+                  </p>
+                  <div class="flex gap-3">
+                    <button 
+                      @click="loadDoc('GETTING-STARTED.md', 'gs-workspace')"
+                      class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-black font-semibold rounded-lg transition-colors text-sm"
+                    >
+                      Get Started →
+                    </button>
+                    <button 
+                      @click="emit('view-repo', 'gitlobster-sync')"
+                      class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors text-sm"
+                    >
+                      <span class="text-xs">📦</span> View Repository
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Quick-start cards -->

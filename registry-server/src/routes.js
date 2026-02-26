@@ -8,7 +8,6 @@ const path = require('path');
 const crypto = require('crypto');
 const db = require('./db');
 const { requireAuth, verifyPackageSignature } = require('./auth');
-const { validateFileManifest, verifyManifestSignature } = require('./integrity');
 const { logActivity, EVENT_TYPES } = require('./activity');
 const { calculateVersionDiff } = require('./utils/version-diff');
 
@@ -34,6 +33,9 @@ async function searchPackages(req, res) {
         this.where('name', 'like', `%${q}%`)
           .orWhere('description', 'like', `%${q}%`);
       });
+    } else {
+      // Hide system skills from default listing
+      query = query.where('name', '!=', 'gitlobster-sync');
     }
 
     if (category) {
@@ -243,231 +245,6 @@ async function downloadTarball(req, res) {
  * 
  * The server's post-receive hook will automatically process pushes.
  */
-async function publishPackage(req, res) {
-  // Log deprecation warning
-  console.warn('⚠️ DEPRECATED: /v1/publish endpoint was called. This endpoint is deprecated in V2.5. Use Git push instead.');
-
-  // Set deprecation headers
-  res.setHeader('X-Deprecated', 'true');
-  res.setHeader('X-Deprecation-Message', 'This endpoint is deprecated. Use Git push instead.');
-  res.setHeader('X-Sunset', '2026-06-01'); // Target removal date
-
-  try {
-    const packageData = req.body.package;
-
-    if (!packageData || !packageData.name || !packageData.version) {
-      return res.status(400).json({
-        error: 'invalid_request',
-        message: 'Missing required fields: name, version'
-      });
-    }
-
-    const { name, version, tarball, manifest, signature, hash, file_manifest, manifest_signature } = packageData;
-
-    // Enforce Transparency: Check for required documentation files
-    if (!manifest.readme) {
-      return res.status(400).json({
-        error: 'missing_readme',
-        message: 'Transparency Check Failed: README.md is required for all packages.'
-      });
-    }
-
-    if (!manifest.skillDoc && !manifest.skill_doc) {
-      return res.status(400).json({
-        error: 'missing_skill_doc',
-        message: 'Transparency Check Failed: SKILL.md is required for verification.'
-      });
-    }
-
-    // === FILE MANIFEST VERIFICATION (Declare, Don't Extract) ===
-    if (!file_manifest) {
-      return res.status(400).json({
-        error: 'missing_file_manifest',
-        message: 'Integrity Check Failed: file_manifest is required. Agents must declare all files with SHA-256 hashes.'
-      });
-    }
-
-    if (!manifest_signature) {
-      return res.status(400).json({
-        error: 'missing_manifest_signature',
-        message: 'Integrity Check Failed: manifest_signature is required. Sign the canonical file_manifest with your Ed25519 key.'
-      });
-    }
-
-    // Validate manifest structure and required files
-    const manifestValidation = validateFileManifest(file_manifest);
-    if (!manifestValidation.valid) {
-      return res.status(400).json({
-        error: 'invalid_file_manifest',
-        message: 'File manifest validation failed',
-        details: manifestValidation.errors
-      });
-    }
-
-    // Look up agent's public key from database using author name
-    // Check that manifest has required author field
-    if (!manifest.author || !manifest.author.name) {
-      return res.status(400).json({
-        error: 'missing_author',
-        message: 'manifest.author.name is required. Please include author info in your manifest.json.'
-      });
-    }
-
-    const authorHandle = manifest.author.name.startsWith('@') ? manifest.author.name : `@${manifest.author.name}`;
-    const agent = await db('agents').where({ name: authorHandle }).first();
-
-    if (!agent || !agent.public_key) {
-      return res.status(400).json({
-        error: 'agent_not_found',
-        message: `Agent ${authorHandle} not found or has no public key. Please register with a valid Ed25519 keypair.`
-      });
-    }
-
-    const publicKey = agent.public_key;
-
-    // Verify file manifest signature
-    const manifestSigResult = verifyManifestSignature(file_manifest, manifest_signature, publicKey);
-    if (!manifestSigResult.valid) {
-      return res.status(400).json({
-        error: 'manifest_signature_invalid',
-        message: 'File manifest signature verification failed. Ensure you signed the canonical manifest JSON with your Ed25519 key.',
-        details: manifestSigResult.error
-      });
-    }
-
-    console.log('✅ File manifest verified:', {
-      total_files: file_manifest.total_files,
-      required_present: manifestValidation.requiredPresent
-    });
-
-    console.log('📦 Publishing Package:', {
-      name,
-      version,
-      hash: hash?.substring(0, 50) + '...',
-      signature: signature?.substring(0, 50) + '...',
-      publicKey: publicKey?.substring(0, 50) + '...',
-      manifestAuthor: manifest.author
-    });
-
-    // Verify signature against hash
-    // The client signs the FULL hash string (e.g., "sha256:abc123...")
-    if (!verifyPackageSignature(hash, signature, publicKey)) {
-      return res.status(400).json({
-        error: 'signature_invalid',
-        message: 'Package signature verification failed. Ensure you signed the full hash string (including sha256: prefix) with your Ed25519 private key.'
-      });
-    }
-
-    console.log('✅ Signature verified successfully');
-
-    // Decode and verify tarball hash
-    const tarballBuffer = Buffer.from(tarball, 'base64');
-    const computedHash = `sha256:${crypto.createHash('sha256').update(tarballBuffer).digest('hex')}`;
-
-    if (computedHash !== hash) {
-      return res.status(400).json({
-        error: 'hash_mismatch',
-        message: `Hash mismatch. Expected ${hash}, got ${computedHash}`
-      });
-    }
-
-    // Check if version already exists
-    const existing = await db('versions')
-      .where({ package_name: name, version })
-      .first();
-
-    if (existing) {
-      return res.status(409).json({
-        error: 'version_exists',
-        message: `Version ${version} already published. Versions are immutable.`
-      });
-    }
-
-    // Save tarball to storage
-    const packageDir = path.join(PACKAGES_DIR, name);
-    await fs.mkdir(packageDir, { recursive: true });
-
-    const tarballFilename = `${version}.tgz`;
-    const tarballPath = path.join(packageDir, tarballFilename);
-    const relativePath = path.relative(STORAGE_DIR, tarballPath);
-
-    await fs.writeFile(tarballPath, tarballBuffer);
-
-    // Insert or update package metadata
-    const packageExists = await db('packages').where({ name }).first();
-
-    if (!packageExists) {
-      await db('packages').insert({
-        name,
-        uuid: crypto.randomUUID(),
-        description: manifest.description,
-        author_name: manifest.author.name.replace('@', ''),
-        author_url: manifest.author.url,
-        author_public_key: publicKey,
-        license: manifest.license,
-        category: manifest.category,
-        tags: JSON.stringify(manifest.tags || []),
-        downloads: 0
-      });
-    } else {
-      // SECURITY CRITICAL: Enforce Identity Continuity
-      // Only the original author (holder of the original private key) can update the package.
-      if (packageExists.author_public_key !== publicKey) {
-        console.warn(`🚨 Security Alert: Identity Mismatch for ${name}. Expected ${packageExists.author_public_key}, got ${publicKey}`);
-        return res.status(403).json({
-          error: 'identity_mismatch',
-          message: 'Package update rejected. The signing key does not match the original author\'s identity. You cannot hijack existing packages.'
-        });
-      }
-
-      await db('packages').where({ name }).update({
-        description: manifest.description,
-        updated_at: db.fn.now()
-      });
-    }
-
-    // Ensure agent exists
-    const agentExists = await db('agents').where({ name: authorHandle }).first();
-    if (!agentExists) {
-      await db('agents').insert({
-        name: authorHandle,
-        public_key: publicKey,
-        bio: `Autonomous agent publishing ${name}`,
-        joined_at: db.fn.now()
-      });
-    }
-
-    // Track Identity Key
-    const { trackIdentityKey } = require('./identity');
-    await trackIdentityKey(authorHandle, publicKey);
-
-    // Insert version with file manifest
-    await db('versions').insert({
-      package_name: name,
-      version,
-      storage_path: relativePath,
-      hash,
-      signature,
-      manifest: JSON.stringify(manifest),
-      file_manifest: JSON.stringify(file_manifest),
-      manifest_signature: manifest_signature
-    });
-
-    // Log activity
-    await logActivity('publish', authorHandle, name, 'package', { version });
-
-    res.status(201).json({
-      status: 'published',
-      name,
-      version,
-      url: `${req.protocol}://${req.get('host')}/v1/packages/${name}/${version}`
-    });
-
-  } catch (error) {
-    console.error('Publish error:', error);
-    res.status(500).json({ error: 'publish_failed', message: error.message });
-  }
-}
 
 /**
  * GET /v1/agents - List all agents
@@ -958,11 +735,12 @@ async function botkitUnstar(req, res) {
  * @returns {string|null} New commit hash or null on failure
  */
 async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkCommit, latestVersion, forkedAt) {
-  const { execSync } = require('child_process');
+  const { execFileSync, spawnSync } = require('child_process');
 
   try {
     // Read current gitlobster.json from HEAD
-    const currentContent = execSync(`git show HEAD:gitlobster.json`, {
+    // Use execFileSync to avoid shell
+    const currentContent = execFileSync('git', ['show', 'HEAD:gitlobster.json'], {
       cwd: forkedGitPath, encoding: 'utf-8'
     });
     const manifest = JSON.parse(currentContent);
@@ -979,17 +757,24 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
     const newContent = JSON.stringify(manifest, null, 2) + '\n';
 
     // Write new blob object into the object store
-    const blobHash = execSync(
-      `printf '%s' ${JSON.stringify(newContent)} | git hash-object -w --stdin`,
-      { cwd: forkedGitPath, encoding: 'utf-8', shell: true }
-    ).trim();
+    // Use spawnSync with input option to write to stdin, avoiding pipe and shell
+    const hashObjectResult = spawnSync('git', ['hash-object', '-w', '--stdin'], {
+      cwd: forkedGitPath,
+      input: newContent,
+      encoding: 'utf-8'
+    });
+
+    if (hashObjectResult.error) throw hashObjectResult.error;
+    if (hashObjectResult.status !== 0) throw new Error(`git hash-object failed: ${hashObjectResult.stderr}`);
+
+    const blobHash = hashObjectResult.stdout.trim();
 
     // Stage the updated file in the index
-    execSync(`git read-tree HEAD`, { cwd: forkedGitPath, stdio: 'ignore' });
-    execSync(`git update-index --cacheinfo 100644,${blobHash},gitlobster.json`, { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['read-tree', 'HEAD'], { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['update-index', '--cacheinfo', `100644,${blobHash},gitlobster.json`], { cwd: forkedGitPath, stdio: 'ignore' });
 
     // Write new tree from the updated index
-    const newTree = execSync(`git write-tree`, { cwd: forkedGitPath, encoding: 'utf-8' }).trim();
+    const newTree = execFileSync('git', ['write-tree'], { cwd: forkedGitPath, encoding: 'utf-8' }).trim();
 
     // Create a new commit on top of HEAD with the updated tree
     const env = {
@@ -1000,13 +785,16 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
       GIT_COMMITTER_EMAIL: 'registry@gitlobster',
       GIT_DIR: forkedGitPath
     };
-    const newCommit = execSync(
-      `git commit-tree ${newTree} -p HEAD -m "fork: inject lineage metadata from ${parentPackage}"`,
+
+    // SECURITY: Use execFileSync with array args to prevent command injection via parentPackage
+    const newCommit = execFileSync(
+      'git',
+      ['commit-tree', newTree, '-p', 'HEAD', '-m', `fork: inject lineage metadata from ${parentPackage}`],
       { cwd: forkedGitPath, encoding: 'utf-8', env }
     ).trim();
 
     // Update HEAD to the new commit
-    execSync(`git update-ref HEAD ${newCommit}`, { cwd: forkedGitPath, stdio: 'ignore' });
+    execFileSync('git', ['update-ref', 'HEAD', newCommit], { cwd: forkedGitPath, stdio: 'ignore' });
 
     console.log(`[Fork] Injected forked_from lineage into gitlobster.json, new commit: ${newCommit}`);
     return newCommit;
@@ -1023,9 +811,9 @@ async function injectForkLineage(forkedGitPath, parentPackage, parentUUID, forkC
  * Performs git clone --bare + injects forked_from lineage into gitlobster.json
  */
 async function botkitFork(req, res) {
-  const { exec } = require('child_process');
+  const { execFile } = require('child_process');
   const util = require('util');
-  const execPromise = util.promisify(exec);
+  const execFilePromise = util.promisify(execFile);
 
   // Import git-middleware helpers
   const { scopedToDirName, GIT_PROJECT_ROOT: GIT_DIR } = require('./git-middleware');
@@ -1100,11 +888,13 @@ async function botkitFork(req, res) {
         console.log(`[Fork] Parent git repo exists at ${parentGitPath}, cloning to ${forkedGitPath}`);
 
         // Clone parent bare repo to fork bare repo
-        await execPromise(`git clone --bare "${parentGitPath}" "${forkedGitPath}"`);
+        // SECURITY: Use execFile with array args to prevent command injection
+        await execFilePromise('git', ['clone', '--bare', parentGitPath, forkedGitPath]);
 
         // Get the commit hash of the HEAD after clone
-        const { stdout: headHash } = await execPromise(
-          `git rev-parse HEAD`,
+        const { stdout: headHash } = await execFilePromise(
+          'git',
+          ['rev-parse', 'HEAD'],
           { cwd: forkedGitPath }
         );
         forkCommit = headHash.trim();
@@ -1719,7 +1509,6 @@ module.exports = {
   getSkillDoc,
   createObservation,
   listObservations,
-  publishPackage,
   requireAuth,
   getAgentProfile,
   getAgentManifest,
@@ -1728,9 +1517,6 @@ module.exports = {
   starPackage,
   unstarPackage,
   checkStarred,
-  botkitStar,
-  botkitUnstar,
-  botkitFork,
   getFileManifest,
   flagPackage,
   getActivityFeed,

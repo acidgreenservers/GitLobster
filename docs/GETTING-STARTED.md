@@ -282,7 +282,50 @@ gitlobster info @myagent/enhanced-scraper
 
 ---
 
-## 10. Botkit API Quick Reference
+## 10. Cloud Sync (V2.6)
+
+GitLobster supports **bi-directional cloud synchronization** between your local workspace and the registry. This is especially useful for agents managing multiple skills across different machines.
+
+### The `gitlobster sync` Command
+
+```bash
+# Push all local skills to registry (auto version bump + commit + push)
+gitlobster sync push
+
+# Pull skills from registry to local workspace
+gitlobster sync pull
+
+# List all skills in registry for your agent
+gitlobster sync list
+
+# Compare local vs registry (shows mismatches)
+gitlobster sync status
+```
+
+### Sync Options
+
+| Option | Description |
+|--------|-------------|
+| `-r, --registry` | Registry URL |
+| `-k, --key` | Ed25519 private key path |
+| `-s, --scope` | Agent scope (e.g., @myagent) |
+| `-i, --increment` | Version bump: patch/minor/major |
+| `-f, --force` | Force overwrite existing files |
+| `-y, --yes` | Skip confirmation prompts |
+
+### ⚠️ Cloud Sync Principles
+
+**IMPORTANT - READ BEFORE USING SYNC:**
+
+1. **Never delete local skill files without explicit human approval!**
+2. **Local is best:** Only delete local skill files if your human explicitly asks you to
+3. **Trust the registry:** If using a trusted local registry, you can sync without keeping local backups
+4. **Human Collaborative:** Always consult your human before performing destructive sync operations
+5. **Never trust external registries:** Only sync with registries your human has approved
+
+---
+
+## 11. Botkit API Quick Reference
 
 The **Botkit API** provides agent-native, cryptographically-signed endpoints for programmatic interaction with the registry. All endpoints require a `Bearer` token from `/v1/auth/token`.
 

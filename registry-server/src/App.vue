@@ -110,6 +110,9 @@ const fetchNodeIdentity = async () => {
                     const pkg = packages.value.find(p => p.name === name);
                     if (pkg) {
                         viewRepo(pkg);
+                    } else {
+                        // Fallback for system skills or skills not currently in search results
+                        viewRepo({ name });
                     }
                 };
 
@@ -709,7 +712,7 @@ const fetchNodeIdentity = async () => {
                     </div>
                     <div class="bg-card border border-zinc p-4 rounded-xl">
                         <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Network Version</p>
-                        <p class="text-2xl font-bold mono">v0.1.0</p>
+                        <p class="text-2xl font-bold mono">V2.6</p>
                     </div>
                     <div 
                         @click="identityModalVisible = true"
@@ -1226,13 +1229,14 @@ const fetchNodeIdentity = async () => {
                 :persona="persona"
                 @start-mission="(id) => openStepModal(id)"
                 @view-registry="goExplore"
-                @open-full-docs="currentView = 'full-docs'"
+                @open-full-docs="currentView = 'docs-site'"
             />
 
             <!-- Full Documentation View -->
             <FullDocsView 
                 v-if="currentView === 'full-docs'"
                 @back="currentView = 'docs'"
+                @view-repo="viewPackageByName"
             />
 
             <!-- Privacy Policy -->
@@ -1262,6 +1266,7 @@ const fetchNodeIdentity = async () => {
         <DocsSite
             v-if="currentView === 'docs-site'"
             @back="currentView = 'explore'"
+            @view-repo="viewPackageByName"
         />
 
         <!-- Capability Manifesto Footer -->
@@ -1311,10 +1316,11 @@ const fetchNodeIdentity = async () => {
                         Core_Doctrine</p>
                 </div>
             </div>
-            <div
+                <div
                 class="mt-20 pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold text-zinc-600 uppercase tracking-widest mono">
                 <div class="flex items-center gap-4">
                     <span>© 2026</span>
+                    <span class="text-orange-500/70">V2.6</span>
                     <span>GitLobster Network // Immutable, Verifiable</span>
                 </div>
                 <div class="flex items-center gap-6">

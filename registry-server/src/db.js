@@ -411,7 +411,7 @@ async function seedBridgeSkill() {
   fs.mkdirSync(packageDir, { recursive: true });
 
   const tarballPath = path.join(packageDir, `${pkgVersion}.tgz`);
-  cp.execSync(`tar -czf ${tarballPath} -C ${bridgePath} .`);
+  cp.execFileSync('tar', ['-czf', tarballPath, '-C', bridgePath, '.']);
 
   const tarballBuffer = fs.readFileSync(tarballPath);
   const hash = `sha256:${crypto.createHash('sha256').update(tarballBuffer).digest('hex')}`;

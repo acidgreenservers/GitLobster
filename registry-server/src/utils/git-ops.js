@@ -1,8 +1,8 @@
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const util = require('util');
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 
 const GIT_PROJECT_ROOT = process.env.GIT_PROJECT_ROOT || path.join(__dirname, '../../storage/git');
 
@@ -62,10 +62,10 @@ async function createBareRepo(repoName) {
 
     try {
         // Ensure parent directory exists
-        await execPromise(`mkdir -p "${path.dirname(repoPath)}"`);
+        fs.mkdirSync(path.dirname(repoPath), { recursive: true });
 
         // Create bare repository
-        await execPromise(`git init --bare "${repoPath}"`);
+        await execFilePromise('git', ['init', '--bare', repoPath]);
 
         // Install the post-receive hook
         await installPostReceiveHook(repoPath);
@@ -88,7 +88,7 @@ async function git(repoName, args) {
         throw new Error('Invalid repo name');
     }
 
-    const { stdout, stderr } = await execPromise(`git ${args}`, { cwd: repoPath });
+    const { stdout, stderr } = await execFilePromise('git', args, { cwd: repoPath });
     return stdout.trim();
 }
 
@@ -97,7 +97,7 @@ async function git(repoName, args) {
  */
 async function getManifest(repoName, ref) {
     try {
-        const content = await git(repoName, `show ${ref}:manifest.json`);
+        const content = await git(repoName, ['show', `${ref}:manifest.json`]);
         return JSON.parse(content);
     } catch (e) {
         // Manifest might not exist in base or head
@@ -124,30 +124,32 @@ async function mergeProposal(repoName, baseRef, headRef, proposalId) {
 
     try {
         // Clone locally
-        await execPromise(`git clone "${repoPath}" "${tmpDir}"`);
+        await execFilePromise('git', ['clone', repoPath, tmpDir]);
 
         // Checkout target branch
-        await execPromise(`git checkout ${baseRef}`, { cwd: tmpDir });
+        await execFilePromise('git', ['checkout', baseRef], { cwd: tmpDir });
 
         // Config identity for the merge commit (The Agent "Hand")
-        await execPromise(`git config user.name "GitLobster Auto-Merge"`, { cwd: tmpDir });
-        await execPromise(`git config user.email "bot@gitlobster.network"`, { cwd: tmpDir });
+        await execFilePromise('git', ['config', 'user.name', 'GitLobster Auto-Merge'], { cwd: tmpDir });
+        await execFilePromise('git', ['config', 'user.email', 'bot@gitlobster.network'], { cwd: tmpDir });
 
         // Merge
         // --no-ff to create a merge commit that records the proposal ID? 
         // Or fast-forward if possible? Let's do --no-ff to preserve history of the PR.
-        await execPromise(`git merge origin/${headRef} --no-ff -m "Merge Proposal ${proposalId}"`, { cwd: tmpDir });
+        await execFilePromise('git', ['merge', `origin/${headRef}`, '--no-ff', '-m', `Merge Proposal ${proposalId}`], { cwd: tmpDir });
 
         // Push back
-        await execPromise(`git push origin ${baseRef}`, { cwd: tmpDir });
+        await execFilePromise('git', ['push', 'origin', baseRef], { cwd: tmpDir });
 
         // Get new hash
-        const { stdout: newHash } = await execPromise(`git rev-parse HEAD`, { cwd: tmpDir });
+        const { stdout: newHash } = await execFilePromise('git', ['rev-parse', 'HEAD'], { cwd: tmpDir });
         return newHash.trim();
 
     } finally {
         // Cleanup
-        await execPromise(`rm -rf "${tmpDir}"`);
+        if (fs.existsSync(tmpDir)) {
+            fs.rmSync(tmpDir, { recursive: true, force: true });
+        }
     }
 }
 

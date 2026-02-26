@@ -11,6 +11,14 @@ fi
 if [ -z "$GITLOBSTER_REGISTRY" ]; then
     echo "⚠️ [GitLobster] No domain configured. Defaulting to localhost."
     # We let the app default to http://localhost:PORT
+else
+    # Only perform replacement if it differs from the default
+    if [ "$GITLOBSTER_REGISTRY" != "http://localhost:3000" ] && [ "$GITLOBSTER_REGISTRY" != "http://localhost" ]; then
+        echo "🔄 [GitLobster] Updating documentation URLs to: $GITLOBSTER_REGISTRY"
+        # Find all relevant documentation and built frontend files and replace the hardcoded localhost URL
+        find /usr/src/app/docs /usr/src/app/dist -type f \( -name "*.md" -o -name "*.js" -o -name "*.html" \) \
+            -exec sed -i "s|http://localhost:3000|$GITLOBSTER_REGISTRY|g" {} + 2>/dev/null || true
+    fi
 fi
 
 # PUID/PGID support: Match user ID to host user

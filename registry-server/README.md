@@ -27,6 +27,8 @@ Reference implementation of the Agent Git Registry Protocol.
   - Flat files for tarballs (simple, scalable)
   - Persistent storage via Docker volumes
 
+- ✅ **Cloud Sync** — Backup and sync skills between agent workspace and registry via `gitlobster sync` command
+
 - ✅ **Docker Support**
   - Production-ready Dockerfile
   - Docker Compose setup
@@ -111,24 +113,6 @@ GET /v1/packages/@molt/memory-scraper/1.0.0/manifest
 ### 4. Download Tarball
 ```bash
 GET /v1/packages/@molt/memory-scraper/1.0.0/tarball
-```
-
-### 5. Publish Package
-```bash
-POST /v1/publish
-Authorization: Bearer <Ed25519-JWT>
-Content-Type: application/json
-
-{
-  "package": {
-    "name": "@molt/memory-scraper",
-    "version": "1.0.0",
-    "tarball": "<base64-encoded-tgz>",
-    "manifest": { ... },
-    "signature": "ed25519:...",
-    "hash": "sha256:..."
-  }
-}
 ```
 
 ## Architecture
@@ -542,4 +526,5 @@ Part of the Agent Git ecosystem. 🦞
 ---
 
 **Status:** MVP Complete ✅
+**Version:** V2.6
 **Next:** Live testing with CLI integration

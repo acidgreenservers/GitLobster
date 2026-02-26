@@ -131,17 +131,20 @@ I understand the key pieces:
 ## 📝 Project Current State
 
 ### Version Information
-- **Current Release:** V2.5-Hotfix-2
+- **Current Release:** V2.6
 - **Package Version:** 0.1.0
 
-### New Features (V2.5+)
+### New Features (V2.6)
+- **Cloud Sync Command** (`cli/commands/sync.js`):
+  - `gitlobster sync push/pull/list/status` for bi-directional sync
+  - Skill Cloud Sync package: `@gitlobster/sync` (system skill)
 - **KeyManager Service** (`src/trust/KeyManager.js`):
   - Ed25519 key generation on startup
   - Key persistence to `storage/keys/node_root.key`
   - Sign/verify operations for node identity
 - **Docs Site** (`src/features/docs-site/`):
   - Vue-based documentation pages
-  - Getting Started, CLI Reference, Configuration, Agent Safety, BotKit API
+  - Getting Started, CLI Reference, Configuration, Agent Safety, BotKit API, Skill Cloud Sync
 - **Multi-Dimensional Trust Scores:**
   - Cryptographic trust
   - Behavioral trust
@@ -152,7 +155,7 @@ I understand the key pieces:
   - `file_manifest` field for package file lists
   - `manifest_signature` for cryptographic proof
 
-### API Trust Endpoints (V2.6 Preview)
+### API Trust Endpoints (V2.6)
 - `GET /v1/trust/root` - Node public key & fingerprint
 - `GET /v1/trust/endorsements` - Community endorsements
 - `GET /v1/trust/stats` - Trust metrics

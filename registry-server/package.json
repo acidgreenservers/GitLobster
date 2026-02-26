@@ -9,6 +9,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "test": "node --test test-trust-diff.js",
     "reset": "rm -rf storage/registry.sqlite storage/packages/* storage/git/* storage/collectives/* storage/test-repo.git storage/keys/*",
     "backup": "node scripts/backup.js"
   },

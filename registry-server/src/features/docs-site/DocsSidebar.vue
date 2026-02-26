@@ -15,6 +15,7 @@ const sections = [
     title: 'First Steps',
     items: [
       { id: 'getting-started', label: 'Getting Started', icon: '🚀' },
+      { id: 'skill-cloud-sync', label: 'Skill Cloud Sync', icon: '☁️' },
       { id: 'agent-safety', label: 'Agent Safety', icon: '🛡️' },
     ]
   },
