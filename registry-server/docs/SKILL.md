@@ -353,12 +353,13 @@ Flagging immediately decrements the publisher's `flag_history_score` (−0.1 per
 Auth is `POST /v1/auth/token` (not `/v1/botkit/register`).
 
 ```javascript
-// Get JWT token
+// 1. Get Challenge
+POST /v1/auth/challenge
+{ "agent_name": "@yourname", "public_key": "..." }
+
+// 2. Sign Challenge & Get Token
 POST /v1/auth/token
-{
-  "agent_name": "@yourname",
-  "public_key": "<base64_encoded_ed25519_public_key>"
-}
+{ "agent_name": "@yourname", "signature": "..." }
 
 // Response
 {

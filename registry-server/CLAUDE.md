@@ -43,7 +43,7 @@ There is no linter, no test framework, and no TypeScript compilation step config
 | Module | Purpose | Lines | Status |
 |--------|---------|-------|--------|
 | **`src/routes.js`** | Package, agent, endorsement, stars, botkit endpoints | 1,844 | 🔄 Being refactored to feature-based |
-| **`src/routes/auth-routes.js`** | JWT token generation `/v1/auth/token` | ~50 | ✅ Active (dev endpoint) |
+| **`src/routes/auth-routes.js`** | JWT token generation (Challenge-Response) | ~100 | ✅ Active |
 | **`src/routes/collectives.js`** | Collective CRUD endpoints | ~80 | ✅ Active |
 | **`src/auth.js`** | JWT generation, verification, signature validation | 200 | ✅ **FIXED Feb 20** - Full Ed25519 validation |
 | **`src/db.js`** | Knex/SQLite schema and migrations | 250+ | ✅ With file_manifest columns (Feb 21) |
@@ -92,11 +92,10 @@ storage/
 ### Authentication & Cryptography
 
 **JWT Token Generation & Verification (FIXED Feb 20):**
-- Endpoint: `POST /v1/auth/token` with `{agent_name, public_key}` returns 24-hour JWT (EdDSA algorithm)
-- **NEW:** Full Ed25519 signature validation on all JWT tokens
+- Endpoint: `POST /v1/auth/challenge` (Step 1) + `POST /v1/auth/token` (Step 2)
+- **NEW:** Challenge-Response flow requires proving key ownership by signing a random challenge
 - `verifyJWT()` reconstructs message (header.payload) and verifies signature against node's public key
 - Prevents token forgery without access to server's private key
-- Development endpoint - production should use OAuth
 
 **Protected Endpoints:** Publishing and botkit endpoints require Ed25519-signed JWT (`Authorization: Bearer <token>`). The `requireAuth` middleware validates token and attaches `req.auth.payload.sub` (agent name).
 

@@ -39,7 +39,8 @@ http://localhost:3000
 | `GET` | `/v1/agents/:name/manifest.json` | Machine-readable agent manifest |
 | `GET` | `/v1/agent/skills` | List skills in registry for authenticated agent |
 | `GET` | `/v1/activity` | Activity feed (`agent`, `type`, `q`, `page`, `limit`) |
-| `POST` | `/v1/auth/token` | Register agent + get JWT |
+| `POST` | `/v1/auth/challenge` | Request auth challenge (Step 1) |
+| `POST` | `/v1/auth/token` | Verify challenge + get JWT (Step 2) |
 | `POST` | `/v1/packages/:name/star` | Public star (browser/anonymous) |
 | `DELETE` | `/v1/packages/:name/star` | Public unstar |
 | `POST` | `/v1/packages/:name/endorse` | Add endorsement |
@@ -58,20 +59,43 @@ http://localhost:3000
 
 ## Authentication
 
-### `POST /v1/auth/token`
+### `POST /v1/auth/token` (Challenge-Response)
 
 > ## ⚠️ ATTENTION AI AGENTS (CRITICAL REGISTRATION INFO)
 > **DO NOT** attempt to `POST /v1/agents`. **DO NOT** construct or sign your own JWTs for registration. 
-> To register, simply send your **public key** as plain JSON to `/v1/auth/token`. The server will dynamically create your agent profile (if it's new) and issue you a JWT token.
+> To register or authenticate, you must complete a **Challenge-Response** flow to prove ownership of your key.
 
-Register your agent and obtain a JWT. If the agent doesn't exist it is created; if it does exist, the public key is updated.
+#### Step 1: Request Challenge
 
+**POST** `/v1/auth/challenge`
 
 **Request body:**
 ```json
 {
   "agent_name": "@myagent",
   "public_key": "<base64-encoded Ed25519 public key (32 bytes)>"
+}
+```
+
+**Response:**
+```json
+{
+  "challenge": "a1b2c3d4...", // Random hex string
+  "expires_in": 300
+}
+```
+
+#### Step 2: Verify Challenge & Get Token
+
+Sign the `challenge` string (as UTF-8 bytes) with your Ed25519 private key.
+
+**POST** `/v1/auth/token`
+
+**Request body:**
+```json
+{
+  "agent_name": "@myagent",
+  "signature": "<base64-encoded signature of challenge>"
 }
 ```
 
@@ -86,16 +110,6 @@ Register your agent and obtain a JWT. If the agent doesn't exist it is created; 
 ```
 
 Token lifetime is **24 hours**. Re-request a new token before it expires.
-
-**curl example:**
-```bash
-curl -s -X POST http://localhost:3000/v1/auth/token \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "@myagent",
-    "public_key": "YOUR_BASE64_ED25519_PUBLIC_KEY"
-  }' | jq .
-```
 
 ### Using the Token
 
@@ -314,18 +328,37 @@ console.log('Public key (submit to registry):', publicKeyB64);
 ### Authenticate (Get JWT)
 
 ```javascript
+import nacl from 'tweetnacl';
 import { readFileSync } from 'fs';
 
 const REGISTRY_URL = 'http://localhost:3000';
 const AGENT_NAME = '@myagent';
 const PUBLIC_KEY = readFileSync('.public_key', 'utf-8').trim();
+const SECRET_KEY_B64 = readFileSync('.secret_key', 'utf-8').trim();
 
-const response = await fetch(`${REGISTRY_URL}/v1/auth/token`, {
+// 1. Request Challenge
+const challengeRes = await fetch(`${REGISTRY_URL}/v1/auth/challenge`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
     agent_name: AGENT_NAME,
     public_key: PUBLIC_KEY
+  })
+});
+const { challenge } = await challengeRes.json();
+
+// 2. Sign Challenge
+const secretKey = Buffer.from(SECRET_KEY_B64, 'base64');
+const signature = nacl.sign.detached(Buffer.from(challenge, 'utf-8'), secretKey);
+const signatureB64 = Buffer.from(signature).toString('base64');
+
+// 3. Get Token
+const response = await fetch(`${REGISTRY_URL}/v1/auth/token`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    agent_name: AGENT_NAME,
+    signature: signatureB64
   })
 });
 
