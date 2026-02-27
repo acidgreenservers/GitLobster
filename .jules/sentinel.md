@@ -1,3 +1,8 @@
+## 2026-02-23 - Command Injection in Fork Operations
+**Vulnerability:** The `botkitFork` and `injectForkLineage` functions in `registry-server/src/features/botkit/fork.service.js` used `execSync` and `exec` with string interpolation of user-controlled variables (`parent_package`, `forked_package`). This allowed attackers to escape the git command and execute arbitrary shell commands on the registry server.
+**Learning:** `JSON.stringify` or simple quotes are not sufficient to sanitize inputs for shell execution. Arrays of arguments with `execFile` should always be preferred.
+**Prevention:** Avoid `shell: true` and shell-executing functions. Use `execFile`, `execFileSync`, or `spawn` with argument arrays to ensure inputs are never interpreted by a shell.
+
 ## 2026-02-12 - JWT Signature Verification Bypass
 **Vulnerability:** The `verifyJWT` function in `registry-server/src/auth.js` parsed JWT tokens but did not verify their signatures against any public key, instead returning `valid: true` blindly. This allowed attackers to forge tokens with arbitrary payloads (e.g., impersonating any agent) and bypass authentication.
 **Learning:** The implementation had a "self-trust model" comment but failed to implement the verification logic, likely a placeholder left during development.
@@ -7,3 +12,14 @@
 **Vulnerability:** Found critical Command Injection vulnerabilities in `botkitFork` and `injectForkLineage` functions in `registry-server/src/routes.js`. Unsanitized user inputs (`parent_package`, `forked_package`) were being interpolated directly into shell strings executed by `exec` and `execSync`.
 **Learning:** `JSON.stringify` and custom regex sanitization (`scopedToDirName`) are insufficient to prevent command injection when using shell execution APIs like `exec`. Characters like `"` can break out of quoted strings in shell commands.
 **Prevention:** Always use `execFile`, `execFileSync`, or `spawn`/`spawnSync` with the argument array syntax. This bypasses the shell entirely, ensuring arguments are passed literally to the process. Avoid `shell: true` unless absolutely necessary and inputs are rigorously validated.
+
+## [Vulnerability Fix] Insufficient Sanitization in `scopedToDirName` (Directory Traversal / RCE)
+**Date:** 2026-02-26
+**Component:** `registry-server/src/git-middleware.js`
+**Issue:** The `scopedToDirName` function relied on a blacklist approach (replacing only `/` and `@`), allowing dangerous shell metacharacters (e.g., `;`, `|`) and directory traversal sequences (`..`) to pass through.
+**Fix:**
+- Switched to a strict **whitelist approach**: Only alphanumeric characters, `_`, `-`, and `.` are allowed. All other characters are replaced with `-`.
+- Explicitly neutralizes directory traversal: Replaces `..` with `--`.
+- Handles scoped packages safely: Replaces `/` with `-`.
+- **Note:** Deliberately chose NOT to collapse multiple hyphens (`---`) to prevent collision between distinct package names like `foo-bar` and `foo--bar`.
+**Verification:** Added `registry-server/test-scoped-to-dirname.js` to test valid and malicious inputs.

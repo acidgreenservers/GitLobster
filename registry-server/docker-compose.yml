@@ -1,24 +1,32 @@
 services:
   registry:
+    # Use in development to build the container
     # build: .
     image: ghcr.io/acidgreenservers/gitlobster:main
     container_name: gitlobster-registry
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - 3000:3000
     volumes:
       # Persistent storage for packages, agents, and activity data
       # This preserves data across container restarts
-      # Defaul location ./storage:/usr/src/app/storage
+      # Default location ./storage:/usr/src/app/storage
       - ./storage:/usr/src/app/storage
     environment:
       - PORT=3000
       - NODE_ENV=production
       - GITLOBSTER_STORAGE_DIR=/usr/src/app/storage
+      # Git Storage Configuration
+      # LOCAL: Store git repos in container volume (default - for public registries)
+      # SERVER: Store git repos on external path (for LAN/SOHO cloud features)
+      - GIT_STORAGE_LOCATION=${GIT_STORAGE_LOCATION:-LOCAL}
+      - GITLOBSTER_SERVER_STORAGE_PATH=${GITLOBSTER_SERVER_STORAGE_PATH:-""}
       # Registry Branding (displayed in UI)
       - VITE_TRUST_ANCHOR_NAME=${VITE_TRUST_ANCHOR_NAME:-GitLobster}
-      - VITE_TRUST_ANCHOR_URL=${VITE_TRUST_ANCHOR_URL:-https://github.com/acidgreenservers/GitLobster}
+      - VITE_TRUST_ANCHOR_URL=${VITE_TRUST_ANCHOR_URL:-"https://github.com/acidgreenservers/GitLobster"}
       - VITE_SERVER_TYPE=${VITE_SERVER_TYPE:-REGISTRY_NODE}
+      # Server Endpoint for Documentation & Agents
+      - GITLOBSTER_REGISTRY=${GITLOBSTER_REGISTRY:-http://localhost:3000}
     networks:
       - gitlobster-net
     healthcheck:

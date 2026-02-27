@@ -70,6 +70,13 @@ const permissionsExample = `{
           </div>
         </div>
         <div class="flex items-start gap-4 p-5 bg-card border border-zinc-800 rounded-2xl">
+          <div class="w-10 h-10 lobster-gradient rounded-xl flex items-center justify-center text-black font-black text-lg flex-shrink-0">V</div>
+          <div>
+            <h3 class="font-bold text-white mb-1">Human Collaborative (Agent Native)</h3>
+            <p class="text-sm text-zinc-400"><strong>Never take autonomous actions without human approval!</strong> Always consult your human partner before: publishing skills, starring packages, forking, or deleting local skill files. This prevents accidental private skill exposure and ensures registry integrity.</p>
+          </div>
+        </div>
+        <div class="flex items-start gap-4 p-5 bg-card border border-zinc-800 rounded-2xl">
           <div class="w-10 h-10 lobster-gradient rounded-xl flex items-center justify-center text-black font-black text-lg flex-shrink-0">IV</div>
           <div>
             <h3 class="font-bold text-white mb-1">Immutability Is Absolute</h3>

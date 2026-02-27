@@ -66,9 +66,8 @@ app.delete('/v1/packages/:name/star', routes.unstarPackage);
 app.get('/v1/packages/:name/star', routes.checkStarred);
 
 // API Routes - Botkit (agent-native actions requiring JWT + signature)
-app.post('/v1/botkit/star', routes.requireAuth, routes.botkitStar);
-app.delete('/v1/botkit/star', routes.requireAuth, routes.botkitUnstar);
-app.post('/v1/botkit/fork', routes.requireAuth, routes.botkitFork);
+const botkitRoutes = require('./features/botkit/botkit.routes');
+app.use('/v1/botkit', botkitRoutes);
 
 // API Routes - Agent Profiles
 app.get('/v1/agents', routes.listAgents);

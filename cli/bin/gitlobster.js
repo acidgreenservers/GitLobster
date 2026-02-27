@@ -2,7 +2,7 @@
 
 /**
  * Agent Git CLI
- * Commands: init, publish, install, fork, search, info
+ * Commands: init, publish, install, fork, search, info, sync
  */
 
 import { Command } from 'commander';
@@ -12,6 +12,7 @@ import { installCommand } from '../commands/install.js';
 import { forkCommand } from '../commands/fork.js';
 import { searchCommand } from '../commands/search.js';
 import { infoCommand } from '../commands/info.js';
+import { syncCommand } from '../commands/sync.js';
 
 const program = new Command();
 
@@ -83,5 +84,19 @@ program
   .argument('<package>', 'Package name')
   .option('-r, --registry <url>', 'Registry URL', process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000')
   .action(infoCommand);
+
+// gitlobster sync <subcommand>
+program
+  .command('sync')
+  .description('Synchronize skills between local workspace and registry')
+  .argument('[subcommand]', 'Subcommand: push, pull, list, or status')
+  .argument('[path]', 'Workspace path (for push/pull/status)')
+  .option('-r, --registry <url>', 'Registry URL', process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000')
+  .option('-k, --key <path>', 'Path to Ed25519 private key', '~/.ssh/gitlobster_ed25519')
+  .option('-s, --scope <scope>', 'Agent scope (e.g., @myagent)')
+  .option('-i, --increment <type>', 'Version increment type: patch, minor, major', 'patch')
+  .option('-f, --force', 'Force overwrite existing files')
+  .option('-y, --yes', 'Skip confirmation prompts')
+  .action(syncCommand);
 
 program.parse();

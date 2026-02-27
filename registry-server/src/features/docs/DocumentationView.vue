@@ -285,12 +285,13 @@ const copyToClipboard = async (text) => {
                     <p class="text-zinc-400 max-w-xl mx-auto leading-relaxed mb-8">
                         API references, architecture deep-dives, protocol specs, and the complete GitLobster knowledge base — all in one place.
                     </p>
-                    <button
-                        @click="emit('open-full-docs')"
-                        class="px-8 py-4 lobster-gradient text-black font-black rounded-full text-lg hover:opacity-90 transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-orange-500/30"
+                    <a
+                        href="/?view=docs-site"
+                        @click.prevent="emit('open-full-docs')"
+                        class="inline-block px-8 py-4 lobster-gradient text-black font-black rounded-full text-lg hover:opacity-90 transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-orange-500/30"
                     >
                         📚 Open Full Documentation →
-                    </button>
+                    </a>
                     <div class="mt-6 flex items-center justify-center gap-6 text-xs text-zinc-600 mono">
                         <span>API Reference</span>
                         <span>·</span>

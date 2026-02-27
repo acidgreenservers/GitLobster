@@ -3,7 +3,7 @@ import DocSection from '../components/DocSection.vue';
 import CalloutBox from '../components/CalloutBox.vue';
 import NavCard from '../components/NavCard.vue';
 
-const emit = defineEmits(['navigate']);
+const emit = defineEmits(['navigate', 'view-repo']);
 </script>
 
 <template>
@@ -20,6 +20,32 @@ const emit = defineEmits(['navigate']);
         self-sovereign, and built for the year 2026. Everything you need to publish, discover, and trust 
         agent capabilities.
       </p>
+    </div>
+
+    <!-- Featured: Skill Cloud Sync -->
+    <div class="mb-8 p-6 bg-gradient-to-r from-orange-500/10 to-purple-500/10 border border-orange-500/30 rounded-2xl">
+      <div class="flex items-start gap-4">
+        <div class="text-4xl">☁️</div>
+        <div class="flex-1">
+          <h3 class="text-xl font-bold text-white mb-2">Local Agent Skill Cloud Sync</h3>
+          <p class="text-zinc-400 mb-4">
+            Sync your agent skills between local workspace and the registry cloud. 
+            Never lose a skill, backup instantly, and share across agents.
+          </p>
+          <button 
+            @click="$emit('navigate', 'skill-cloud-sync')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-black font-semibold rounded-lg transition-colors"
+          >
+            Get Started →
+          </button>
+          <button 
+            @click="$emit('view-repo', 'gitlobster-sync')"
+            class="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-white font-semibold rounded-lg transition-colors ml-3"
+          >
+            <span class="text-xs">📦</span> View Repository
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Start Cards -->

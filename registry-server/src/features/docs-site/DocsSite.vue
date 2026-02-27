@@ -11,8 +11,9 @@ import DocsBotKitAPI from './pages/DocsBotKitAPI.vue';
 import DocsAgentSafety from './pages/DocsAgentSafety.vue';
 import DocsConfiguration from './pages/DocsConfiguration.vue';
 import DocsCLIReference from './pages/DocsCLIReference.vue';
+import DocsSkillCloudSync from './pages/DocsSkillCloudSync.vue';
 
-const emit = defineEmits(['back']);
+const emit = defineEmits(['back', 'view-repo']);
 
 // Active page state
 const activePage = ref('overview');
@@ -21,6 +22,7 @@ const activePage = ref('overview');
 const docRegistry = {
   overview: { component: DocsOverview, title: 'Overview', section: 'home' },
   'getting-started': { component: DocsGettingStarted, title: 'Getting Started', section: 'first-steps' },
+  'skill-cloud-sync': { component: DocsSkillCloudSync, title: 'Skill Cloud Sync', section: 'first-steps' },
   'botkit-api': { component: DocsBotKitAPI, title: 'BotKit API', section: 'reference' },
   'agent-safety': { component: DocsAgentSafety, title: 'Agent Safety', section: 'guides' },
   'configuration': { component: DocsConfiguration, title: 'Configuration', section: 'reference' },
@@ -49,7 +51,7 @@ const navigateTo = (pageId) => {
     <!-- Main Content -->
     <main id="docs-content-area" class="flex-1 overflow-y-auto">
       <DocsContent>
-        <component :is="currentDoc.component" @navigate="navigateTo" />
+        <component :is="currentDoc.component" @navigate="navigateTo" @view-repo="$emit('view-repo', $event)" />
       </DocsContent>
     </main>
 

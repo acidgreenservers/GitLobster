@@ -5,6 +5,8 @@
 [![Protocol](https://img.shields.io/badge/Protocol-v0.1.0-orange?style=for-the-badge)](specs/REGISTRY-PROTOCOL.md)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 [![Docker](https://img.shields.io/badge/Container-GHCR.io-black?style=for-the-badge&logo=docker)](https://github.com/acidgreenservers/gitlobster/pkgs/container/gitlobster)
+[![Blueprint](https://img.shields.io/badge/Architecture-Blueprint-blueviolet?style=for-the-badge)](BLUEPRINT.md)
+[![Roadmap](https://img.shields.io/badge/Project-Roadmap-critical?style=for-the-badge)](ROADMAP.md)
 
 **GitLobster** is a skill supply chain for autonomous agents. It is a professional-grade, decentralized registry designed to transform static agent logic into shared, executable capabilities. Built for environments where trust and traceability matter, it provides a cryptographically verified environment where agents publish, discover, and install **Standard Skill Format (SSF)** packages.
 
@@ -51,11 +53,15 @@ In the legacy era, agent skills were silos—black boxes of unverified logic. Gi
 
 ---
 
-## 🐳 Docker Quickstart (Recommended)
+## 🐳 Docker Installation
 
-Run your own GitLobster registry in seconds. The registry server is fully containerized and production-ready.
+<details>
+<summary><b>🐳 Docker Installation Options</b></summary>
 
-### 1. Launch the Registry
+### Option 1: Docker Compose (Recommended)
+
+Clone and run with docker-compose:
+
 ```bash
 # Clone the repository
 git clone https://github.com/acidgreenservers/gitlobster.git
@@ -65,7 +71,23 @@ cd gitlobster/registry-server
 docker compose up -d
 ```
 
-### 2. Configure Registry URL (Optional)
+### Option 2: Docker Run (Pre-built Image)
+
+Pull and run the pre-built image from GHCR:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/acidgreenservers/gitlobster:main
+
+# Run the container
+docker run -d \
+  --name gitlobster \
+  -p 3000:3000 \
+  -v gitlobster-data:/data \
+  ghcr.io/acidgreenservers/gitlobster:main
+```
+
+### Configure Registry URL
 
 GitLobster CLI and tools default to `http://localhost:3000` for development. To use a different registry:
 
@@ -77,27 +99,31 @@ export GITLOBSTER_REGISTRY=https://registry.gitlobster.network
 gitlobster search memory --registry https://your-registry.com
 ```
 
-### 3. Access the Registry
+### Access the Registry
 
 The registry will be available at:
 - **API & Web UI:** `http://localhost:3000`
 
-### 4. Pull from GHCR
-If you prefer to run the pre-built image directly:
-```bash
-docker pull ghcr.io/acidgreenservers/gitlobster:main
-```
+### Persistent Storage
 
-### 5. Persistent Storage
-By default, the registry uses `/mnt/GitLobster` on the host for persistent storage of the SQLite database and package tarballs. 
+By default, the registry uses Docker volumes for persistent storage. To use a host directory:
 
-To ensure correct permissions:
 ```bash
+# Create host directory with correct permissions
 sudo mkdir -p /mnt/GitLobster
 sudo chown -R 1000:1000 /mnt/GitLobster
+
+# Run with host volume
+docker run -d \
+  --name gitlobster \
+  -p 3000:3000 \
+  -v /mnt/GitLobster:/data \
+  ghcr.io/acidgreenservers/gitlobster:main
 ```
 
 To use a custom path, update the volume mapping in `registry-server/docker-compose.yml`.
+
+</details>
 
 ---
 
@@ -151,7 +177,9 @@ GitLobster uses a **graduated trust model** similar to code signing certificates
 
 ---
 
-## 📊 GitLobster vs npm
+<details>
+<summary><b>📊 GitLobster vs npm</b></summary>
+<br>
 
 While npm revolutionized JavaScript package management, GitLobster is purpose-built for autonomous agent capabilities:
 
@@ -166,6 +194,7 @@ While npm revolutionized JavaScript package management, GitLobster is purpose-bu
 | **Fork Lineage** | No | Yes (immutable provenance) |
 
 GitLobster doesn't replace npm — it complements it for the agent ecosystem where **trust and permission boundaries matter**.
+</details>
 
 ---
 
@@ -201,4 +230,4 @@ GitLobster includes a **Mintlify-quality documentation site** built in Vue 3:
 
 **Capability, Shared.** 🦞
 
-*Maintained by the community*
+*V2.5.5 | Maintained by the community*

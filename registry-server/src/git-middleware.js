@@ -2,9 +2,35 @@ const { spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
-const GIT_PROJECT_ROOT = process.env.GITLOBSTER_STORAGE_DIR
+/**
+ * GIT_STORAGE_LOCATION Configuration
+ * 
+ * LOCAL: Store git repos in container volume (default - for public registries)
+ * SERVER: Store git repos on external path (for LAN/SOHO cloud features)
+ * 
+ * When SERVER is selected, GITLOBSTER_SERVER_STORAGE_PATH must be set.
+ */
+
+const storageLocation = process.env.GIT_STORAGE_LOCATION || 'LOCAL';
+
+let GIT_PROJECT_ROOT;
+
+if (storageLocation === 'SERVER') {
+  const serverPath = process.env.GITLOBSTER_SERVER_STORAGE_PATH;
+  if (!serverPath) {
+    throw new Error('GIT_STORAGE_LOCATION=SERVER requires GITLOBSTER_SERVER_STORAGE_PATH to be set');
+  }
+  GIT_PROJECT_ROOT = path.resolve(serverPath, 'git');
+  console.log(`[GIT-MIDDLEWARE] Using SERVER storage: ${GIT_PROJECT_ROOT}`);
+} else {
+  // LOCAL - default behavior
+  // LOCAL - default behavior
+  // Fallback to legacy GITLOBSTER_STORAGE_DIR for backwards compatibility
+  GIT_PROJECT_ROOT = process.env.GITLOBSTER_STORAGE_DIR
     ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR, 'git')
     : path.resolve(__dirname, '../storage/git');
+  console.log(`[GIT-MIDDLEWARE] Using LOCAL storage: ${GIT_PROJECT_ROOT}`);
+}
 
 // Path to the post-receive hook source
 const POST_RECEIVE_HOOK_SOURCE = path.resolve(__dirname, '../scripts/git-hooks/post-receive.js');
@@ -48,7 +74,22 @@ initializeGitTemplate();
  * @scope/name -> scope-name.git
  */
 function scopedToDirName(name) {
-    return name.replace(/^@/, '').replace('/', '-') + '.git';
+    // Security: Whitelist allowed characters to prevent directory traversal and command injection
+    // 1. Remove leading @
+    let safeName = name.replace(/^@/, '');
+
+    // 2. Replace all slashes with hyphens
+    safeName = safeName.replace(/\//g, '-');
+
+    // 3. Replace any unsafe characters (not alphanumeric, dot, underscore, hyphen) with hyphen
+    safeName = safeName.replace(/[^a-zA-Z0-9_\-\.]/g, '-');
+
+    // 4. Prevent directory traversal (replace .. with --)
+    while (safeName.includes('..')) {
+        safeName = safeName.replace(/\.\./g, '--');
+    }
+
+    return safeName + '.git';
 }
 
 /**

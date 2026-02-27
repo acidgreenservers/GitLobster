@@ -33,6 +33,9 @@ async function searchPackages(req, res) {
         this.where('name', 'like', `%${q}%`)
           .orWhere('description', 'like', `%${q}%`);
       });
+    } else {
+      // Hide system skills from default listing
+      query = query.where('name', '!=', 'gitlobster-sync');
     }
 
     if (category) {
@@ -1514,9 +1517,6 @@ module.exports = {
   starPackage,
   unstarPackage,
   checkStarred,
-  botkitStar,
-  botkitUnstar,
-  botkitFork,
   getFileManifest,
   flagPackage,
   getActivityFeed,

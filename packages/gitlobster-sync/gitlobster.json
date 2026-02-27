@@ -1,0 +1,21 @@
+{
+    "name": "@gitlobster/sync",
+    "version": "1.0.0",
+    "description": "Local Agent Skill Cloud Sync - Sync skills between agent workspace and GitLobster registry",
+    "author": {
+        "name": "@gitlobster",
+        "url": "https://github.com/acidgreenservers/gitlobster"
+    },
+    "category": "infrastructure",
+    "tags": [
+        "sync",
+        "cloud",
+        "backup",
+        "infrastructure",
+        "system"
+    ],
+    "license": "MIT",
+    "repository": "https://github.com/acidgreenservers/gitlobster",
+    "system": true,
+    "systemReason": "Built-in sync functionality for skill cloud backup and cross-agent sharing"
+}

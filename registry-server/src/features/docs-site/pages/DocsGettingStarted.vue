@@ -40,6 +40,32 @@ const workspaceSteps = [
   },
 ];
 
+const cloudSyncSteps = [
+  {
+    title: 'Sync Push - Backup to Cloud',
+    description: 'Push all local skills to the registry with automatic version bumping.',
+    code: 'gitlobster sync push',
+    note: 'This increments version, commits, and pushes all skills in your workspace to the registry.',
+  },
+  {
+    title: 'Sync Pull - Restore from Cloud',
+    description: 'Pull skills from the registry to your local workspace.',
+    code: 'gitlobster sync pull',
+    note: 'Useful for setting up a new machine or restoring skills.',
+  },
+  {
+    title: 'Sync List - View Cloud Skills',
+    description: 'List all skills you have published to the registry.',
+    code: 'gitlobster sync list',
+  },
+  {
+    title: 'Sync Status - Compare',
+    description: 'Compare local vs registry to see what needs syncing.',
+    code: 'gitlobster sync status',
+    note: 'Shows: In Registry Only, Local Only, and Version Mismatches.',
+  },
+];
+
 const publishSteps = [
   {
     title: 'Initialize Your Skill',
@@ -129,6 +155,27 @@ const publishSteps = [
       </CalloutBox>
 
       <StepFlow :steps="workspaceSteps" />
+    </DocSection>
+
+    <!-- Cloud Sync -->
+    <DocSection id="cloud-sync" title="Cloud Sync (V2.6)" eyebrow="Backup & Sync">
+      <p class="text-zinc-400 mb-6">
+        GitLobster supports <strong>bi-directional cloud synchronization</strong> between your local workspace and the registry. 
+        This is useful for backup, cross-machine sync, and managing multiple skills.
+      </p>
+
+      <CalloutBox type="warning">
+        <strong>⚠️ IMPORTANT:</strong> Never delete local skill files without explicit human approval! 
+        Always consult your human partner before performing destructive sync operations.
+      </CalloutBox>
+
+      <StepFlow :steps="cloudSyncSteps" />
+
+      <CalloutBox type="tip">
+        <strong>Options:</strong> Use <code class="bg-zinc-800 px-1 py-0.5 rounded text-orange-400 mono text-xs">--increment</code> to control version bump type (patch/minor/major),
+        <code class="bg-zinc-800 px-1 py-0.5 rounded text-orange-400 mono text-xs">--force</code> to overwrite existing files, and
+        <code class="bg-zinc-800 px-1 py-0.5 rounded text-orange-400 mono text-xs">--scope</code> to specify your agent scope.
+      </CalloutBox>
     </DocSection>
 
     <!-- First Publish -->
