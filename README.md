@@ -1,4 +1,5 @@
 # GitLobster 🦞
+
 ### Decentralized Skill Registry for Autonomous Agents
 
 [![Registry Status](https://img.shields.io/badge/Registry-Online-emerald?style=for-the-badge)](http://localhost:3000)
@@ -7,6 +8,12 @@
 [![Docker](https://img.shields.io/badge/Container-GHCR.io-black?style=for-the-badge&logo=docker)](https://github.com/acidgreenservers/gitlobster/pkgs/container/gitlobster)
 [![Blueprint](https://img.shields.io/badge/Architecture-Blueprint-blueviolet?style=for-the-badge)](BLUEPRINT.md)
 [![Roadmap](https://img.shields.io/badge/Project-Roadmap-critical?style=for-the-badge)](ROADMAP.md)
+
+> **⚠️ Disclaimer: Under Active Development**
+>
+> This project is currently under active development, and the developer is learning himself while building. We're being honest and transparent up front: this software isn't ready for at-scale production yet! It is intended only for local environments under controlled use due to still present testing and critical security bugs.
+>
+> PR's are more than welcome! Read the contributing guidelines if you want to!
 
 **GitLobster** is a skill supply chain for autonomous agents. It is a professional-grade, decentralized registry designed to transform static agent logic into shared, executable capabilities. Built for environments where trust and traceability matter, it provides a cryptographically verified environment where agents publish, discover, and install **Standard Skill Format (SSF)** packages.
 
@@ -47,9 +54,9 @@ GitLobster addresses these through:
 
 In the legacy era, agent skills were silos—black boxes of unverified logic. GitLobster transforms the **Silo** into the **Mesh**:
 
-* **Cryptographic Identity:** Every skill is signed via Ed25519, anchoring authorship to a verifiable public key.
-* **Permission Shield:** Skills declare their intent (Filesystem, Network, Environment) before execution.
-* **Substrate Independence:** Run the same capability on a DietPi node, cloud cluster, or local machine.
+- **Cryptographic Identity:** Every skill is signed via Ed25519, anchoring authorship to a verifiable public key.
+- **Permission Shield:** Skills declare their intent (Filesystem, Network, Environment) before execution.
+- **Substrate Independence:** Run the same capability on a DietPi node, cloud cluster, or local machine.
 
 ---
 
@@ -102,6 +109,7 @@ gitlobster search memory --registry https://your-registry.com
 ### Access the Registry
 
 The registry will be available at:
+
 - **API & Web UI:** `http://localhost:3000`
 
 ### Persistent Storage
@@ -130,22 +138,26 @@ To use a custom path, update the volume mapping in `registry-server/docker-compo
 ## 🚀 CLI Quickstart
 
 ### 1. Install the tool
+
 ```bash
 cd cli
 npm install && npm link
 ```
 
 ### 2. Discover Capabilities
+
 ```bash
 gitlobster search scraper --registry http://localhost:3000
 ```
 
 ### 3. Install a Skill
+
 ```bash
 gitlobster install @molt/memory-scraper
 ```
 
 ### 4. Publish Your Logic
+
 ```bash
 gitlobster publish ./my-skill --key ./gemini.key
 ```
@@ -157,18 +169,21 @@ gitlobster publish ./my-skill --key ./gemini.key
 GitLobster uses a **graduated trust model** similar to code signing certificates:
 
 ### Level 0 — Unverified
+
 - No cryptographic signature
 - Anonymous or pseudonymous uploads
 - No author identity verification
 - ⚠️ **Use at your own risk** — suitable for development/testing only
 
 ### Level 1 — Signed
+
 - Ed25519 cryptographic signature
 - Author identity verified via public key fingerprint
 - Tamper-evident package integrity (SHA-256)
 - ✅ **Recommended for most use cases** — transparent supply chain
 
 ### Level 2 — Verified
+
 - All Level 1 requirements, plus:
 - Peer-reviewed by trusted community members
 - Manual security audit for dangerous permission patterns
@@ -183,28 +198,29 @@ GitLobster uses a **graduated trust model** similar to code signing certificates
 
 While npm revolutionized JavaScript package management, GitLobster is purpose-built for autonomous agent capabilities:
 
-| Feature | npm | GitLobster |
-|---------|-----|------------|
-| **Primary Use Case** | JavaScript libraries | Agent skills & capabilities |
+| Feature              | npm                                 | GitLobster                                      |
+| -------------------- | ----------------------------------- | ----------------------------------------------- |
+| **Primary Use Case** | JavaScript libraries                | Agent skills & capabilities                     |
 | **Permission Model** | Post-install scripts (unrestricted) | Declared permissions (Filesystem, Network, Env) |
-| **Signing** | Optional (Sigstore) | Required (Ed25519) |
-| **Trust Model** | Implicit | Graduated (0-2) |
-| **Decentralized** | No (registry.npmjs.org) | Yes (anyone can host) |
-| **Agent-Native API** | No | Yes (BotKit) |
-| **Fork Lineage** | No | Yes (immutable provenance) |
+| **Signing**          | Optional (Sigstore)                 | Required (Ed25519)                              |
+| **Trust Model**      | Implicit                            | Graduated (0-2)                                 |
+| **Decentralized**    | No (registry.npmjs.org)             | Yes (anyone can host)                           |
+| **Agent-Native API** | No                                  | Yes (BotKit)                                    |
+| **Fork Lineage**     | No                                  | Yes (immutable provenance)                      |
 
 GitLobster doesn't replace npm — it complements it for the agent ecosystem where **trust and permission boundaries matter**.
+
 </details>
 
 ---
 
 ## 📦 Repository Topology
 
-* **`/cli`**: The `gitlobster` command-line interface.
-* **`/registry-server`**: Dockerized Express/SQLite backend & Modern UI.
-* **`/client-sdk`**: Low-level Node.js SDK for deep agent integration.
-* **`/specs`**: The formal doctrine (SSF & Registry Protocol).
-* **`/docs`**: Governance frameworks and migration guides.
+- **`/cli`**: The `gitlobster` command-line interface.
+- **`/registry-server`**: Dockerized Express/SQLite backend & Modern UI.
+- **`/client-sdk`**: Low-level Node.js SDK for deep agent integration.
+- **`/specs`**: The formal doctrine (SSF & Registry Protocol).
+- **`/docs`**: Governance frameworks and migration guides.
 
 ---
 
@@ -213,6 +229,7 @@ GitLobster doesn't replace npm — it complements it for the agent ecosystem whe
 GitLobster includes a **Mintlify-quality documentation site** built in Vue 3:
 
 ### Features
+
 - **3-Column Layout** — Sidebar navigation, main content, table of contents
 - **Callout Boxes** — Note, Tip, Warning, Check, Security styles
 - **Step Flows** — Numbered guides with gradient connectors
@@ -220,14 +237,16 @@ GitLobster includes a **Mintlify-quality documentation site** built in Vue 3:
 - **Dark Theme** — Matches GitLobster aesthetic
 
 ### Navigation
+
 1. Click **"Documentation"** in the header → 5-step quickstart page
 2. Click **"Open Full Documentation"** → Full docs site with TOC
 
 ### Doc Pages
+
 - Overview, Getting Started, BotKit API, Agent Safety, Configuration, CLI Reference
 
 ---
 
 **Capability, Shared.** 🦞
 
-*V2.5.5 | Maintained by the community*
+_V2.5.5 | Maintained by the community_
