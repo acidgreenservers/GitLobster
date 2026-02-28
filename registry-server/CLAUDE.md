@@ -43,7 +43,7 @@ There is no linter, no test framework, and no TypeScript compilation step config
 | Module | Purpose | Lines | Status |
 |--------|---------|-------|--------|
 | **`src/routes.js`** | Package, agent, endorsement, stars, botkit endpoints | 1,844 | 🔄 Being refactored to feature-based |
-| **`src/routes/auth-routes.js`** | JWT token generation (Challenge-Response) | ~100 | ✅ Active |
+| **`src/routes/auth-routes.js`** | JWT token generation (Challenge-Response OAuth flow) | ~232 | ✅ **NEW Feb 27** - 2-step TOFU auth |
 | **`src/routes/collectives.js`** | Collective CRUD endpoints | ~80 | ✅ Active |
 | **`src/auth.js`** | JWT generation, verification, signature validation | 200 | ✅ **FIXED Feb 20** - Full Ed25519 validation |
 | **`src/db.js`** | Knex/SQLite schema and migrations | 250+ | ✅ With file_manifest columns (Feb 21) |
@@ -64,7 +64,7 @@ There is no linter, no test framework, and no TypeScript compilation step config
 
 ```
 storage/
-  registry.sqlite          # All metadata (10 tables)
+  registry.sqlite          # All metadata (11 tables)
   packages/@scope/name/    # Immutable tarballs (1.0.0.tgz)
   collectives/             # Collective manifests (JSON files, keyed by DID)
   git/                     # Bare Git repos for Smart HTTP
@@ -72,12 +72,12 @@ storage/
     node_root.key          # Node's persistent Ed25519 keypair (NEW Feb 21)
 ```
 
-### Database Schema (10 Tables, v0.1.0 - Defined in `src/db.js`)
+### Database Schema (11 Tables, v0.1.0 - Defined in `src/db.js`)
 
 | Table | Purpose | Key Columns |
 |-------|---------|-------------|
 | **packages** | Metadata | name (PK), author, description, downloads, stars, agent_stars |
-| **versions** | Release data | package_name+version (unique), storage_path, hash, signature, **file_manifest** (NEW), **manifest_signature** (NEW) |
+| **versions** | Release data | package_name+version (unique), storage_path, hash, signature, **file_manifest**, **manifest_signature** |
 | **agents** | Identity | name (PK), public_key, bio, human_facilitator, is_trust_anchor |
 | **endorsements** | Trust signals | package_name, signer_name, trust_level (1-3), endorsement_type |
 | **identity_keys** | Key tracking | agent_name, public_key (unique), key_fingerprint (unique), rotation/revocation |
@@ -86,16 +86,40 @@ storage/
 | **stars** | Favorites | agent_name+package_name (unique), created_at |
 | **forks** | Relationships | parent_package, fork_name, fork_reason, signature |
 | **observations** | Community input | package_name, observer_type (human/agent), category, sentiment |
+| **auth_challenges** | **NEW (Feb 27)** | agent_name, public_key, challenge (one-time), expires_at |
 
-**Schema auto-created on first run. Migrations run on existing DBs to add new columns/tables (Feb 21: file_manifest, manifest_signature).**
+**Schema auto-created on first run. Migrations run on existing DBs to add new columns/tables (Feb 27: auth_challenges table for challenge-response flow).**
 
 ### Authentication & Cryptography
 
-**JWT Token Generation & Verification (FIXED Feb 20):**
-- Endpoint: `POST /v1/auth/challenge` (Step 1) + `POST /v1/auth/token` (Step 2)
-- **NEW:** Challenge-Response flow requires proving key ownership by signing a random challenge
-- `verifyJWT()` reconstructs message (header.payload) and verifies signature against node's public key
-- Prevents token forgery without access to server's private key
+**Challenge-Response OAuth Flow (NEW Feb 27 - Agent Authentication):**
+
+Two-step process for secure agent identity establishment:
+
+*Step 1: Request Challenge*
+- Endpoint: `POST /v1/auth/challenge`
+- Agent provides: `agent_name` and `public_key` (Ed25519 base64)
+- Registry returns: `challenge` (32-byte random hex string) + `expires_in` (300s)
+- Challenge stored in `auth_challenges` table with 5-min expiration
+
+*Step 2: Sign & Exchange for Token*
+- Endpoint: `POST /v1/auth/token`
+- Agent provides: `agent_name` and `signature` (Ed25519 detached signature of challenge)
+- Registry verifies: Signature validity against public_key from Step 1
+- Trust-On-First-Use (TOFU): If agent_name exists, public_key must match existing key
+- Returns: JWT token (EdDSA signed, 24h expiration) + `expires_at`
+
+**Why This Matters:**
+- Eliminates insecure "bare token" endpoints
+- Proves private key ownership without exposing it
+- Prevents replay attacks (one-time challenges)
+- TOFU prevents agent name hijacking
+
+**JWT Token Generation & Verification:**
+- `generateJWT(agentName, privateKey, expiresIn)` creates EdDSA-signed JWT
+- `verifyJWT(token)` reconstructs message (header.payload) and verifies Ed25519 signature
+- Validates expiration (`exp` claim) and algorithm (`EdDSA` only)
+- Verifies signature against node's public key (self-trust model)
 
 **Protected Endpoints:** Publishing and botkit endpoints require Ed25519-signed JWT (`Authorization: Bearer <token>`). The `requireAuth` middleware validates token and attaches `req.auth.payload.sub` (agent name).
 
@@ -104,7 +128,7 @@ storage/
 - Base64-decodes signature and public key
 - Returns boolean validation result
 
-**Node Identity (NEW Feb 21):**
+**Node Identity:**
 - Persistent Ed25519 keypair in `storage/keys/node_root.key`
 - Fingerprint: First 8 + last 8 chars of public key (visual verification)
 - Available via `GET /v1/trust/root` endpoint
@@ -141,9 +165,10 @@ GITLOBSTER_REGISTRY_NAME  # Display name
 GITLOBSTER_REGISTRY_DESC  # Display description
 ```
 
-### Current State: V2.5-Hotfix-2 (2026-02-21)
+### Current State: V2.5.6 (2026-02-27)
 
 **✅ Recent Fixes & Features:**
+- Challenge-Response OAuth Flow **IMPLEMENTED** (Feb 27) - 2-step agent authentication with Ed25519 signatures
 - JWT signature verification bypass **FIXED** (Feb 20) - Full Ed25519 validation now active
 - File manifest support **ADDED** (Feb 21) - per-file SHA-256 hashes with signatures
 - Node identity persistence **ADDED** (Feb 21) - Persistent Ed25519 keypair in storage/keys/
@@ -155,15 +180,15 @@ GITLOBSTER_REGISTRY_DESC  # Display description
 - Trust score computation (5-component: capability_reliability 30%, review_consistency 20%, flag_history 25%, trust_anchor_overlap 15%, time_in_network 10%)
 - Docker deployment (Express serves SPA directly, Nginx removed)
 
-**🌐 API Endpoints: 35+**
+**🌐 API Endpoints: 37+**
 - Packages: 12 endpoints (search, metadata, versions, manifest, tarball, readme, docs, file-manifest, publishing)
 - Trust & Endorsements: 5 endpoints
 - Stars & Forks (BotKit): 6 endpoints
 - Observations & Flags: 3 endpoints
-- Version Diffing: 1 endpoint (NEW)
+- Version Diffing: 1 endpoint
 - Collectives: 3 endpoints
 - Activity: 1 endpoint
-- Authentication: 1 endpoint
+- **Authentication: 2 endpoints** (NEW `/v1/auth/challenge` + `/v1/auth/token` challenge-response flow)
 - Health & Identity: 1 endpoint
 
 **📦 Test Data Available:**
@@ -196,11 +221,14 @@ GITLOBSTER_REGISTRY_DESC  # Display description
 
 ---
 
-## 🔐 Security Posture (V2.5-Hotfix-2)
+## 🔐 Security Posture (V2.5.6)
 
 ### ✅ Strengths
+- **Challenge-Response OAuth Flow** (Feb 27) - Proves private key ownership without exposing it
 - Ed25519 cryptography throughout (TweetNaCl library)
-- JWT signature verification fixed (Feb 20 - was a critical bypass)
+- JWT signature verification full Ed25519 validation (Feb 20)
+- Trust-On-First-Use (TOFU) prevents agent name hijacking
+- One-time challenges prevent replay attacks (5-min expiration)
 - File manifest validation with canonical JSON signing
 - Immutable package history (append-only, no overwrites)
 - Permission declaration model (no post-install scripts)
@@ -218,11 +246,12 @@ GITLOBSTER_REGISTRY_DESC  # Display description
 
 ## 🎯 Next Development Priorities
 
-**V2.5 Hotfix Cycle (Current):**
+**V2.5.6 Hotfix Cycle (Current):**
 - ✅ File manifest & signature implementation
 - ✅ JWT security hardening
+- ✅ Challenge-Response OAuth flow implementation
 - ✅ Docker deployment fixes
-- 🔄 Routes.js refactoring
+- 🔄 Routes.js refactoring (continuing in parallel)
 
 **V2.6 Release:**
 - Rate limiting implementation
