@@ -3,7 +3,7 @@
  * Helper functions for Git operations
  */
 
-import { execSync, spawnSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { existsSync } from 'fs';
 import { resolve } from 'path';
 
@@ -13,7 +13,7 @@ import { resolve } from 'path';
  */
 export function checkGitAvailable() {
   try {
-    execSync('git --version', { stdio: 'ignore' });
+    execFileSync('git', ['--version'], { stdio: 'ignore' });
     return true;
   } catch (error) {
     return false;
@@ -29,7 +29,7 @@ export function initRepo(path) {
   const repoPath = resolve(path);
   
   try {
-    execSync('git init', { cwd: repoPath, stdio: 'pipe' });
+    execFileSync('git', ['init'], { cwd: repoPath, stdio: 'pipe' });
     return { success: true, message: 'Git repository initialized' };
   } catch (error) {
     return { success: false, message: error.message };
@@ -50,7 +50,7 @@ export function addFiles(files, options = {}) {
   }
 
   try {
-    execSync(`git add ${files.join(' ')}`, { cwd, stdio: 'pipe' });
+    execFileSync('git', ['add', ...files], { cwd, stdio: 'pipe' });
     return { success: true, message: `Added ${files.length} file(s) to staging` };
   } catch (error) {
     return { success: false, message: error.message };
@@ -84,7 +84,7 @@ export function commit(message, author, options = {}) {
       GIT_COMMITTER_EMAIL: author.email
     };
     
-    execSync(`git commit -m "${message}"`, { cwd, stdio: 'pipe', env });
+    execFileSync('git', ['commit', '-m', message], { cwd, stdio: 'pipe', env });
     return { success: true, message: 'Changes committed successfully' };
   } catch (error) {
     return { success: false, message: error.message };
@@ -106,7 +106,7 @@ export function push(remote, branch, options = {}) {
   }
 
   try {
-    execSync(`git push ${remote} ${branch}`, { cwd, stdio: 'pipe' });
+    execFileSync('git', ['push', remote, branch], { cwd, stdio: 'pipe' });
     return { success: true, message: `Pushed to ${remote}/${branch}` };
   } catch (error) {
     return { success: false, message: error.message };
@@ -127,7 +127,7 @@ export function getRemoteUrl(remote, options = {}) {
   }
 
   try {
-    const url = execSync(`git remote get-url ${remote}`, { cwd, encoding: 'utf-8' }).trim();
+    const url = execFileSync('git', ['remote', 'get-url', remote], { cwd, encoding: 'utf-8' }).trim();
     return url || null;
   } catch (error) {
     return null;
@@ -155,7 +155,7 @@ export function addRemote(name, url, options = {}) {
       return { success: true, message: `Remote '${name}' already exists with URL: ${existingUrl}` };
     }
 
-    execSync(`git remote add ${name} ${url}`, { cwd, stdio: 'pipe' });
+    execFileSync('git', ['remote', 'add', name, url], { cwd, stdio: 'pipe' });
     return { success: true, message: `Remote '${name}' added` };
   } catch (error) {
     return { success: false, message: error.message };
@@ -171,7 +171,7 @@ export function getStagedDiff(options = {}) {
   const { cwd = process.cwd() } = options;
 
   try {
-    const diff = execSync('git diff --staged', { cwd, encoding: 'utf-8' });
+    const diff = execFileSync('git', ['diff', '--staged'], { cwd, encoding: 'utf-8' });
     return diff;
   } catch (error) {
     return '';
@@ -198,7 +198,7 @@ export function getCurrentBranch(options = {}) {
   const { cwd = process.cwd() } = options;
 
   try {
-    const branch = execSync('git branch --show-current', { cwd, encoding: 'utf-8' }).trim();
+    const branch = execFileSync('git', ['branch', '--show-current'], { cwd, encoding: 'utf-8' }).trim();
     return branch || null;
   } catch (error) {
     return null;
