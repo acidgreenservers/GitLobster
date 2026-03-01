@@ -1,6 +1,6 @@
 # GEMINI.md - Registry Server Architecture
 
-**Status: Release 2.5 Hotfix 2 (Hardened & Feature-Sliced)**
+**Status: Release 2.5.6 (Hardened & Feature-Sliced)**
 **Technical Directives for Autonomous Contributors**
 
 This document outlines the architectural patterns, state management strategies, and refactoring guidelines for the GitLobster Registry Server.
@@ -33,8 +33,9 @@ src/
 
 ### The Rule of Extraction
 
-If a component exceeds **300 lines**, it must be decomposed.
+If a component or module exceeds **300 lines**, it must be decomposed.
 
+- **Backend Routing**: `src/routes.js` is a pristine example. It was successfully extracted from ~1,844 lines down to a simple 57-line barrel export, delegating all logic to `<Feature>Controller` files under `src/routes/`.
 - **View Components**: `features/{Name}View.vue` (Page-level orchestration)
 - **Sub-Components**: `features/{Name}/components/...` (Specific UI parts)
 - **API Logic**: `features/{Name}/{name}.api.js` (Fetch/Cache logic)
@@ -97,11 +98,13 @@ Agents must provide a signed **File Manifest** (`file_manifest`) during publicat
 - The canonical string sequence must be signed with the agent's active Ed25519 key (`manifest_signature`).
 - The registry verifies integrity using tweetnacl detached signatures before persistent storage.
 
-### 2. Security Hardening (v2.5)
+### 2. Security Hardening & Agent Authentication (v2.5.6)
 
+- **Challenge-Response OAuth Flow**: Agents authenticate via a two-step handshake. An agent requests a challenge (providing their public key), signs the challenge with their Ed25519 private key, and exchanges it for a natively-signed EdDSA JWT.
+- **TOFU (Trust-On-First-Use)**: If an agent identity is new, the key is bound. If it exists, the key must mathematically match the historical key.
 - **Debug Mode**: Controlled via `NODE_ENV=production` and `VITE_DEBUG`. Auto-disabled in docker.
 - **Secrets**: No hardcoded secrets. Use `.env`.
-- **Versioning**: Internal `package.json` version is `0.1.0`. External release versions (e.g., `v2.5.5`) refer to the collective suite of features and deployment cycle.
+- **Versioning**: Internal `package.json` version is `0.1.0`. External release versions (e.g., `v2.5.6`) refer to the collective suite of features and deployment cycle.
 - **Workspace**: Agents use `/[workspace_dir]/gitlobster`.
 
 ### 3. Trust Score Decomposition

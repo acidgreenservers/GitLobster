@@ -3,19 +3,15 @@
  * Low-level client for interacting with GitLobster registries
  */
 
-import { readFile } from 'fs/promises';
-import nacl from 'tweetnacl';
-
-// Deprecation flag for downloadPackage
-let _downloadDeprecationWarned = false;
-
-// Deprecation flag for publish
-let _publishDeprecationWarned = false;
+import { readFile } from "fs/promises";
+import nacl from "tweetnacl";
 
 export class GitLobsterClient {
-  constructor({ registryUrl = process.env.GITLOBSTER_REGISTRY || 'http://localhost:3000' } = {}) {
-    this.registryUrl = registryUrl.replace(/\/$/, ''); // Remove trailing slash
-    this.apiVersion = 'v1';
+  constructor({
+    registryUrl = process.env.GITLOBSTER_REGISTRY || "http://localhost:3000",
+  } = {}) {
+    this.registryUrl = registryUrl.replace(/\/$/, ""); // Remove trailing slash
+    this.apiVersion = "v1";
   }
 
   /**
@@ -23,17 +19,19 @@ export class GitLobsterClient {
    */
   async search({ q, category, tag, limit = 20, offset = 0 } = {}) {
     const params = new URLSearchParams();
-    if (q) params.append('q', q);
-    if (category) params.append('category', category);
-    if (tag) params.append('tag', tag);
-    params.append('limit', limit.toString());
-    params.append('offset', offset.toString());
+    if (q) params.append("q", q);
+    if (category) params.append("category", category);
+    if (tag) params.append("tag", tag);
+    params.append("limit", limit.toString());
+    params.append("offset", offset.toString());
 
     const url = `${this.registryUrl}/${this.apiVersion}/packages?${params}`;
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`Search failed: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Search failed: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -50,7 +48,9 @@ export class GitLobsterClient {
       if (response.status === 404) {
         throw new Error(`Package not found: ${packageName}`);
       }
-      throw new Error(`Failed to fetch metadata: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch metadata: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -64,62 +64,9 @@ export class GitLobsterClient {
     const response = await fetch(url);
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch manifest: ${response.status} ${response.statusText}`);
-    }
-
-    return response.json();
-  }
-
-  /**
-   * Download package tarball
-   * @deprecated Use git clone with getCloneUrl() instead
-   */
-  async downloadPackage(packageName, version) {
-    if (!_downloadDeprecationWarned) {
-      console.warn('[GitLobster] WARNING: downloadPackage() is deprecated. Use git clone with getCloneUrl() instead.');
-      _downloadDeprecationWarned = true;
-    }
-
-    const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/${version}/tarball`;
-    const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`Failed to download package: ${response.status} ${response.statusText}`);
-    }
-
-    const tarball = Buffer.from(await response.arrayBuffer());
-    const hash = response.headers.get('X-Package-Hash');
-    const signature = response.headers.get('X-Package-Signature');
-
-    return { tarball, hash, signature };
-  }
-
-  /**
-   * Publish a package
-   * @deprecated Use git push to publish packages instead
-   */
-  async publish(packageData, privateKeyPath) {
-    if (!_publishDeprecationWarned) {
-      console.warn('[GitLobster] WARNING: publish() is deprecated. Use git push to publish packages instead.');
-      _publishDeprecationWarned = true;
-    }
-
-    // Generate JWT token
-    const token = await this.generateAuthToken(packageData.name, privateKeyPath);
-
-    const url = `${this.registryUrl}/${this.apiVersion}/publish`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ package: packageData })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Publish failed: ${error.error} - ${error.message}`);
+      throw new Error(
+        `Failed to fetch manifest: ${response.status} ${response.statusText}`,
+      );
     }
 
     return response.json();
@@ -129,27 +76,31 @@ export class GitLobsterClient {
    * Generate Ed25519-signed JWT for authentication
    */
   async generateAuthToken(packageName, privateKeyPath) {
-    const privateKeyRaw = await readFile(privateKeyPath, 'utf-8');
+    const privateKeyRaw = await readFile(privateKeyPath, "utf-8");
 
     // Support raw base64 Ed25519 keys (TweetNaCl format)
     let secretKey;
 
-    if (privateKeyRaw.trim().startsWith('-----BEGIN')) {
-      throw new Error('PEM keys not supported. Please use raw base64 Ed25519 secret key (64 bytes).');
+    if (privateKeyRaw.trim().startsWith("-----BEGIN")) {
+      throw new Error(
+        "PEM keys not supported. Please use raw base64 Ed25519 secret key (64 bytes).",
+      );
     } else {
-      secretKey = Buffer.from(privateKeyRaw.trim(), 'base64');
+      secretKey = Buffer.from(privateKeyRaw.trim(), "base64");
     }
 
     if (secretKey.length !== 64) {
-      throw new Error(`Invalid Ed25519 secret key length: ${secretKey.length} bytes (expected 64)`);
+      throw new Error(
+        `Invalid Ed25519 secret key length: ${secretKey.length} bytes (expected 64)`,
+      );
     }
 
     // Extract scope from package name (e.g., "@molt/skill" -> "@molt")
     const scope = packageName.match(/^(@[^/]+)/)?.[1] || packageName;
 
     const header = {
-      alg: 'EdDSA',
-      typ: 'JWT'
+      alg: "EdDSA",
+      typ: "JWT",
     };
 
     const now = Math.floor(Date.now() / 1000);
@@ -158,7 +109,7 @@ export class GitLobsterClient {
       iss: `gitlobster-cli`,
       iat: now,
       exp: now + 3600, // 1 hour
-      scope: 'publish'
+      scope: "publish",
     };
 
     // Create JWT
@@ -167,8 +118,11 @@ export class GitLobsterClient {
     const signingInput = `${encodedHeader}.${encodedPayload}`;
 
     // Sign with Ed25519 using TweetNaCl
-    const messageBytes = Buffer.from(signingInput, 'utf-8');
-    const signature = nacl.sign.detached(messageBytes, secretKey);
+    const messageBytes = Buffer.from(signingInput, "utf-8");
+    const signature = nacl.sign.detached(
+      Uint8Array.from(messageBytes),
+      Uint8Array.from(secretKey),
+    );
 
     const encodedSignature = base64url(Buffer.from(signature));
 
@@ -197,7 +151,9 @@ export class GitLobsterClient {
       if (response.status === 404) {
         throw new Error(`Package not found: ${packageName}`);
       }
-      throw new Error(`Failed to fetch versions: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to fetch versions: ${response.status} ${response.statusText}`,
+      );
     }
 
     const data = await response.json();
@@ -215,16 +171,18 @@ export class GitLobsterClient {
 
     const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/star`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Failed to star package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+      throw new Error(
+        `Failed to star package: ${response.status} ${response.statusText} - ${error.message || ""}`,
+      );
     }
 
     return response.json();
@@ -241,16 +199,18 @@ export class GitLobsterClient {
 
     const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/unstar`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Failed to unstar package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+      throw new Error(
+        `Failed to unstar package: ${response.status} ${response.statusText} - ${error.message || ""}`,
+      );
     }
 
     return response.json();
@@ -267,16 +227,18 @@ export class GitLobsterClient {
 
     const url = `${this.registryUrl}/${this.apiVersion}/packages/${encodeURIComponent(packageName)}/fork`;
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
-      throw new Error(`Failed to fork package: ${response.status} ${response.statusText} - ${error.message || ''}`);
+      throw new Error(
+        `Failed to fork package: ${response.status} ${response.statusText} - ${error.message || ""}`,
+      );
     }
 
     return response.json();
@@ -287,10 +249,10 @@ export class GitLobsterClient {
  * Base64 URL encoding (without padding)
  */
 function base64url(input) {
-  const str = typeof input === 'string' ? input : input.toString('utf-8');
+  const str = typeof input === "string" ? input : input.toString("utf-8");
   return Buffer.from(str)
-    .toString('base64')
-    .replace(/\+/g, '-')
-    .replace(/\//g, '_')
-    .replace(/=/g, '');
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=/g, "");
 }

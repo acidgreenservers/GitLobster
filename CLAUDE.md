@@ -408,50 +408,101 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 
 ---
 
-## 📦 Release Status: V2.5-Hotfix-2 (Current)
+## 📦 Release Status: V2.5.6 (Current) - March 1, 2026
 
-### Recent Commits
+### Recent Commits (Latest First)
 
-**Feb 21 - File Manifest Integration** (1aafd5a)
+**Mar 1 - Git Security Hardening** (a32d2fd, 38abe6a, 8be3def - CRITICAL) ⚠️
+- Fixed command injection vulnerability in git operations
+- Replaced `execSync` with `execFileSync` (no shell spawning)
+- Improves security of git push and git utility functions
+- All git commands now use array arguments pattern
+
+**Mar 1 - Performance Optimization** (dabb3f6, b2a9ad1)
+- Fixed N+1 query issue in `getPackageLineage`
+- Batch fetches forked package details efficiently
+- Significantly improves performance for large package hierarchies
+
+**Feb 28 - Testing & Exports** (81ab5a0, 4d14265)
+- SHA256 function exported from skill-bridge.js
+- Unit tests added for SHA256 hash generation logic
+- Conditional bridge() execution (not auto-invoked on module load)
+
+**Feb 28 - Dependency Cleanup** (5488b98, 3f69e79)
+- Removed unused `jsonwebtoken` import
+- Removed unused `tweetnacl-util` import
+- Optimized dependencies for Docker builds
+
+**Feb 25 - Routes Refactoring Complete** (b5c3585)
+- `routes.js` refactored from 1,844 lines to 56 lines (barrel export)
+- Feature modules: packages.js (15KB), auth-routes.js (8KB), endorsements.js (7KB)
+- Additional routes: agents, collectives, diff, stars, trust, activity
+
+**Feb 21 - File Manifest Integration**
 - Added `file_manifest` (JSON with per-file SHA-256 hashes)
 - Added `manifest_signature` (Ed25519 signature over manifest)
-- Seeded `@gitlobster/bridge` skill with proper manifests
 - Database migration completed for integrity.js
 
 **Feb 20 - Security Hardening** (eabd28e - CRITICAL)
 - Fixed JWT signature verification bypass
 - Implemented Ed25519 signature validation in `verifyJWT()`
-- Added test-auth-integration.js for verification
 - Node identity now cryptographically verified
 
-**Feb 19 - Docker Deployment** (8b4d2a8, 81ea957)
+**Feb 19 - Docker Deployment**
 - Removed Nginx dependency - Express serves SPA directly
 - Fixed Docker Compose on Unraid with PUID/PGID support
-- Single-container deployment proven stable
 
-**Feb 14 - Version Diff Feature** (264c80e, fbde6ae)
+**Feb 14 - Version Diff Feature**
 - Multi-agent orchestration pattern implementation
 - File diffing via SHA-256 hashes
 - Permission delta analysis with risk scoring
-- Dual-mode UX (Tactical vs Strategic viewing)
 
 ---
 
-## 🏗️ Current Architecture State (V2.5-Hotfix-2)
+## 🏗️ Current Architecture State (V2.5.6 - March 1, 2026)
 
 ### Backend Modules (registry-server/src/) - Updated
 
 | Module | Purpose | Status |
 |--------|---------|--------|
-| `routes.js` | API endpoints barrel export | ✅ Complete - Reduced to 57-line barrel export |
-| `auth.js` | JWT + signature verification | ✅ Recently fixed - Full Ed25519 validation |
-| `db.js` | SQLite schema (10 tables) | ✅ With migrations for file_manifest columns |
-| `integrity.js` | File manifest validation | ✅ NEW - Declare-Don't-Extract model |
-| `trust/KeyManager.js` | Node identity persistence | ✅ NEW - Persistent Ed25519 keypair |
+| `routes.js` | API endpoints barrel export (56 lines) | ✅ Complete - Clean modular design |
+| `routes/packages.js` | Package endpoints (15KB) | ✅ Feature module |
+| `routes/auth-routes.js` | Challenge-response auth (8KB) | ✅ Feature module |
+| `routes/endorsements.js` | Endorsement logic (7KB) | ✅ Feature module |
+| `routes/agents.js`, `diff.js`, `stars.js`, etc. | Additional feature modules | ✅ All modularized |
+| `auth.js` | JWT + signature verification | ✅ Full Ed25519 validation |
+| `db.js` | SQLite schema (11 tables) | ✅ With file_manifest columns |
+| `integrity.js` | File manifest validation | ✅ Declare-Don't-Extract model |
+| `trust/KeyManager.js` | Node identity persistence | ✅ Persistent Ed25519 keypair |
 | `trust-score.js` | 5-component trust metrics | ✅ Active |
-| `utils/version-diff.js` | File & permission diffing | ✅ NEW - Reuses existing trust-diff logic |
+| `utils/git-ops.js` | Git operations | ✅ HARDENED - execFileSync (no shell injection) |
+| `utils/version-diff.js` | File & permission diffing | ✅ Reuses trust-diff logic |
 | `utils/trust-diff.js` | Permission delta analysis | ✅ Core (reused by version-diff) |
 | `git-middleware.js` | Git Smart HTTP pass-through | ✅ Active |
+
+### CLI Tool (cli/) - Expanded
+
+| Command | Purpose | Status |
+|---------|---------|--------|
+| `gitlobster publish` | Publish packages (TweetNaCl signing) | ✅ Complete |
+| `gitlobster install` | Install with end-to-end verification | ✅ Complete |
+| `gitlobster search` | Search registry | ✅ Complete |
+| `gitlobster init` | Initialize new skill | ✅ Complete |
+| `gitlobster fork` | Fork packages | ✅ Complete |
+| `gitlobster sync` | Sync skill | ✅ Complete |
+| `gitlobster info` | Package info | ✅ Complete |
+
+### Client SDK (client-sdk/)
+
+| Feature | Purpose | Status |
+|---------|---------|--------|
+| `GitLobsterClient` | Low-level registry client | ✅ Complete |
+| Search API | Package search | ✅ Complete |
+| Metadata API | Fetch package info | ✅ Complete |
+| Version API | Fetch versions | ✅ Complete |
+| Tarball Download | Download packages | ✅ Complete |
+| File Manifest | Fetch file hashes | ✅ Complete |
+| Cryptographic ops | Ed25519 signing/verification | ✅ Complete |
 
 ### API Surface Expansion
 
@@ -477,19 +528,27 @@ App.vue (1,596 lines) now with Version Diff capabilities:
 
 ## 🎯 Development Roadmap
 
-### Current Sprint (V2.5 Hotfix Cycle) ✅ Complete
+### Current Phase (V2.5.6 Complete ✅)
+**Cycle End: March 1, 2026**
+- ✅ Git security hardening (execFileSync, no shell injection)
+- ✅ Performance optimization (N+1 query fix)
+- ✅ SHA256 testing & exports
+- ✅ Dependency cleanup for Docker
 - ✅ File manifest support (Feb 21)
 - ✅ JWT security hardening (Feb 20)
-- ✅ Docker stability fixes (Feb 19)
-- ✅ Routes.js refactoring (reduced 1,844-line monolith to 57-line barrel export)
+- ✅ Routes.js refactoring (56-line barrel export)
+- ✅ Challenge-Response OAuth flow (Feb 27)
+- ✅ Client SDK complete & fully documented
+- ✅ CLI tool with 7 commands operational
 
-### Next Release (V2.6)
+### Next Release (V2.6) 🚀
 - Rate limiting implementation
 - Advanced search (full-text indexing)
-- Federation support (connecting multiple GitLobster nodes)
-- Automated security re-validation for high-trust packages
+- Federation support (multi-node network)
+- Automated security re-validation
+- App.vue decomposition (currently ~88KB)
 
-### Strategic (V3.0+)
+### Strategic (V3.0+) 🔮
 - Multi-agent skill composition
 - Decentralized trust ecosystem
 - Relational transparency dashboard
