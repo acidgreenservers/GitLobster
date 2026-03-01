@@ -16,7 +16,13 @@ fs.mkdir(PACKAGES_DIR, { recursive: true }).catch((err) => {
  */
 async function searchPackages(req, res) {
   try {
-    const { q, category, tag, limit = 20, offset = 0 } = req.query;
+    const { q, category, tag } = req.query;
+    // SECURITY: Cap pagination to prevent DoS via unbounded queries
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
+    const offset = Math.min(
+      10000,
+      Math.max(0, parseInt(req.query.offset) || 0),
+    );
 
     let query = db("packages").select("*");
 
@@ -42,7 +48,7 @@ async function searchPackages(req, res) {
     }
 
     const total = await query.clone().count("* as count").first();
-    const results = await query.limit(parseInt(limit)).offset(parseInt(offset));
+    const results = await query.limit(limit).offset(offset);
 
     // Parse JSON tags for each result
     const formatted = results.map((pkg) => ({
@@ -53,8 +59,8 @@ async function searchPackages(req, res) {
     res.json({
       results: formatted,
       total: total.count,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit,
+      offset,
     });
   } catch (error) {
     console.error("Search error:", error);

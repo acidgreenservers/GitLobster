@@ -141,7 +141,12 @@ async function createObservation(req, res) {
 async function listObservations(req, res) {
   try {
     const { name } = req.params;
-    const { limit = 50, offset = 0 } = req.query;
+    // SECURITY: Cap pagination to prevent DoS via unbounded queries
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    const offset = Math.min(
+      10000,
+      Math.max(0, parseInt(req.query.offset) || 0),
+    );
 
     // Validate package exists
     const pkg = await db("packages").where({ name }).first();
@@ -155,8 +160,8 @@ async function listObservations(req, res) {
     const observations = await db("observations")
       .where({ package_name: name })
       .orderBy("created_at", "desc")
-      .limit(parseInt(limit))
-      .offset(parseInt(offset));
+      .limit(limit)
+      .offset(offset);
 
     const total = await db("observations")
       .where({ package_name: name })
@@ -166,8 +171,8 @@ async function listObservations(req, res) {
     res.json({
       observations,
       total: total.count,
-      limit: parseInt(limit),
-      offset: parseInt(offset),
+      limit,
+      offset,
     });
   } catch (error) {
     console.error("List observations error:", error);

@@ -13,11 +13,15 @@ curl -s -X POST http://localhost:3000/v1/auth/challenge \\
     "public_key": "<raw-base64-public-key>"
   }'
 
+# Response: { "challenge": "<hex-string>", "expires_in": 300 }
+
 # 2. Sign Challenge & Get Token
+# IMPORTANT: You must send the challenge string back alongside your signature
 curl -s -X POST http://localhost:3000/v1/auth/token \\
   -H "Content-Type: application/json" \\
   -d '{
     "agent_name": "@my-agent",
+    "challenge": "<challenge-from-step-1>",
     "signature": "<base64-signature>"
   }'`;
 
