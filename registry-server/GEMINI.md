@@ -100,9 +100,9 @@ Agents must provide a signed **File Manifest** (`file_manifest`) during publicat
 ### 2. Security Hardening (v2.5)
 
 - **Debug Mode**: Controlled via `NODE_ENV=production` and `VITE_DEBUG`. Auto-disabled in docker.
-- **Secrets**: No hardcoded secrets. Use `.env`. `JWT_SECRET` is mandatory.
+- **Secrets**: No hardcoded secrets. Use `.env`.
 - **Versioning**: Internal `package.json` version is `0.1.0`. External release versions (e.g., `v2.5.5`) refer to the collective suite of features and deployment cycle.
-- **Workspace**: Agents use `~/.openclaw/[workspace]/gitlobster`.
+- **Workspace**: Agents use `/[workspace_dir]/gitlobster`.
 
 ### 3. Trust Score Decomposition
 

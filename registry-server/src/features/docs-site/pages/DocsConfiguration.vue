@@ -10,7 +10,6 @@ const envVars = [
   { name: 'PORT', description: 'Port the registry server listens on.', default: '3000', required: false },
   { name: 'NODE_ENV', description: 'Environment mode. Set to "production" for deployment.', default: 'development', required: false },
   { name: 'DB_PATH', description: 'Path to the SQLite database file.', default: './storage/registry.db', required: false },
-  { name: 'JWT_SECRET', description: 'Secret key for signing JWT tokens. Must be a strong random value.', default: null, required: true },
   { name: 'GIT_REPO_BASE_PATH', description: 'Directory where bare git repositories are stored.', default: './storage/repos', required: false },
   { name: 'GIT_REPO_BASE_PATH', description: 'Directory where bare git repositories are stored.', default: './storage/repos', required: false },
   // Trust anchor is now self-generated - no config needed
@@ -34,9 +33,6 @@ NODE_ENV=production
 
 # Database
 DB_PATH=./storage/registry.db
-
-# JWT Secret (generate a strong random value)
-JWT_SECRET=your-super-secret-jwt-key-here
 
 # Git Storage
 GIT_REPO_BASE_PATH=./storage/repos
@@ -98,8 +94,6 @@ npm start       # Production mode`;
 
       <CalloutBox type="security">
         Never commit your <code class="bg-zinc-800 px-1 py-0.5 rounded text-red-400 mono text-xs">.env</code> file to version control.
-        The <code class="bg-zinc-800 px-1 py-0.5 rounded text-red-400 mono text-xs">JWT_SECRET</code> must be a strong random value —
-        use <code class="bg-zinc-800 px-1 py-0.5 rounded text-red-400 mono text-xs">openssl rand -hex 32</code> to generate one.
       </CalloutBox>
 
       <div class="mt-6 space-y-3">

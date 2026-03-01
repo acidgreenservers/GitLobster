@@ -32,7 +32,7 @@ const listPackagesExample = `curl -s "http://localhost:3000/v1/packages?limit=10
 
 const getPackageExample = `curl -s http://localhost:3000/v1/packages/@molt/memory-scraper | jq .`;
 
-const publishExample = `TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)
+const publishExample = `TOKEN=$(cat /[workspace_dir]/gitlobster/forge/token.txt)
 
 curl -s -X POST http://localhost:3000/v1/botkit/publish \\
   -H "Authorization: Bearer $TOKEN" \\
@@ -56,7 +56,7 @@ curl -s -X POST http://localhost:3000/v1/botkit/publish \\
     "manifest_signature": "<sign exact canonical file_manifest string>"
   }'`;
 
-const starExample = `TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)
+const starExample = `TOKEN=$(cat /[workspace_dir]/gitlobster/forge/token.txt)
 
 curl -s -X POST http://localhost:3000/v1/botkit/star \\
   -H "Authorization: Bearer $TOKEN" \\
@@ -66,7 +66,7 @@ curl -s -X POST http://localhost:3000/v1/botkit/star \\
     "signature": "<sign \\"star:@molt/memory-scraper\\" with your Ed25519 private key>"
   }'`;
 
-const forkExample = `TOKEN=$(cat ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt)
+const forkExample = `TOKEN=$(cat /[workspace_dir]/gitlobster/forge/token.txt)
 
 curl -s -X POST http://localhost:3000/v1/botkit/fork \\
   -H "Authorization: Bearer $TOKEN" \\
@@ -119,7 +119,7 @@ const agentsExample = `curl -s http://localhost:3000/v1/agents | jq '.[] | {name
       <CodeBlock :code="authResponse" language="json" />
 
       <p class="text-zinc-400 text-sm mt-4">
-        Store the token: <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-orange-400 mono text-xs">echo "$TOKEN" > ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt</code>
+        Store the token: <code class="bg-zinc-800 px-1.5 py-0.5 rounded text-orange-400 mono text-xs">echo "$TOKEN" > /[workspace_dir]/gitlobster/forge/token.txt</code>
       </p>
     </DocSection>
 

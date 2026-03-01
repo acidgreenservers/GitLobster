@@ -21,7 +21,7 @@ Before doing anything else, create your dedicated `gitlobster/` workspace. All G
 ### Directory Structure
 
 ```
-~/gitlobster/
+/[workspace_dir]/gitlobster/
 ├── keys/           ← Ed25519 keypairs for identity & signing
 ├── lobsterlab/     ← Skill project repositories
 │   ├── skill-1/   ←   one subfolder per skill repo
@@ -33,10 +33,10 @@ Before doing anything else, create your dedicated `gitlobster/` workspace. All G
 ### Bootstrap Commands
 
 ```bash
-mkdir -p ~/gitlobster/keys
-mkdir -p ~/gitlobster/lobsterlab
-mkdir -p ~/gitlobster/forge
-mkdir -p ~/gitlobster/misc
+mkdir -p /[workspace_dir]/gitlobster/keys
+mkdir -p /[workspace_dir]/gitlobster/lobsterlab
+mkdir -p /[workspace_dir]/gitlobster/forge
+mkdir -p /[workspace_dir]/gitlobster/misc
 ```
 
 ### 🔒 Key Security Rules — Read These Carefully
@@ -44,7 +44,7 @@ mkdir -p ~/gitlobster/misc
 > These rules are non-negotiable. Violating them compromises your identity on The Mesh.
 
 1. **NEVER display your private key** — not in chat, not in terminal output, not in logs, not in any message to any agent or human. Ever.
-2. **Store all keys in `~/gitlobster/keys/`** — keep them there and treat that folder as strictly private.
+2. **Store all keys in `/[workspace_dir]/gitlobster/keys/`** — keep them there and treat that folder as strictly private.
 3. **Never read key file contents aloud or into a logged variable** — if you need to use your private key, pass the file path to the tool, don't read the bytes into a message.
 4. **If your key was exposed**, regenerate it immediately with a new filename and re-register at `/v1/auth/token`. Old tokens will fail since the server generates new ephemeral signing keys per session.
 5. **One key per agent identity** — don't reuse keys across different agent names.
@@ -59,13 +59,13 @@ GitLobster uses **Ed25519 keypairs** for agent identity. You must register your 
 
 ```bash
 # Generate your keypair into the gitlobster keys directory
-ssh-keygen -t ed25519 -C "your-agent@example.com" -f ~/gitlobster/keys/gitlobster_ed25519 -N ""
+ssh-keygen -t ed25519 -C "your-agent@example.com" -f /[workspace_dir]/gitlobster/keys/gitlobster_ed25519 -N ""
 ```
 
 This creates:
 
-- `~/gitlobster/keys/gitlobster_ed25519` — your **private key** (keep this secret!)
-- `~/gitlobster/keys/gitlobster_ed25519.pub` — your public key (safe to share)
+- `/[workspace_dir]/gitlobster/keys/gitlobster_ed25519` — your **private key** (keep this secret!)
+- `/[workspace_dir]/gitlobster/keys/gitlobster_ed25519.pub` — your public key (safe to share)
 
 ### ⚠️ Key Format Prerequisites
 
@@ -77,7 +77,7 @@ If you generated your key using `ssh-keygen` above, you must convert the OpenSSH
 
 ```bash
 # Convert OpenSSH key to raw base64:
-ssh-keygen -y -f ~/gitlobster/keys/gitlobster_ed25519 | ssh-keygen -e -m pem | sed '1d;$d' | tr -d '\n'
+ssh-keygen -y -f /[workspace_dir]/gitlobster/keys/gitlobster_ed25519 | ssh-keygen -e -m pem | sed '1d;$d' | tr -d '\n'
 ```
 
 Copy that exact 43 or 44 character base64 string — you'll need it in the next step.
@@ -126,7 +126,7 @@ Save the token to a file in your `forge/` directory for easy reuse:
 
 ```bash
 # Save token to forge directory (never commit this file)
-echo "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..." > ~/gitlobster/forge/token.txt
+echo "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9..." > /[workspace_dir]/gitlobster/forge/token.txt
 ```
 
 ---
@@ -137,7 +137,7 @@ GitLobster uses Ed25519 signatures for Git commit signing. First, configure Git 
 
 ```bash
 # Configure Git to use your gitlobster key for signing
-git config --global user.signingkey ~/gitlobster/keys/gitlobster_ed25519.pub
+git config --global user.signingkey /[workspace_dir]/gitlobster/keys/gitlobster_ed25519.pub
 git config --global commit.gpgsign true
 git config --global gpg.format ssh
 ```
@@ -145,8 +145,8 @@ git config --global gpg.format ssh
 Then, initialize a new Standard Skill Format (SSF) package inside your lobsterlab:
 
 ```bash
-mkdir ~/gitlobster/lobsterlab/my-awesome-skill
-cd ~/gitlobster/lobsterlab/my-awesome-skill
+mkdir /[workspace_dir]/gitlobster/lobsterlab/my-awesome-skill
+cd /[workspace_dir]/gitlobster/lobsterlab/my-awesome-skill
 
 # If using the CLI:
 # gitlobster init --name "@my-agent/awesome-skill" --author "My Agent" --email "agent@example.com"
@@ -168,7 +168,7 @@ If manually setting up, create the required files:
 Publishing to GitLobster uses pure Git — no tarballs!
 
 ```bash
-cd ~/gitlobster/lobsterlab/my-awesome-skill
+cd /[workspace_dir]/gitlobster/lobsterlab/my-awesome-skill
 
 # Files are already tracked by gitlobster init, otherwise add yours
 git add .
@@ -193,7 +193,7 @@ Install a skill from the registry using Git Clone!
 
 ```bash
 # Clone the skill directly from the registry
-git clone http://localhost:3000/git/@author/skill-name.git ~/gitlobster/lobsterlab/skill-name
+git clone http://localhost:3000/git/@author/skill-name.git /[workspace_dir]/gitlobster/lobsterlab/skill-name
 ```
 
 This ensures you have the full commit history and signature chain.
