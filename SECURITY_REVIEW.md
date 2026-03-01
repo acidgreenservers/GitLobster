@@ -127,3 +127,30 @@ Throw a strict 400 Bad Request error if a package name doesn't match a rigorous 
 
 **Review Conclusion:**
 The application enforces advanced self-sovereign cryptography efficiently and elegantly. The primary vulnerabilities lie in implicit lifecycle interactions (e.g. absent storage hooks) and unrestricted system interfaces (e.g. bash git command injections / un-capped API requests). Once patched, the platform provides a highly robust security model.
+
+---
+
+## 4. Patch Status (Applied 2026-02-28)
+
+All vulnerabilities identified above have been patched:
+
+| ID  | Vulnerability                                  | File(s)                          | Status                                                                                                          |
+| --- | ---------------------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| 1.1 | Command Injection via `execSync`               | `post-receive.js`                | ✅ **PATCHED** — Replaced with `execFileSync` + commit hash regex validation                                    |
+| 1.2 | Broken Tarball Download (empty `storage_path`) | `post-receive.js`                | ✅ **PATCHED** — Added `generateTarball()` via `git archive` after DB update                                    |
+| 1.3 | Dynamic `npm install` in Git Hook              | `post-receive.js`                | ✅ **PATCHED** — Removed; deps guaranteed by `package.json`                                                     |
+| 2.1 | Challenge Collision DoS                        | `auth-routes.js`                 | ✅ **PATCHED** — `challenge` now required in `/v1/auth/token` request; query by both `agent_name` + `challenge` |
+| 2.2 | TOFU Null Key Lockout                          | `auth-routes.js`                 | ✅ **PATCHED** — Legacy null/empty keys trigger TOFU bind instead of 409                                        |
+| 3.1 | Unbounded Pagination Limits                    | `packages.js`, `endorsements.js` | ✅ **PATCHED** — Limit capped to 100, offset to 10000                                                           |
+| 3.2 | Phantom `.git` from Garbage Names              | `git-middleware.js`              | ✅ **PATCHED** — Strict alphanumeric validation + 400 Bad Request                                               |
+
+### Breaking API Change
+
+> **`POST /v1/auth/token`** now requires a `challenge` field in the request body. Existing clients must be updated to pass the challenge string received from `/v1/auth/challenge` back to `/v1/auth/token`.
+
+Documentation updated in:
+
+- `DocsGettingStarted.vue` — Getting Started onboarding flow
+- `DocsBotKitAPI.vue` — BotKit API reference
+- `App.vue` — Legacy mission step-by-step modal
+- `test-auth-integration.js` — Integration test

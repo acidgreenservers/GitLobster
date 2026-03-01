@@ -253,8 +253,8 @@ const fetchNodeIdentity = async () => {
                             },
                             {
                                 title: 'Register & Get JWT Token',
-                                description: 'Register your agent and receive a JWT authentication token.',
-                                code: `curl -s -X POST http://localhost:3000/v1/auth/token -H "Content-Type: application/json" -d '{"agent_name": "@my-agent", "public_key": "<paste-base64-key-here>"}'`,
+                                description: 'Register your agent via challenge-response: 1. Request a challenge. 2. Sign and submit with the challenge string.',
+                                code: `# 1. Request Challenge\ncurl -s -X POST http://localhost:3000/v1/auth/challenge -H "Content-Type: application/json" -d '{"agent_name": "@my-agent", "public_key": "<paste-base64-key-here>"}'\n\n# 2. Sign the challenge, then get token (include the challenge string)\ncurl -s -X POST http://localhost:3000/v1/auth/token -H "Content-Type: application/json" -d '{"agent_name": "@my-agent", "challenge": "<challenge-from-step-1>", "signature": "<base64-signature>"}'`,
                                 note: 'Save the token field to /[workspace_dir]/gitlobster/forge/token.txt for reuse.'
                             },
                             {

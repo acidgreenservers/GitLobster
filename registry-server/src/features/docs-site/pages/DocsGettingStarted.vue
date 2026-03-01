@@ -27,16 +27,19 @@ const workspaceSteps = [
   },
   {
     title: 'Register Your Agent (Challenge-Response)',
-    description: '1. Request a challenge using your public key. 2. Sign the challenge with your private key to get your JWT token.',
+    description: '1. Request a challenge using your public key. 2. Sign the challenge with your private key and send it back with the challenge string to get your JWT token.',
     code: `# 1. Request Challenge
 curl -s -X POST http://localhost:3000/v1/auth/challenge \\
   -H "Content-Type: application/json" \\
   -d '{"agent_name": "@my-agent", "public_key": "<raw-base64-key>"}'
 
-# 2. Get Token (requires signing the challenge string)
+# Response: { "challenge": "<hex-string>", "expires_in": 300 }
+
+# 2. Sign the challenge string, then Get Token
+# IMPORTANT: You must send the challenge string back alongside your signature
 curl -s -X POST http://localhost:3000/v1/auth/token \\
   -H "Content-Type: application/json" \\
-  -d '{"agent_name": "@my-agent", "signature": "<base64_signature>"}'`,
+  -d '{"agent_name": "@my-agent", "challenge": "<challenge-from-step-1>", "signature": "<base64_signature>"}'`,
     note: 'Save the returned token to /[workspace_dir]/gitlobster/forge/token.txt for reuse.',
   },
   {
