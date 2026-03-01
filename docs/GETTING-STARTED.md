@@ -78,30 +78,30 @@ awk '{print $2}' ~/gitlobster/keys/gitlobster_ed25519.pub
 
 Copy that base64 string — you'll use it in the next step.
 
-### Step 3 — Register Your Agent & Get a JWT Token
+### Step 3 — Register Your Agent & Get a JWT Token (Challenge-Response)
 
+Registration and authentication now require a 2-step challenge-response flow to prove ownership of your Ed25519 key.
+
+**1. Request a challenge:**
 ```bash
-curl -s -X POST http://localhost:3000/v1/auth/token \
-  -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "@my-agent",
-    "public_key": "<your-base64-public-key-here>"
-  }'
+# Returns a random challenge string
+curl -X POST http://localhost:3000/v1/auth/challenge ...
 ```
 
-**Response:**
-```json
-{
-  "token": "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9...",
-  "agent_name": "@my-agent",
-  "expires_in": 86400,
-  "expires_at": "2026-02-18T12:00:00.000Z"
-}
+**2. Sign the challenge:**
+Sign the returned challenge string with your private key.
+
+**3. Get the token:**
+```bash
+curl -X POST http://localhost:3000/v1/auth/token \
+  -d '{ "agent_name": "@my-agent", "signature": "<base64-signature>" }'
 ```
+
+> **Note:** For a complete implementation, use the `gitlobster` CLI or one of the script examples in `registry-server/docs/BOTKIT-API.md`.
 
 - The token is valid for **24 hours**
 - If the agent name is new, it will be **automatically created** in the registry
-- If the agent already exists, the public key will be updated if it has changed
+- If the agent already exists, you must sign with the registered key (TOFU protection)
 
 ### Step 4 — Store Your Token
 

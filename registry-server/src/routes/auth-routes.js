@@ -1,26 +1,102 @@
 /**
  * Authentication Routes
  * Provides JWT token generation for agents
- *
- * TODO: This is a DEVELOPMENT endpoint. In production, implement proper OAuth flow
- * with challenge-response authentication to verify key ownership before issuing tokens.
  */
 
 const express = require('express');
 const router = express.Router();
 const nacl = require('tweetnacl');
+const crypto = require('crypto');
 const db = require('../db');
 const { generateJWT } = require('../auth');
 const { trackIdentityKey } = require('../identity');
 const KeyManager = require('../trust/KeyManager');
 
 /**
- * POST /v1/auth/token - Generate JWT token for agent
+ * POST /v1/auth/challenge - Request authentication challenge
+ * Step 1 of OAuth-like flow
  *
  * Request body:
  * {
  *   agent_name: "@gemini",
  *   public_key: "base64_encoded_ed25519_public_key"
+ * }
+ *
+ * Response:
+ * {
+ *   challenge: "random_hex_string",
+ *   expires_in: 300
+ * }
+ */
+router.post('/challenge', async (req, res) => {
+  try {
+    const { agent_name, public_key } = req.body;
+
+    if (!agent_name || !public_key) {
+      return res.status(400).json({
+        error: 'invalid_request',
+        message: 'Missing required fields: agent_name, public_key'
+      });
+    }
+
+    const normalizedAgentName = agent_name.startsWith('@') ? agent_name : `@${agent_name}`;
+
+    // Validate public key format
+    try {
+      const publicKeyBytes = Buffer.from(public_key, 'base64');
+      if (publicKeyBytes.length !== nacl.sign.publicKeyLength) {
+        throw new Error('Invalid key length');
+      }
+    } catch (error) {
+      return res.status(400).json({
+        error: 'invalid_public_key',
+        message: 'Public key must be valid base64-encoded Ed25519 key'
+      });
+    }
+
+    // Check if agent exists and enforce TOFU (Trust On First Use) at this stage too
+    const existingAgent = await db('agents').where({ name: normalizedAgentName }).first();
+    if (existingAgent && existingAgent.public_key !== public_key) {
+        return res.status(409).json({
+          error: 'agent_name_taken',
+          message: `The agent name ${normalizedAgentName} is already registered with a different public key.`
+        });
+    }
+
+    // Generate random challenge
+    const challenge = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+    // Store challenge
+    await db('auth_challenges').insert({
+      agent_name: normalizedAgentName,
+      public_key,
+      challenge,
+      expires_at: expiresAt
+    });
+
+    res.status(200).json({
+      challenge,
+      expires_in: 300 // seconds
+    });
+
+  } catch (error) {
+    console.error('❌ Challenge generation error:', error);
+    res.status(500).json({
+      error: 'challenge_failed',
+      message: error.message
+    });
+  }
+});
+
+/**
+ * POST /v1/auth/token - Generate JWT token for agent
+ * Step 2 of OAuth-like flow
+ *
+ * Request body:
+ * {
+ *   agent_name: "@gemini",
+ *   signature: "base64_encoded_signature_of_challenge"
  * }
  *
  * Response:
@@ -33,35 +109,65 @@ const KeyManager = require('../trust/KeyManager');
  */
 router.post('/token', async (req, res) => {
   try {
-    const { agent_name, public_key } = req.body;
+    const { agent_name, signature } = req.body;
 
     // Validate required fields
-    if (!agent_name || !public_key) {
+    if (!agent_name || !signature) {
       return res.status(400).json({
         error: 'invalid_request',
-        message: 'Missing required fields: agent_name, public_key'
+        message: 'Missing required fields: agent_name, signature'
       });
     }
 
     // Ensure agent name has @ prefix
     const normalizedAgentName = agent_name.startsWith('@') ? agent_name : `@${agent_name}`;
 
-    // Validate public key format (should be base64 and decode to 32 bytes for Ed25519)
-    let publicKeyBytes;
-    try {
-      publicKeyBytes = Buffer.from(public_key, 'base64');
-      if (publicKeyBytes.length !== nacl.sign.publicKeyLength) {
-        return res.status(400).json({
-          error: 'invalid_public_key',
-          message: `Ed25519 public key must be ${nacl.sign.publicKeyLength} bytes`
-        });
-      }
-    } catch (error) {
-      return res.status(400).json({
-        error: 'invalid_public_key',
-        message: 'Public key must be valid base64-encoded Ed25519 key'
+    // 1. Retrieve the active challenge
+    const challengeRecord = await db('auth_challenges')
+      .where({ agent_name: normalizedAgentName })
+      .orderBy('created_at', 'desc')
+      .first();
+
+    if (!challengeRecord) {
+      return res.status(401).json({
+        error: 'challenge_not_found',
+        message: 'No active challenge found. Please request a challenge first via POST /v1/auth/challenge'
       });
     }
+
+    // Check expiration
+    if (new Date(challengeRecord.expires_at) < new Date()) {
+      await db('auth_challenges').where({ id: challengeRecord.id }).delete();
+      return res.status(401).json({
+        error: 'challenge_expired',
+        message: 'Challenge expired. Please request a new one.'
+      });
+    }
+
+    // 2. Verify Signature
+    try {
+      // The challenge was a random hex string sent to the client
+      const challengeBytes = Buffer.from(challengeRecord.challenge, 'utf8');
+      const signatureBytes = Buffer.from(signature, 'base64');
+      const publicKeyBytes = Buffer.from(challengeRecord.public_key, 'base64');
+
+      const isValid = nacl.sign.detached.verify(challengeBytes, signatureBytes, publicKeyBytes);
+
+      if (!isValid) {
+        throw new Error('Signature verification failed');
+      }
+    } catch (err) {
+      return res.status(401).json({
+        error: 'invalid_signature',
+        message: 'Signature verification failed. Ensure you are signing the challenge string correctly.'
+      });
+    }
+
+    // 3. Cleanup challenge (prevent replay)
+    await db('auth_challenges').where({ id: challengeRecord.id }).delete();
+
+    // 4. Proceed with Agent Registration/Login (using the verified public key)
+    const public_key = challengeRecord.public_key;
 
     // Check if agent exists, create or update
     const existingAgent = await db('agents').where({ name: normalizedAgentName }).first();

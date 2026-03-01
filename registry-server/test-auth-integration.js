@@ -16,7 +16,7 @@ function request(options, data) {
 }
 
 async function run() {
-    console.log('--- Testing Valid Auth ---');
+    console.log('--- Testing Valid Auth (Challenge-Response) ---');
 
     // 1. Generate Client Keypair
     const keyPair = nacl.sign.keyPair();
@@ -26,27 +26,70 @@ async function run() {
     console.log(`Agent: ${agentName}`);
     console.log(`Public Key: ${publicKeyB64}`);
 
-    // 2. Get Token
-    const authData = JSON.stringify({
+    // 2. Request Challenge
+    console.log('--> Requesting Challenge...');
+    const challengeData = JSON.stringify({
         agent_name: agentName,
         public_key: publicKeyB64
     });
 
-    const authOptions = {
+    const challengeOptions = {
+        hostname: 'localhost',
+        port: 3000,
+        path: '/v1/auth/challenge',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(challengeData)
+        }
+    };
+
+    let challenge;
+    try {
+        const res = await request(challengeOptions, challengeData);
+        console.log(`Challenge Response: ${res.statusCode} ${res.body}`);
+        if (res.statusCode !== 200) {
+            console.error('Failed to get challenge');
+            process.exit(1);
+        }
+        const body = JSON.parse(res.body);
+        challenge = body.challenge;
+        console.log(`Got Challenge: ${challenge}`);
+    } catch (e) {
+        console.error('Challenge request failed', e);
+        process.exit(1);
+    }
+
+    // 3. Sign Challenge
+    // Challenge is a hex string, treat it as bytes
+    const challengeBytes = Buffer.from(challenge, 'utf8'); // IMPORTANT: Matches server logic
+    const signatureBytes = nacl.sign.detached(challengeBytes, keyPair.secretKey);
+    const signatureB64 = encodeBase64(signatureBytes);
+
+    console.log(`Signature: ${signatureB64.substring(0, 20)}...`);
+
+    // 4. Request Token with Signature
+    console.log('--> Requesting Token...');
+    const tokenData = JSON.stringify({
+        agent_name: agentName,
+        signature: signatureB64
+    });
+
+    const tokenOptions = {
         hostname: 'localhost',
         port: 3000,
         path: '/v1/auth/token',
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'Content-Length': Buffer.byteLength(authData)
+            'Content-Length': Buffer.byteLength(tokenData)
         }
     };
 
     let token;
     try {
-        const res = await request(authOptions, authData);
-        console.log(`Auth Response: ${res.statusCode} ${res.body}`);
+        const res = await request(tokenOptions, tokenData);
+        console.log(`Token Response: ${res.statusCode} ${res.body}`);
         if (res.statusCode !== 200) {
             console.error('Failed to get token');
             process.exit(1);
@@ -55,21 +98,20 @@ async function run() {
         token = body.token;
         console.log('Got Token:', token.substring(0, 20) + '...');
     } catch (e) {
-        console.error('Auth request failed', e);
+        console.error('Token request failed', e);
         process.exit(1);
     }
 
-    // 3. Use Token to Star a Package
-    // Note: Package might not exist, so we might get 404, but NOT 401.
+    // 5. Use Token to Star a Package (Verify Token Works)
     const packageName = '@test/pkg-does-not-exist';
     const message = `star:${packageName}`;
     const messageBytes = Buffer.from(message, 'utf8');
-    const signatureBytes = nacl.sign.detached(messageBytes, keyPair.secretKey);
-    const signatureB64 = encodeBase64(signatureBytes);
+    const signatureBytesStar = nacl.sign.detached(messageBytes, keyPair.secretKey);
+    const signatureB64Star = encodeBase64(signatureBytesStar);
 
     const starData = JSON.stringify({
         package_name: packageName,
-        signature: signatureB64
+        signature: signatureB64Star
     });
 
     const starOptions = {

@@ -355,6 +355,24 @@ async function init() {
     console.log('✅ parent_uuid column added to forks');
   }
 
+  // Migration: Create auth_challenges table for challenge-response auth
+  const hasAuthChallenges = await db.schema.hasTable('auth_challenges');
+  if (!hasAuthChallenges) {
+    console.log('🔄 Creating auth_challenges table...');
+    await db.schema.createTable('auth_challenges', (table) => {
+      table.increments('id');
+      table.string('agent_name').notNullable();
+      table.string('public_key').notNullable();
+      table.string('challenge').notNullable();
+      table.timestamp('expires_at').notNullable();
+      table.timestamp('created_at').defaultTo(db.fn.now());
+
+      // Index for fast lookups
+      table.index(['agent_name', 'challenge']);
+    });
+    console.log('✅ auth_challenges table created');
+  }
+
   try {
     await seedBridgeSkill();
   } catch (err) {

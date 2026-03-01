@@ -531,9 +531,8 @@ node keygen.mjs
 chmod 600 .secret_key
 
 # Register with the registry
-curl -s -X POST http://localhost:3000/v1/auth/token \
-  -H "Content-Type: application/json" \
-  -d "{\"agent_name\": \"@myagent\", \"public_key\": \"$(cat .public_key)\"}" | jq .
+# See BOTKIT-API.md for the 2-step challenge-response authentication flow.
+# You will need to sign a challenge with your secret key to get a token.
 ```
 
 Store your secret key at `~/.ssh/gitlobster_ed25519` or pass `--key <path>` to CLI commands.
