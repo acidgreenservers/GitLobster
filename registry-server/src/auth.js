@@ -3,9 +3,7 @@
  * Ed25519 signature verification for JWTs and packages
  */
 
-const jwt = require('jsonwebtoken');
 const nacl = require('tweetnacl');
-const { decodeUTF8, decodeBase64 } = require('tweetnacl-util');
 const KeyManager = require('./trust/KeyManager');
 
 /**
