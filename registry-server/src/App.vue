@@ -21,7 +21,7 @@ import StatusPage from './features/pages/StatusPage.vue';
 const DEBUG_MODE = ref(import.meta.env.MODE === 'development' || import.meta.env.VITE_DEBUG === 'true'); // Auto-disable in prod, enable in dev
 const debugPanelVisible = ref(false);
 
-// Debug logging helper - only logs when DEBUG_MODE is true  
+// Debug logging helper - only logs when DEBUG_MODE is true
 const debugLog = (label, data) => {
     if (DEBUG_MODE.value) {
         console.log(`[DEBUG ${new Date().toISOString()}] ${label}:`, JSON.stringify(data, null, 2));
@@ -98,9 +98,9 @@ const fetchNodeIdentity = async () => {
                     const agentName = name.startsWith('@') ? name : `@${name}`;
                     // We don't have the full agents list in App.vue anymore.
                     // But we can just set the current view and let the components handle fetching.
-                    // For now, we'll try to find it via a direct fetch if needed, 
+                    // For now, we'll try to find it via a direct fetch if needed,
                     // OR we just switch to agents view and let the user find it (simple MVP approach)
-                    
+
                     // Better approach: Set current view to agent_profile and create a partial agent object
                     const agent = { name: agentName };
                     viewAgent(agent);
@@ -208,6 +208,32 @@ const fetchNodeIdentity = async () => {
                     } catch (e) {
                         console.error('Package fetch failed:', e);
                     }
+                };
+
+                const openForkModal = (pkg) => {
+                    const packageName = pkg?.name || selectedRepo.value?.name;
+                    if (!packageName) return;
+
+                    const title = 'Fork Skill';
+                    const intro = 'Copy the following command to give to your agent to fork this skill into your own namespace:';
+                    const snippet = `gitlobster fork ${packageName} @my-agent/${packageName.split('/').pop()} --registry ${window.location.origin}`;
+
+                    openPromptModal(title, intro, snippet);
+                };
+
+                const toggleStar = (pkg) => {
+                    const packageName = pkg?.name || selectedRepo.value?.name;
+                    if (!packageName) return;
+
+                    const title = 'Star Skill';
+                    const intro = 'Copy the following BotKit CLI command for your agent to cryptographically star and endorse this skill on your behalf:';
+                    const snippet = `TOKEN=$(cat /[workspace_dir]/gitlobster/forge/token.txt)
+curl -s -X POST ${window.location.origin}/v1/botkit/star \\
+  -H "Authorization: Bearer $TOKEN" \\
+  -H "Content-Type: application/json" \\
+  -d '{"package_name": "${packageName}", "signature": "<your-signed-message>"}'`;
+
+                    openPromptModal(title, intro, snippet);
                 };
 
 
@@ -487,8 +513,8 @@ const fetchNodeIdentity = async () => {
                         return;
                     }
 
-                    debugLog('syncStateToUrl', { 
-                        view: currentView.value, 
+                    debugLog('syncStateToUrl', {
+                        view: currentView.value,
                         q: searchQuery.value,
                         repo: selectedRepo.value?.name,
                         agent: selectedAgent.value?.name,
@@ -585,7 +611,7 @@ const fetchNodeIdentity = async () => {
 
                 // Watch state changes to update URL
                 // Using flush: 'post' ensures watch runs AFTER all reactive changes are applied
-                watch([currentView, searchQuery, selectedRepo, selectedAgent, selectedAgentActivity], 
+                watch([currentView, searchQuery, selectedRepo, selectedAgent, selectedAgentActivity],
                     () => {
                         syncStateToUrl();
                     },
@@ -596,17 +622,17 @@ const fetchNodeIdentity = async () => {
                 // Use a flag to prevent overlapping restorations
                 let isRestoringPopstate = false;
                 let isProgrammaticNavigation = false;
-                
+
                 window.addEventListener('popstate', async (event) => {
                     // Prevent overlapping popstate handlers
                     if (isRestoringPopstate || appPhase.value === 'restoring' || isProgrammaticNavigation || appPhase.value !== 'ready') {
                         debugLog('popstate SKIPPED', { alreadyRestoring: isRestoringPopstate, phase: appPhase.value });
                         return;
                     }
-                    
+
                     isRestoringPopstate = true;
                     debugLog('popstate START', { state: event.state });
-                    
+
                     try {
                         await restoreStateFromUrl(true);
                     } finally {
@@ -616,21 +642,21 @@ const fetchNodeIdentity = async () => {
 
                 onMounted(async () => {
                     debugLog('onMounted START', {});
-                    
+
                     // Phase 1: Fetch initial data
                     await fetchPackages();
                     // Fetch node identity for self-verification UI
                     await fetchNodeIdentity();
                     debugLog('fetchPackages COMPLETE', { count: packages.value.length });
-                    
+
                     // Phase 2: Restore state from URL
                     // This sets appPhase to 'restoring' internally
                     await restoreStateFromUrl();
-                    
+
                     // Phase 3: App is now ready for normal operation
                     // syncStateToUrl will now work because phase is 'ready'
                     debugLog('onMounted COMPLETE', { phase: appPhase.value });
-                    
+
                     // Default doc loading now handled by DocumentationView on mount if needed
                     setInterval(fetchPackages, 10000);
                 });
@@ -714,7 +740,7 @@ const fetchNodeIdentity = async () => {
                         <p class="text-xs text-zinc-500 uppercase tracking-widest font-bold mb-1">Network Version</p>
                         <p class="text-2xl font-bold mono">V2.5.5</p>
                     </div>
-                    <div 
+                    <div
                         @click="identityModalVisible = true"
                         class="bg-card border border-zinc p-4 rounded-xl registry-online cursor-pointer hover:border-emerald-500/50 transition-all group"
                     >
@@ -915,15 +941,15 @@ const fetchNodeIdentity = async () => {
             </div>
 
             <!-- Activity Feed View -->
-            <ActivityFeed 
-                v-if="currentView === 'activity'" 
-                @view-agent="viewAgentByName" 
-                @view-package="viewPackageByName" 
+            <ActivityFeed
+                v-if="currentView === 'activity'"
+                @view-agent="viewAgentByName"
+                @view-package="viewPackageByName"
             />
 
             <!-- Agent Activity View (Dedicated) -->
-            <AgentActivityView 
-                v-if="currentView === 'agent_activity' && selectedAgentActivity" 
+            <AgentActivityView
+                v-if="currentView === 'agent_activity' && selectedAgentActivity"
                 :agent-name="selectedAgentActivity"
                 @back="backFromAgentActivity"
                 @view-agent="viewAgentActivity"
@@ -933,15 +959,15 @@ const fetchNodeIdentity = async () => {
 
             <!-- The Mesh / Agents View -->
             <!-- The Mesh / Agents View -->
-            <AgentsView 
-                v-if="currentView === 'agents'" 
-                @view-agent="viewAgent" 
+            <AgentsView
+                v-if="currentView === 'agents'"
+                @view-agent="viewAgent"
             />
 
             <!-- Agent Detail View -->
             <!-- Agent Detail View -->
-            <AgentProfile 
-                v-if="currentView === 'agent_profile' && selectedAgent" 
+            <AgentProfile
+                v-if="currentView === 'agent_profile' && selectedAgent"
                 :agent="selectedAgent"
                 @back="currentView = 'agents'"
                 @view-package="viewRepo"
@@ -949,14 +975,14 @@ const fetchNodeIdentity = async () => {
             />
 
             <!-- Repository View (Extracted) -->
-            <RepositoryView 
-                v-if="currentView === 'repo' && selectedRepo" 
-                :repo="selectedRepo" 
+            <RepositoryView
+                v-if="currentView === 'repo' && selectedRepo"
+                :repo="selectedRepo"
                 :user-starred="userStarred"
                 @back="currentView = 'explore'"
-                @star="toggleStar" 
-                @fork="openForkModal" 
-                @view-file="viewRawFile" 
+                @star="toggleStar"
+                @fork="openForkModal"
+                @view-file="viewRawFile"
                 @download="showSafetyWarning"
             />
 
@@ -1224,8 +1250,8 @@ const fetchNodeIdentity = async () => {
             </div>
 
             <!-- Documentation View -->
-            <DocumentationView 
-                v-if="currentView === 'docs'" 
+            <DocumentationView
+                v-if="currentView === 'docs'"
                 :persona="persona"
                 @start-mission="(id) => openStepModal(id)"
                 @view-registry="goExplore"
@@ -1233,27 +1259,27 @@ const fetchNodeIdentity = async () => {
             />
 
             <!-- Full Documentation View -->
-            <FullDocsView 
+            <FullDocsView
                 v-if="currentView === 'full-docs'"
                 @back="currentView = 'docs'"
                 @view-repo="viewPackageByName"
             />
 
             <!-- Privacy Policy -->
-            <PrivacyPolicy 
+            <PrivacyPolicy
                 v-if="currentView === 'privacy'"
                 :trust-anchor-name="trustAnchorName"
                 @back="currentView = 'explore'"
             />
 
             <!-- Terms of Service -->
-            <TermsOfService 
+            <TermsOfService
                 v-if="currentView === 'terms'"
                 @back="currentView = 'explore'"
             />
 
             <!-- Status Page -->
-            <StatusPage 
+            <StatusPage
                 v-if="currentView === 'status'"
                 :fingerprint="nodeFingerprint"
                 :public-key="nodePublicKey"
@@ -1304,12 +1330,12 @@ const fetchNodeIdentity = async () => {
                         class="absolute -top-20 -right-20 w-64 h-64 lobster-gradient rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity">
                     </div>
                     <pre class="text-[10px] leading-tight text-orange-500/50 mono">
-    01010011 01001000 01000001 01010010 
-    01000101 01000100 01011111 01010000 
-    01001111 01010111 01000101 01010011 
-    01011111 01001001 01010011 01011111 
-    01010011 01000001 01000110 01000101 
-    01010010 01011111 01010000 01001111 
+    01010011 01001000 01000001 01010010
+    01000101 01000100 01011111 01010000
+    01001111 01010111 01000101 01010011
+    01011111 01001001 01010011 01011111
+    01010011 01000001 01000110 01000101
+    01010010 01011111 01010000 01001111
     01010111 01000101 01010010
                     </pre>
                     <p class="mt-8 text-xs font-bold tracking-[0.2em] text-zinc-500 uppercase">GitLobster //
@@ -1356,38 +1382,38 @@ const fetchNodeIdentity = async () => {
             </div>
         </div>
 
-        
+
         <!-- Safety Warning Modal -->
-        <SafetyWarningModal 
-            :visible="safetyWarningVisible" 
+        <SafetyWarningModal
+            :visible="safetyWarningVisible"
             :url="safetyWarningUrl"
-            @close="safetyWarningVisible = false" 
+            @close="safetyWarningVisible = false"
         />
 
         <!-- Observation Modal (Still in App.vue for now or handled elsewhere? It wasn't in list to extract yet but I should check if it exists in code view) -->
-        <!-- Note: Observation logic was removed in previous refactor, but the template snippet I saw earlier had it. 
-             If it's dead code, I should remove it. The user said 'Globals Modals Extraction'. 
+        <!-- Note: Observation logic was removed in previous refactor, but the template snippet I saw earlier had it.
+             If it's dead code, I should remove it. The user said 'Globals Modals Extraction'.
              Wait, I see 'Observation Modal' in the view_file output at line 1204.
-             But I didn't see explicit logic for it in script setup in the first chunk view... 
-             Ah, 'createObservation' was deleted in previous refactor? 
+             But I didn't see explicit logic for it in script setup in the first chunk view...
+             Ah, 'createObservation' was deleted in previous refactor?
              Let's check if 'observationModalVisible' is defined. It wasn't in the displayed script.
              It might be dead code I missed deleting earlier. I'll delete it now if present.
         -->
 
         <!-- Prompt Modal -->
-        <PromptModal 
-            :visible="promptModalVisible" 
+        <PromptModal
+            :visible="promptModalVisible"
             :title="currentPrompt?.title"
             :intro="currentPrompt?.intro"
             :snippet="currentPrompt?.snippet"
-            @close="promptModalVisible = false" 
+            @close="promptModalVisible = false"
         />
 
         <!-- Step-by-Step Mission Modal -->
-        <MissionStepModal 
-            :visible="stepModalVisible" 
+        <MissionStepModal
+            :visible="stepModalVisible"
             :mission="currentMission"
-            @close="stepModalVisible = false" 
+            @close="stepModalVisible = false"
         />
 
         <!-- Node Identity Modal -->
@@ -1401,16 +1427,16 @@ const fetchNodeIdentity = async () => {
 
         <!-- Debug Panel -->
         <div v-if="DEBUG_MODE" class="fixed bottom-4 right-4 z-[9999]">
-            <button 
+            <button
                 @click="debugPanelVisible = !debugPanelVisible"
                 class="bg-zinc-800 text-orange-500 px-3 py-1 rounded text-xs font-mono hover:bg-zinc-700 transition-colors border border-orange-500/30"
             >
                 {{ debugPanelVisible ? '▼' : '▲' }} DEBUG
             </button>
-            
+
             <div v-if="debugPanelVisible" class="mt-2 bg-black/95 border border-orange-500/50 rounded-lg p-4 w-80 max-h-96 overflow-auto text-xs font-mono">
                 <div class="text-orange-500 font-bold mb-2">🔧 State Persistence Debug</div>
-                
+
                 <div class="space-y-2 text-zinc-300">
                     <div><span class="text-zinc-500">currentView:</span> {{ currentView }}</div>
                     <div><span class="text-zinc-500">searchQuery:</span> {{ searchQuery }}</div>
@@ -1421,7 +1447,7 @@ const fetchNodeIdentity = async () => {
                     <div><span class="text-zinc-500">URL:</span> {{ window.location.href }}</div>
                     <div><span class="text-zinc-500">DEBUG_MODE:</span> {{ DEBUG_MODE }}</div>
                 </div>
-                
+
                 <div class="mt-4 pt-2 border-t border-zinc-700">
                     <button @click="debugLog('Manual test', { test: true })" class="text-zinc-500 hover:text-white text-xs mr-2">
                         [Test Log]
