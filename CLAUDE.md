@@ -443,7 +443,7 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 
 | Module | Purpose | Status |
 |--------|---------|--------|
-| `routes.js` | API endpoints (1,844 lines) | 🔄 Being refactored to feature modules |
+| `routes.js` | API endpoints barrel export | ✅ Complete - Reduced to 57-line barrel export |
 | `auth.js` | JWT + signature verification | ✅ Recently fixed - Full Ed25519 validation |
 | `db.js` | SQLite schema (10 tables) | ✅ With migrations for file_manifest columns |
 | `integrity.js` | File manifest validation | ✅ NEW - Declare-Don't-Extract model |
@@ -477,11 +477,11 @@ App.vue (1,596 lines) now with Version Diff capabilities:
 
 ## 🎯 Development Roadmap
 
-### Current Sprint (V2.5 Hotfix Cycle) ✅ Mostly Complete
+### Current Sprint (V2.5 Hotfix Cycle) ✅ Complete
 - ✅ File manifest support (Feb 21)
 - ✅ JWT security hardening (Feb 20)
 - ✅ Docker stability fixes (Feb 19)
-- 🔄 Routes.js refactoring (extract 1,844-line monolith to feature modules)
+- ✅ Routes.js refactoring (reduced 1,844-line monolith to 57-line barrel export)
 
 ### Next Release (V2.6)
 - Rate limiting implementation

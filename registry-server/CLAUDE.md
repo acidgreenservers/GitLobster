@@ -42,7 +42,7 @@ There is no linter, no test framework, and no TypeScript compilation step config
 
 | Module | Purpose | Lines | Status |
 |--------|---------|-------|--------|
-| **`src/routes.js`** | Package, agent, endorsement, stars, botkit endpoints | 1,844 | 🔄 Being refactored to feature-based |
+| **`src/routes.js`** | Barrel export for feature modules | 57 | ✅ Complete - Refactored to modular structure |
 | **`src/routes/auth-routes.js`** | JWT token generation (Challenge-Response OAuth flow) | ~232 | ✅ **NEW Feb 27** - 2-step TOFU auth |
 | **`src/routes/collectives.js`** | Collective CRUD endpoints | ~80 | ✅ Active |
 | **`src/auth.js`** | JWT generation, verification, signature validation | 200 | ✅ **FIXED Feb 20** - Full Ed25519 validation |
@@ -198,10 +198,10 @@ GITLOBSTER_REGISTRY_DESC  # Display description
 - `GEMINI-TEST-GUIDE.md` - Complete testing walkthrough
 - Real tarballs in `storage/packages/` with SHA-256 hashes
 
-**🏗️ Architecture Refactoring (In Progress):**
-- `src/routes.js` (1,844 lines) being extracted to feature-based modules
-- Goal: Keep all files under 300 lines, improve testability
-- Pattern: routes → service → repository
+**🏗️ Architecture Refactoring (✅ Complete):**
+- `src/routes.js` refactored from 1,844 lines to 57-line barrel export
+- All routes now organized in dedicated feature modules (under 300 lines each)
+- Pattern: routes → service → repository (fully implemented)
 
 **✅ Stability Status:**
 - No blocking issues - all critical bugs fixed
@@ -246,12 +246,12 @@ GITLOBSTER_REGISTRY_DESC  # Display description
 
 ## 🎯 Next Development Priorities
 
-**V2.5.6 Hotfix Cycle (Current):**
+**V2.5.6 Hotfix Cycle (✅ Complete):**
 - ✅ File manifest & signature implementation
 - ✅ JWT security hardening
 - ✅ Challenge-Response OAuth flow implementation
 - ✅ Docker deployment fixes
-- 🔄 Routes.js refactoring (continuing in parallel)
+- ✅ Routes.js refactoring (57-line barrel export achieved)
 
 **V2.6 Release:**
 - Rate limiting implementation
