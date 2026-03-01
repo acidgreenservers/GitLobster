@@ -453,26 +453,31 @@ async function getPackageLineage(req, res) {
       .where({ parent_package: name })
       .limit(parseInt(depth));
 
-    // Get package details for each fork
-    const descendants = await Promise.all(
-      forks.map(async (fork) => {
-        const forkedPkg = await db("packages")
-          .where({ name: fork.forked_package })
-          .first();
-        return {
-          package: fork.forked_package,
-          forkReason: fork.fork_reason,
-          forkerAgent: fork.forker_agent,
-          signatureValid: !!fork.signature,
-          signatureStatus: fork.signature ? "verified" : "unverified",
-          author: forkedPkg?.author_public_key
-            ? {
-                fingerprint: forkedPkg.author_public_key.slice(0, 12),
-              }
-            : null,
-        };
-      }),
-    );
+    // Batch fetch package details for all forks to avoid N+1 queries
+    const forkedPackageNames = forks.map((f) => f.forked_package);
+    const forkedPkgs =
+      forkedPackageNames.length > 0
+        ? await db("packages").whereIn("name", forkedPackageNames)
+        : [];
+
+    // Map for fast lookup
+    const forkedPkgsMap = new Map(forkedPkgs.map((p) => [p.name, p]));
+
+    const descendants = forks.map((fork) => {
+      const forkedPkg = forkedPkgsMap.get(fork.forked_package);
+      return {
+        package: fork.forked_package,
+        forkReason: fork.fork_reason,
+        forkerAgent: fork.forker_agent,
+        signatureValid: !!fork.signature,
+        signatureStatus: fork.signature ? "verified" : "unverified",
+        author: forkedPkg?.author_public_key
+          ? {
+              fingerprint: forkedPkg.author_public_key.slice(0, 12),
+            }
+          : null,
+      };
+    });
 
     res.json({
       package: {
