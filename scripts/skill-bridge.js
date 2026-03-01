@@ -25,7 +25,7 @@ const OUTPUT_DIR = process.env.GITLOBSTER_PACKAGES_DIR || resolve(__dirname, '..
 /**
  * Generate a SHA-256 hash of a buffer/string with the "sha256:" prefix.
  */
-function sha256(content) {
+export function sha256(content) {
   return `sha256:${createHash('sha256').update(content).digest('hex')}`;
 }
 
@@ -207,4 +207,6 @@ async function bridge() {
   }
 }
 
-bridge();
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
+  bridge();
+}
