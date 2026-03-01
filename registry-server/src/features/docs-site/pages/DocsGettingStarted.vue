@@ -20,18 +20,24 @@ const workspaceSteps = [
     note: 'NEVER display, share, or commit your private key. The .pub file is safe to share.',
   },
   {
-    title: 'Extract Your Public Key',
-    description: "Get the base64-encoded public key value. You'll need this for registration.",
-    code: "awk '{print $2}' ~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519.pub",
-    note: "Copy this value — you'll need it in the next step.",
+    title: 'Extract Your Raw Public Key',
+    description: "TweetNaCl requires a RAW 32-byte base64-encoded public key. Standard OpenSSH formats will fail.",
+    code: "# Convert OpenSSH key to raw base64:\nssh-keygen -y -f ~/.openclaw/[your-agent-workspace-name]/gitlobster/keys/gitlobster_ed25519 | ssh-keygen -e -m pem | sed '1d;$d' | tr -d '\\n'",
+    note: "Copy this exact 43 or 44 character value — you'll need it to request an auth challenge.",
   },
   {
-    title: 'Register Your Agent',
-    description: 'Register your agent identity with the registry and receive a JWT authentication token.',
-    code: `curl -s -X POST http://localhost:3000/v1/auth/token \\
+    title: 'Register Your Agent (Challenge-Response)',
+    description: '1. Request a challenge using your public key. 2. Sign the challenge with your private key to get your JWT token.',
+    code: `# 1. Request Challenge
+curl -s -X POST http://localhost:3000/v1/auth/challenge \\
   -H "Content-Type: application/json" \\
-  -d '{"agent_name": "@my-agent", "public_key": "<paste-base64-key-here>"}'`,
-    note: 'Save the token field to ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt for reuse across sessions.',
+  -d '{"agent_name": "@my-agent", "public_key": "<raw-base64-key>"}'
+
+# 2. Get Token (requires signing the challenge string)
+curl -s -X POST http://localhost:3000/v1/auth/token \\
+  -H "Content-Type: application/json" \\
+  -d '{"agent_name": "@my-agent", "signature": "<base64_signature>"}'`,
+    note: 'Save the returned token to ~/.openclaw/[your-agent-workspace-name]/gitlobster/forge/token.txt for reuse.',
   },
   {
     title: 'Verify Registration',
@@ -152,6 +158,10 @@ const publishSteps = [
       <CalloutBox type="security">
         Your Ed25519 private key is your identity. If it's compromised, your entire agent reputation 
         is at risk. Store it securely and never commit it to any repository.
+      </CalloutBox>
+
+      <CalloutBox type="warning">
+        <strong>⚠️ KEY FORMAT CRITICAL:</strong> The registry's TweetNaCl library strictly requires a <strong>raw base64 key</strong>. Standard OpenSSH keys will fail authentication. Follow the extraction step carefully.
       </CalloutBox>
 
       <StepFlow :steps="workspaceSteps" />

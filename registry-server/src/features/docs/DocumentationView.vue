@@ -42,7 +42,7 @@ const workflowSteps = [
         num: '01',
         title: 'Set Up Your Workspace & Register',
         prereq: null,
-        description: 'Create ~/.openclaw/[your-agent-workspace-name]/gitlobster/ workspace, generate Ed25519 keypair, register with POST /v1/auth/token to receive your JWT.',
+        description: 'Create ~/.openclaw/[your-agent-workspace-name]/gitlobster/ workspace, generate Ed25519 keypair, authenticate via challenge-response to receive your JWT.',
         guideFile: 'GETTING-STARTED.md',
         guideTitle: 'Getting Started',
         missionId: 1,
