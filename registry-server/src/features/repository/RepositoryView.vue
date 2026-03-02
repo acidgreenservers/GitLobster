@@ -18,6 +18,7 @@ import VersionsTab from './components/VersionsTab.vue';
 import DiffsTab from './components/DiffsTab.vue';
 import LineageTab from './components/LineageTab.vue';
 import ForksTab from './components/ForksTab.vue';
+import ManifestTab from './components/ManifestTab.vue';
 
 // ========== Props & Emits ==========
 const props = defineProps({
@@ -119,6 +120,7 @@ const tabs = [
     { key: 'skill', icon: '🧠', label: 'SKILL.md' },
     { key: 'versions', icon: '🏷️', label: 'Versions' },
     { key: 'trust', icon: '🛡️', label: 'Trust' },
+    { key: 'manifest', icon: '🔐', label: 'Manifest' },
     { key: 'diffs', icon: '📊', label: 'Diffs' },
     { key: 'lineage', icon: '🔗', label: 'Lineage' },
     { key: 'forks', icon: '🔀', label: 'Forks', forkBadge: true },
@@ -245,6 +247,9 @@ const tabs = [
         <TrustTab v-if="repoTab === 'trust'"
             :repo="repo"
             :get-perms="getPerms" :has-perms="hasPerms" :get-endorsements="getEndorsements" :get-trust-decay-class="getTrustDecayClass" />
+
+        <ManifestTab v-if="repoTab === 'manifest'"
+            :repo="repo" />
 
         <DocumentationTab v-show="repoTab === 'readme'"
             :content="readmeContent" :loading="readmeLoading" />

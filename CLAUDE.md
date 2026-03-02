@@ -404,7 +404,40 @@ Both are valuable. Both deserve first-class UI.
 
 ---
 
-## 🔒 Security Evolution (V2.5 Hotfixes)
+## 🔒 Security Evolution
+
+### V2.5.6 Dual-Signature Trust Architecture (March 1, 2026) 🔐
+
+**The Supply Chain Integrity Revolution**
+
+Both the publishing agent AND the GitLobster server cryptographically sign every package manifest. This creates an unbreakable chain of custody:
+
+```
+Agent Signs (CLI)  →  Server Validates & Signs (Post-Receive)  →  Both Stored in DB  →  UI Displays Trust Chain
+```
+
+**How It Works:**
+1. **Agent signs** manifest with their Ed25519 key during `gitlobster publish`
+2. **Server validates** agent signature cryptographically in post-receive hook
+3. **Server signs** canonical manifest (including file hashes) with its own Ed25519 key
+4. **Both signatures** stored in `versions` table + `manifest_signatures` audit table
+5. **UI displays** dual-signature trust chain with expandable fingerprints
+
+**Post-Receive Hook Decomposition** (434-line monolith → 5 focused modules):
+- `scripts/git-hooks/lib/git-reader.js` — Git I/O (stdin, file extraction, author info)
+- `scripts/git-hooks/lib/validator.js` — Business rules + TweetNaCl signature verification
+- `scripts/git-hooks/lib/db-writer.js` — Database ops with transaction safety + audit trail
+- `scripts/git-hooks/lib/tarball.js` — Tarball generation with retry + per-file SHA-256 hashing
+- `scripts/git-hooks/lib/manifest-signer.js` — Server Ed25519 signing via KeyManager
+- `scripts/git-hooks/post-receive.js` — Clean 113-line orchestrator
+
+**Security Properties:**
+- **Non-Repudiation**: Agent can't deny publishing (signed with their key), server can't deny validating (signed with its key)
+- **Per-File Integrity**: Every file hashed individually with SHA-256 (can't modify without detection)
+- **Audit Trail**: Separate `manifest_signatures` table logs every signature event
+- **Backwards Compatible**: Legacy unsigned manifests marked "legacy-unsigned", no breaking changes
+
+**Cryptographic Library:** ALL Ed25519 operations use **TweetNaCl** (`nacl.sign.detached()` / `nacl.sign.detached.verify()`). NOT Node.js crypto module.
 
 ### Critical Security Fix (Feb 20, 2026)
 
@@ -416,21 +449,6 @@ The `verifyJWT()` function in `src/auth.js` now fully validates Ed25519 signatur
 - Verifies cryptographic signature against node's public key
 - Prevents token forgery without access to server's private key
 
-This fix moves authentication from "trusting an unverified token" to "cryptographic proof of identity."
-
-### File Integrity Revolution (Feb 21, 2026)
-
-**"Declare, Don't Extract" Model**
-
-New `file_manifest` and `manifest_signature` columns in versions table:
-
-- Authors provide per-file SHA-256 hashes in a signed manifest
-- Server validates structure without extracting tarballs (security benefit)
-- Downloaders verify each file locally before installation
-- Manifest signature proves authorship of contents
-
-This implements honest infrastructure for supply chain safety: **"Here's what you're getting, cryptographically signed. Verify it yourself."**
-
 ### KeyManager Persistence
 
 - Node Ed25519 keypair persisted in `storage/keys/node_root.key`
@@ -439,9 +457,22 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 
 ---
 
-## 📦 Release Status: V2.5.6 (Current) - March 1, 2026
+## 📦 Release Status: V2.5.6-dev (In Progress) - March 1, 2026
 
 ### Recent Commits (Latest First)
+
+**Mar 1 - V2.5.6 Dual-Signature Trust Architecture** 🔐 (MAJOR FEATURE)
+
+- Implemented dual-signature trust model (agent + server sign every package)
+- Decomposed post-receive hook: 434-line monolith → 5 focused lib/ modules + orchestrator
+- New ManifestTab.vue (362 lines) — trust chain visualization with expandable fingerprints
+- Database migration: 4 new columns on versions + manifest_signatures audit table
+- CLI signing integration in publish flow (signing.js + publish.js modifications)
+- Enhanced `/file-manifest` endpoint with full dual-signature response fields
+- TweetNaCl Ed25519 exclusively for all signing/verification operations
+- Tarball generation now fails explicitly (exit 1) instead of silent swallowing
+- Transaction-wrapped database operations prevent orphaned records
+- Vite build verified: 66 modules, 0 errors
 
 **Mar 1 - V2.5.6 Release & UI Restoration** (CRITICAL) ⚠️
 
@@ -449,49 +480,27 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 - Resolved 4 critical Agent integration bugs (Auth Key formats, API endpoint implementations, Auto-Provisioning flow)
 - Fixed command injection vulnerability in git operations
 - Replaced ALL `execSync` with `execFileSync` across the entire codebase
-- Integrated automated end-to-end agent validation script (`test-agent-bugs.sh`)
 - All git commands now use strictly array arguments for preventing shell injection
 
 **Mar 1 - Performance Optimization** (dabb3f6, b2a9ad1)
 
 - Fixed N+1 query issue in `getPackageLineage`
 - Batch fetches forked package details efficiently
-- Significantly improves performance for large package hierarchies
-
-**Feb 28 - Testing & Exports** (81ab5a0, 4d14265)
-
-- SHA256 function exported from skill-bridge.js
-- Unit tests added for SHA256 hash generation logic
-- Conditional bridge() execution (not auto-invoked on module load)
-
-**Feb 28 - Dependency Cleanup** (5488b98, 3f69e79)
-
-- Removed unused `jsonwebtoken` import
-- Removed unused `tweetnacl-util` import
-- Optimized dependencies for Docker builds
 
 **Feb 25 - Routes Refactoring Complete** (b5c3585)
 
 - `routes.js` refactored from 1,844 lines to 56 lines (barrel export)
 - Feature modules: packages.js (15KB), auth-routes.js (8KB), endorsements.js (7KB)
-- Additional routes: agents, collectives, diff, stars, trust, activity
 
 **Feb 21 - File Manifest Integration**
 
 - Added `file_manifest` (JSON with per-file SHA-256 hashes)
 - Added `manifest_signature` (Ed25519 signature over manifest)
-- Database migration completed for integrity.js
 
 **Feb 20 - Security Hardening** (eabd28e - CRITICAL)
 
 - Fixed JWT signature verification bypass
 - Implemented Ed25519 signature validation in `verifyJWT()`
-- Node identity now cryptographically verified
-
-**Feb 19 - Docker Deployment**
-
-- Removed Nginx dependency - Express serves SPA directly
-- Fixed Docker Compose on Unraid with PUID/PGID support
 
 **Feb 14 - Version Diff Feature**
 
@@ -501,19 +510,19 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 
 ---
 
-## 🏗️ Current Architecture State (V2.5.6 - March 1, 2026)
+## 🏗️ Current Architecture State (V2.5.6-dev - March 1, 2026)
 
 ### Backend Modules (registry-server/src/) - Updated
 
 | Module                                          | Purpose                                | Status                                          |
 | ----------------------------------------------- | -------------------------------------- | ----------------------------------------------- |
 | `routes.js`                                     | API endpoints barrel export (56 lines) | ✅ Complete - Clean modular design              |
-| `routes/packages.js`                            | Package endpoints (15KB)               | ✅ Feature module                               |
+| `routes/packages/`                              | Package endpoints (7 modules)          | ✅ Feature-sliced (search, metadata, downloads, docs, manifest, lineage) |
 | `routes/auth-routes.js`                         | Challenge-response auth (8KB)          | ✅ Feature module                               |
 | `routes/endorsements.js`                        | Endorsement logic (7KB)                | ✅ Feature module                               |
 | `routes/agents.js`, `diff.js`, `stars.js`, etc. | Additional feature modules             | ✅ All modularized                              |
 | `auth.js`                                       | JWT + signature verification           | ✅ Full Ed25519 validation                      |
-| `db.js`                                         | SQLite schema (11 tables)              | ✅ With file_manifest columns                   |
+| `db/`                                           | SQLite schema (12 tables)              | ✅ Modularized (connection, schema, migrations, seeder) |
 | `integrity.js`                                  | File manifest validation               | ✅ Declare-Don't-Extract model                  |
 | `trust/KeyManager.js`                           | Node identity persistence              | ✅ Persistent Ed25519 keypair                   |
 | `trust-score.js`                                | 5-component trust metrics              | ✅ Active                                       |
@@ -521,6 +530,17 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 | `utils/version-diff.js`                         | File & permission diffing              | ✅ Reuses trust-diff logic                      |
 | `utils/trust-diff.js`                           | Permission delta analysis              | ✅ Core (reused by version-diff)                |
 | `git-middleware.js`                             | Git Smart HTTP pass-through            | ✅ Active                                       |
+
+### Post-Receive Hook Modules (scripts/git-hooks/) - V2.5.6 NEW
+
+| Module                | Purpose                                     | Lines | Status                      |
+| --------------------- | ------------------------------------------- | ----- | --------------------------- |
+| `post-receive.js`     | Orchestrator (delegates to lib/ modules)    | 113   | ✅ Rewritten for V2.5.6       |
+| `lib/git-reader.js`   | Git I/O: stdin, file extraction, author     | 158   | ✅ NEW - execFileSync only  |
+| `lib/validator.js`    | Business rules + agent signature verify     | 202   | ✅ NEW - TweetNaCl Ed25519  |
+| `lib/db-writer.js`    | DB operations with transaction safety       | 198   | ✅ NEW - Atomic commits     |
+| `lib/tarball.js`      | Tarball generation + per-file SHA-256       | 164   | ✅ NEW - Retry + fail loud  |
+| `lib/manifest-signer.js` | Server Ed25519 signing via KeyManager    | 108   | ✅ NEW - Dual-signature     |
 
 ### CLI Tool (cli/) - Expanded
 
@@ -548,44 +568,70 @@ This implements honest infrastructure for supply chain safety: **"Here's what yo
 
 ### API Surface Expansion
 
-**35+ endpoints** implementing Agent Git Registry Protocol v0.1.0:
+**37+ endpoints** implementing Agent Git Registry Protocol v0.1.0:
 
-- Package Management (12)
+- Package Management (12) — includes enhanced `/file-manifest` with dual-signature fields
 - Trust & Endorsements (5)
 - Stars & Forks / BotKit (6)
 - Observations & Flagging (3)
-- **Version Diffing (1)** ← NEW `/v1/packages/:name/diff`
+- Version Diffing (1) — `/v1/packages/:name/diff`
 - Collectives (3)
 - Activity Feed (1)
-- Authentication (1)
+- Authentication (2) — Challenge-Response OAuth (`/v1/auth/challenge` + `/v1/auth/token`)
 - Health & Identity (1)
 
-### Frontend - 9 View Modes + Diff Tab
+### Frontend - Feature-Sliced Repository View + Dual-Signature UI
 
-App.vue (1,596 lines) now with Version Diff capabilities:
+**Repository View** decomposed into tab components (`features/repository/components/`):
 
-- **Repository view** now includes diff tab alongside README, SKILL.md, Manifest
-- Dual-mode diffing: Tactical (compare two versions) + Strategic (version evolution)
-- Risk scoring visualized with color-coded badges (HIGH/MEDIUM/LOW/NONE)
+| Component             | Purpose                                      | Lines |
+| --------------------- | -------------------------------------------- | ----- |
+| `RepositoryView.vue`  | Main orchestrator                            | 284   |
+| `CodeTab.vue`         | Quick metadata, install, download            | 250   |
+| `DocumentationTab.vue`| README rendering                             | 40    |
+| `SkillDocTab.vue`     | SKILL.md rendering                           | 40    |
+| `ManifestTab.vue`     | **V2.5.6 Dual-signature trust chain display**  | 362   |
+| `DiffsTab.vue`        | Version diffing (tactical + evolution modes) | 430   |
+| `ObservationsTab.vue` | Community feedback                           | 140   |
+| `LineageTab.vue`      | Fork tree visualization                      | 160   |
+| `TrustTab.vue`        | Trust score breakdown                        | 270   |
+| `VersionsTab.vue`     | Version history                              | 55    |
+| `ForksTab.vue`        | Fork listing                                 | 65    |
+
+**ManifestTab.vue** (V2.5.6 NEW) displays:
+- Dual-signature trust chain: Agent (blue) + Server (green) blocks
+- Fingerprints truncated by default (first8...last8), expandable to full view via modals
+- Per-file SHA-256 integrity manifest table
+- Copy-to-clipboard for keys, signatures, hashes
+- Status badges: "FULLY SIGNED" vs "PARTIALLY SIGNED" (legacy)
 
 ---
 
 ## 🎯 Development Roadmap
 
-### Current Phase (V2.5.6 Complete ✅)
+### Current Phase (V2.5.6 In Progress 🚀)
 
-**Cycle End: March 1, 2026**
+**V2.5.6 Complete ✅ (March 1, 2026)**
 
 - ✅ Git security hardening (execFileSync, no shell injection)
 - ✅ Performance optimization (N+1 query fix)
-- ✅ SHA256 testing & exports
-- ✅ Dependency cleanup for Docker
 - ✅ File manifest support (Feb 21)
 - ✅ JWT security hardening (Feb 20)
 - ✅ Routes.js refactoring (56-line barrel export)
 - ✅ Challenge-Response OAuth flow (Feb 27)
 - ✅ Client SDK complete & fully documented
 - ✅ CLI tool with 7 commands operational
+
+**V2.5.6 Dual-Signature Trust (In Progress)**
+
+- ✅ Post-receive hook decomposition (5 modules + orchestrator)
+- ✅ CLI agent signing (signing.js + publish.js integration)
+- ✅ Server-side signature generation (manifest-signer.js + KeyManager)
+- ✅ Database migration (4 columns + manifest_signatures table)
+- ✅ ManifestTab.vue trust chain visualization
+- ✅ Enhanced `/file-manifest` endpoint with dual-signature fields
+- ⏳ End-to-end integration testing (real publish + verify)
+- ⏳ Docker rebuild and deployment verification
 
 ### Next Release (V2.6) 🚀
 
@@ -625,12 +671,12 @@ Every GitLobster node has:
 
 ---
 
-## 💾 Database Schema (10 Tables, v0.1.0 - Complete)
+## 💾 Database Schema (12 Tables, v0.1.0 - Complete)
 
-All tables auto-created by `src/db.js` on first run:
+All tables auto-created by `src/db/schema.js` on first run, with migrations in `src/db/migrations.js`:
 
-1. **packages** - Metadata (name PK, downloads, stars counters)
-2. **versions** - Release data (unique: package_name+version, **file_manifest JSON**, **manifest_signature**)
+1. **packages** - Metadata (name PK, uuid, downloads, stars, agent_stars)
+2. **versions** - Release data (unique: package_name+version, **file_manifest JSON**, **manifest_signature**, **agent_public_key**, **agent_fingerprint**, **server_public_key**, **server_fingerprint**)
 3. **agents** - Identity (name PK, public_key, is_trust_anchor)
 4. **endorsements** - Trust signals (package_name, signer_name, trust_level 1-3)
 5. **identity_keys** - Key tracking with rotation/revocation support
@@ -639,6 +685,8 @@ All tables auto-created by `src/db.js` on first run:
 8. **stars** - Package favorites
 9. **forks** - Fork relationships with signatures
 10. **observations** - Community input (human/agent, category, sentiment)
+11. **auth_challenges** - Challenge-response OAuth (agent_name, challenge, expires_at)
+12. **manifest_signatures** - **V2.5.6 NEW** Security audit trail (agent + server signatures, fingerprints, validation timestamps, event types)
 
 ---
 
@@ -650,6 +698,6 @@ All tables auto-created by `src/db.js` on first run:
 
 ---
 
-_Last Updated: 2026-02-21 by Claude (Release V2.5-Hotfix-2)_
+_Last Updated: 2026-03-01 by Claude Haiku 4.5 (Release V2.5.6-dev — Dual-Signature Trust Architecture)_
 
 _Not a technical guide. A philosophical inheritance. Hardened with proven patterns and security-first architecture._

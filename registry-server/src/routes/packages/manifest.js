@@ -90,6 +90,18 @@ async function getFileManifest(req, res) {
       manifest_signature: versionData.manifest_signature,
       tarball_hash: versionData.hash,
       publisher_public_key: pkg?.author_public_key,
+      // V2.6 Dual-signature fields
+      agent_public_key: versionData.agent_public_key || null,
+      agent_fingerprint: versionData.agent_fingerprint || "legacy-unsigned",
+      agent_signature: versionData.agent_signature || null,
+      server_public_key: versionData.server_public_key || null,
+      server_fingerprint: versionData.server_fingerprint || null,
+      commit_hash: versionData.commit_hash || null,
+      author_name: versionData.author_name || pkg?.author_name || null,
+      author_email: versionData.author_email || null,
+      published_at: versionData.published_at || null,
+      // Include parsed manifest for agentSignature/agentPublicKey fallback
+      manifest: versionData.manifest ? JSON.parse(versionData.manifest) : null,
     });
   } catch (error) {
     console.error("File manifest error:", error);

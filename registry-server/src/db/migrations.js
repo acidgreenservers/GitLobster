@@ -197,6 +197,62 @@ async function runMigrations() {
     });
     console.log("✅ auth_challenges table created");
   }
+
+  // ── V2.6 dual-signature columns (versions table) ───────────────────────
+  if (!(await db.schema.hasColumn("versions", "agent_public_key"))) {
+    console.log("🔄 Adding agent_public_key column to versions table...");
+    await db.schema.table("versions", (t) =>
+      t.text("agent_public_key").nullable(),
+    );
+    console.log("✅ agent_public_key column added");
+  }
+
+  if (!(await db.schema.hasColumn("versions", "agent_fingerprint"))) {
+    console.log("🔄 Adding agent_fingerprint column to versions table...");
+    await db.schema.table("versions", (t) =>
+      t.text("agent_fingerprint").nullable(),
+    );
+    console.log("✅ agent_fingerprint column added");
+  }
+
+  if (!(await db.schema.hasColumn("versions", "server_public_key"))) {
+    console.log("🔄 Adding server_public_key column to versions table...");
+    await db.schema.table("versions", (t) =>
+      t.text("server_public_key").nullable(),
+    );
+    console.log("✅ server_public_key column added");
+  }
+
+  if (!(await db.schema.hasColumn("versions", "server_fingerprint"))) {
+    console.log("🔄 Adding server_fingerprint column to versions table...");
+    await db.schema.table("versions", (t) =>
+      t.text("server_fingerprint").nullable(),
+    );
+    console.log("✅ server_fingerprint column added");
+  }
+
+  // ── V2.6 manifest_signatures audit table ────────────────────────────────
+  if (!(await db.schema.hasTable("manifest_signatures"))) {
+    console.log("🔄 Creating manifest_signatures audit table...");
+    await db.schema.createTable("manifest_signatures", (table) => {
+      table.increments("id");
+      table.string("package_name").notNullable();
+      table.string("version").notNullable();
+      table.string("agent_name").notNullable();
+      table.text("agent_fingerprint").notNullable();
+      table.text("agent_signature").notNullable();
+      table.boolean("agent_signature_valid").defaultTo(true);
+      table.timestamp("agent_validated_at");
+      table.text("server_fingerprint").notNullable();
+      table.text("server_signature").notNullable();
+      table.timestamp("server_signed_at");
+      table
+        .string("event_type")
+        .comment("SERVER_VALIDATED, SIGNATURE_VERIFIED");
+      table.timestamp("created_at").defaultTo(db.fn.now());
+    });
+    console.log("✅ manifest_signatures audit table created");
+  }
 }
 
 module.exports = { runMigrations };

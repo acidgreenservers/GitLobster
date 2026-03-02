@@ -1,21 +1,24 @@
 /**
- * Publish Command - Git Workflow (V2.5)
+ * Publish Command - Git Workflow (V2.6)
  * Validates and publishes a skill to the registry using pure Git workflow
- * 
- * V2.5 NOTE: This command uses Git push only - NO tarball uploads.
- * The server's post-receive hook handles package registration.
+ *
+ * V2.6: Agent signs manifest with Ed25519 before push.
+ * The server's post-receive hook validates agent signature,
+ * generates a server signature, and stores both (dual-signature trust).
  */
 
-import { readFile, access, stat } from 'fs/promises';
-import { resolve } from 'path';
-import ora from 'ora';
-import chalk from 'chalk';
-import yaml from 'js-yaml';
-import * as git from '../src/git-utils.js';
+import { readFile, writeFile, access, stat } from "fs/promises";
+import { resolve } from "path";
+import ora from "ora";
+import chalk from "chalk";
+import yaml from "js-yaml";
+import * as git from "../src/git-utils.js";
+import { attachSignature } from "../utils/signing.js";
 
 // File constants
-const CONFIG_FILE = 'gitlobster.json';
-const README_FILE = 'README.md';
+const CONFIG_FILE = "gitlobster.json";
+const README_FILE = "README.md";
+const SKILL_FILE = "SKILL.md";
 
 /**
  * Prompt for user confirmation (interactive mode)
@@ -23,16 +26,16 @@ const README_FILE = 'README.md';
  * @returns {Promise<boolean>} User response
  */
 async function promptConfirmation(question) {
-  const readline = await import('readline');
+  const readline = await import("readline");
   const rl = readline.createInterface({
     input: process.stdin,
-    output: process.stdout
+    output: process.stdout,
   });
 
   return new Promise((resolve) => {
     rl.question(question, (answer) => {
       rl.close();
-      resolve(answer.toLowerCase().startsWith('y'));
+      resolve(answer.toLowerCase().startsWith("y"));
     });
   });
 }
@@ -93,11 +96,13 @@ async function isDirectory(path) {
 async function loadConfig(skillPath) {
   const configPath = resolve(skillPath, CONFIG_FILE);
 
-  if (!await fileExists(configPath)) {
-    throw new Error(`${CONFIG_FILE} not found in ${skillPath}. Run 'gitlobster init' first.`);
+  if (!(await fileExists(configPath))) {
+    throw new Error(
+      `${CONFIG_FILE} not found in ${skillPath}. Run 'gitlobster init' first.`,
+    );
   }
 
-  const content = await readFile(configPath, 'utf-8');
+  const content = await readFile(configPath, "utf-8");
   let config;
 
   try {
@@ -116,7 +121,9 @@ async function loadConfig(skillPath) {
   }
 
   if (!config.author || !config.author.name || !config.author.email) {
-    throw new Error(`${CONFIG_FILE} must have "author" with "name" and "email" fields`);
+    throw new Error(
+      `${CONFIG_FILE} must have "author" with "name" and "email" fields`,
+    );
   }
 
   return config;
@@ -130,15 +137,19 @@ async function loadConfig(skillPath) {
 async function loadReadme(skillPath) {
   const readmePath = resolve(skillPath, README_FILE);
 
-  if (!await fileExists(readmePath)) {
-    throw new Error(`${README_FILE} not found in ${skillPath}. README.md with YAML frontmatter is required.`);
+  if (!(await fileExists(readmePath))) {
+    throw new Error(
+      `${README_FILE} not found in ${skillPath}. README.md with YAML frontmatter is required.`,
+    );
   }
 
-  const content = await readFile(readmePath, 'utf-8');
+  const content = await readFile(readmePath, "utf-8");
   const frontmatter = parseYamlFrontmatter(content);
 
   if (!frontmatter) {
-    throw new Error(`${README_FILE} must have YAML frontmatter (e.g., ---\ntitle: package-name\n---)`);
+    throw new Error(
+      `${README_FILE} must have YAML frontmatter (e.g., ---\ntitle: package-name\n---)`,
+    );
   }
 
   if (!frontmatter.title) {
@@ -156,7 +167,7 @@ async function loadReadme(skillPath) {
 function validateNameMatch(config, frontmatter) {
   if (config.name !== frontmatter.title) {
     throw new Error(
-      `Name mismatch: gitlobster.json has "${config.name}" but README.md frontmatter has "${frontmatter.title}". These must match.`
+      `Name mismatch: gitlobster.json has "${config.name}" but README.md frontmatter has "${frontmatter.title}". These must match.`,
     );
   }
 }
@@ -169,12 +180,12 @@ async function showStagedDiff(skillPath) {
   const diff = git.getStagedDiff({ cwd: skillPath });
 
   if (diff) {
-    console.log('\n' + chalk.cyan('Staged changes:'));
-    console.log('---');
+    console.log("\n" + chalk.cyan("Staged changes:"));
+    console.log("---");
     console.log(diff);
-    console.log('---\n');
+    console.log("---\n");
   } else {
-    console.log(chalk.yellow('No staged changes to show.\n'));
+    console.log(chalk.yellow("No staged changes to show.\n"));
   }
 }
 
@@ -185,124 +196,172 @@ async function showStagedDiff(skillPath) {
  */
 export async function publishCommand(path, options) {
   // Determine interactive mode
-  const isInteractive = options.yes !== true && process.env.GITLOBSTER_INTERACTIVE_PUBLISH !== 'false';
+  const isInteractive =
+    options.yes !== true &&
+    process.env.GITLOBSTER_INTERACTIVE_PUBLISH !== "false";
 
   const skillPath = resolve(path);
-  const spinner = ora('Starting publish process').start();
+  const spinner = ora("Starting publish process").start();
 
   try {
     // Step 1: Verify skill directory exists
-    spinner.text = 'Verifying skill directory...';
-    if (!await isDirectory(skillPath)) {
+    spinner.text = "Verifying skill directory...";
+    if (!(await isDirectory(skillPath))) {
       throw new Error(`Skill directory not found: ${skillPath}`);
     }
-    spinner.succeed('Skill directory verified');
+    spinner.succeed("Skill directory verified");
 
     // Step 2: Check if git is available
-    spinner.text = 'Checking Git availability...';
+    spinner.text = "Checking Git availability...";
     if (!git.checkGitAvailable()) {
-      throw new Error('Git is not available. Please install Git and ensure it is in your PATH.');
+      throw new Error(
+        "Git is not available. Please install Git and ensure it is in your PATH.",
+      );
     }
-    spinner.succeed('Git is available');
+    spinner.succeed("Git is available");
 
     // Step 3: Check if it's a git repository
-    spinner.text = 'Checking Git repository...';
+    spinner.text = "Checking Git repository...";
     if (!git.isGitRepo(skillPath)) {
-      throw new Error(`${skillPath} is not a Git repository. Run 'git init' first.`);
+      throw new Error(
+        `${skillPath} is not a Git repository. Run 'git init' first.`,
+      );
     }
-    spinner.succeed('Git repository found');
+    spinner.succeed("Git repository found");
 
     // Step 4: Load and validate gitlobster.json
-    spinner.text = 'Loading gitlobster.json...';
+    spinner.text = "Loading gitlobster.json...";
     const config = await loadConfig(skillPath);
-    spinner.succeed(`Config loaded: ${chalk.cyan(config.name)}@${chalk.cyan(config.version)}`);
+    spinner.succeed(
+      `Config loaded: ${chalk.cyan(config.name)}@${chalk.cyan(config.version)}`,
+    );
 
     // Step 5: Load and parse README.md
-    spinner.text = 'Parsing README.md...';
+    spinner.text = "Parsing README.md...";
     const frontmatter = await loadReadme(skillPath);
-    spinner.succeed('README.md parsed');
+    spinner.succeed("README.md parsed");
 
     // Step 6: Validate name match
-    spinner.text = 'Validating package name...';
+    spinner.text = "Validating package name...";
     validateNameMatch(config, frontmatter);
     spinner.succeed(`Package name validated: ${chalk.green(config.name)}`);
 
+    // Step 6b: Validate SKILL.md exists (required for transparency)
+    spinner.text = "Checking SKILL.md...";
+    const skillPath_ = resolve(skillPath, SKILL_FILE);
+    if (!(await fileExists(skillPath_))) {
+      throw new Error(
+        `${SKILL_FILE} not found. A SKILL.md file is strictly required for transparency.`,
+      );
+    }
+    spinner.succeed("SKILL.md found");
+
+    // Step 6c: Sign manifest with agent's Ed25519 key (V2.6 Dual-Signature)
+    spinner.text = "Signing manifest with agent key...";
+    try {
+      const signedConfig = await attachSignature(config, options.key);
+      await writeFile(
+        resolve(skillPath, CONFIG_FILE),
+        JSON.stringify(signedConfig, null, 2),
+        "utf-8",
+      );
+      spinner.succeed(
+        `Manifest signed: ${chalk.green("agentSignature attached")}`,
+      );
+    } catch (signErr) {
+      // Non-fatal: unsigned manifests are still accepted (legacy compat)
+      spinner.warn(
+        `Signing skipped: ${signErr.message} (push will proceed unsigned)`,
+      );
+    }
+
     // Step 7: Interactive mode - show diff and prompt
     if (isInteractive) {
-      spinner.text = 'Checking for staged changes...';
+      spinner.text = "Checking for staged changes...";
       await showStagedDiff(skillPath);
 
-      const confirmed = await promptConfirmation('Proceed with publish? [y/N]: ');
+      const confirmed = await promptConfirmation(
+        "Proceed with publish? [y/N]: ",
+      );
       if (!confirmed) {
-        spinner.warn('Publish cancelled by user');
+        spinner.warn("Publish cancelled by user");
         process.exit(0);
       }
     }
 
     // Step 8: Add files to git
-    spinner.text = 'Adding files to Git...';
-    const addResult = git.addFiles(['.'], { cwd: skillPath });
+    spinner.text = "Adding files to Git...";
+    const addResult = git.addFiles(["."], { cwd: skillPath });
     if (!addResult.success) {
       throw new Error(`Failed to add files: ${addResult.message}`);
     }
-    spinner.succeed('Files added to staging');
+    spinner.succeed("Files added to staging");
 
     // Step 9: Show diff for confirmation (interactive)
     if (isInteractive) {
       await showStagedDiff(skillPath);
 
-      const commitConfirmed = await promptConfirmation('Commit and publish? [y/N]: ');
+      const commitConfirmed = await promptConfirmation(
+        "Commit and publish? [y/N]: ",
+      );
       if (!commitConfirmed) {
-        spinner.warn('Publish cancelled by user');
+        spinner.warn("Publish cancelled by user");
         process.exit(0);
       }
     }
 
     // Step 10: Commit changes
-    spinner.text = 'Committing changes...';
+    spinner.text = "Committing changes...";
     const commitMessage = `Publish ${config.name}@${config.version}`;
-    const commitResult = git.commit(commitMessage, config.author, { cwd: skillPath });
+    const commitResult = git.commit(commitMessage, config.author, {
+      cwd: skillPath,
+    });
 
     if (!commitResult.success) {
       // Check if there are any changes to commit
-      if (commitResult.message.includes('nothing to commit')) {
-        spinner.info('No changes to commit');
+      if (commitResult.message.includes("nothing to commit")) {
+        spinner.info("No changes to commit");
       } else {
         throw new Error(`Failed to commit: ${commitResult.message}`);
       }
     } else {
-      spinner.succeed('Changes committed');
+      spinner.succeed("Changes committed");
     }
 
     // Step 11: Push to remote
-    spinner.text = 'Pushing to remote...';
+    spinner.text = "Pushing to remote...";
     const currentBranch = git.getCurrentBranch({ cwd: skillPath });
-    const remoteUrl = git.getRemoteUrl('origin', { cwd: skillPath });
+    const remoteUrl = git.getRemoteUrl("origin", { cwd: skillPath });
 
     if (!remoteUrl) {
-      throw new Error('No remote "origin" configured. Add a remote with: git remote add origin <url>');
+      throw new Error(
+        'No remote "origin" configured. Add a remote with: git remote add origin <url>',
+      );
     }
 
-    const pushResult = git.push('origin', currentBranch || 'main', { cwd: skillPath });
+    const pushResult = git.push("origin", currentBranch || "main", {
+      cwd: skillPath,
+    });
     if (!pushResult.success) {
       throw new Error(`Failed to push: ${pushResult.message}`);
     }
-    spinner.succeed('Pushed to remote');
+    spinner.succeed("Pushed to remote");
 
     // V2.5: Git push is the publish mechanism
     // The server's post-receive hook handles package registration automatically
     spinner.succeed(chalk.green(`Published ${config.name}@${config.version}`));
-    console.log(`\n  ${chalk.cyan('Package pushed to registry via Git.')}`);
-    console.log(`  ${chalk.dim('The post-receive hook will process and register the package.')}`);
+    console.log(`\n  ${chalk.cyan("Package pushed to registry via Git.")}`);
+    console.log(
+      `  ${chalk.dim("The post-receive hook will process and register the package.")}`,
+    );
 
     if (remoteUrl) {
       console.log(`\n  Remote: ${chalk.cyan(remoteUrl)}`);
-      console.log(`  Branch: ${chalk.cyan(currentBranch || 'main')}`);
+      console.log(`  Branch: ${chalk.cyan(currentBranch || "main")}`);
     }
-
   } catch (error) {
-    spinner.fail(chalk.red('Publish failed'));
-    console.error(`\n${chalk.red('Error:')} ${error.message}`);
+    spinner.fail(chalk.red("Publish failed"));
+    console.error(`\n${chalk.red("Error:")} ${error.message}`);
     process.exit(1);
   }
 }

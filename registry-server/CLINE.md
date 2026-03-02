@@ -143,8 +143,36 @@ I understand the key pieces:
 
 ### Version Information
 
-- **Current Release:** V2.6
+- **Current Release:** V2.5.6 (Dual-Signature Trust Architecture - COMPLETE)
 - **Package Version:** 0.1.0
+- **Latest Commit:** `1fe29ff2df0da1f493826e7c33811d7f2c833a60` - V2.5.6 Dual-Signature Trust Architecture
+
+### New Features (V2.5.6 - COMPLETE)
+
+- **Dual-Signature Trust Architecture** 🔐:
+  - Agent signs manifest with Ed25519 key during `gitlobster publish`
+  - Server validates agent signature cryptographically in post-receive hook
+  - Server signs canonical manifest (including file hashes) with its own Ed25519 key
+  - Both signatures stored in `versions` table + `manifest_signatures` audit table
+  - UI displays dual-signature trust chain with expandable fingerprints
+- **Post-Receive Hook Decomposition**:
+  - `post-receive.js` orchestrator (113 lines) + 5 focused `lib/` modules
+  - `lib/git-reader.js` - Git I/O (stdin, file extraction, author)
+  - `lib/validator.js` - Business rules + TweetNaCl signature verification
+  - `lib/manifest-signer.js` - Server Ed25519 signing via KeyManager
+  - `lib/db-writer.js` - DB operations with transaction safety + audit trail
+  - `lib/tarball.js` - Tarball generation + per-file SHA-256 hashing
+- **ManifestTab.vue** (362 lines) - Trust chain visualization with expandable fingerprints
+- **Database Migration** - 4 new dual-signature columns + manifest_signatures audit table
+- **CLI Agent Signing** - signing.js + publish.js integration for Ed25519 manifest signing
+- **Enhanced `/file-manifest` endpoint** - Full dual-signature response fields
+- **Git Security Hardening** - execFileSync prevents shell injection attacks
+- **Performance Optimization** - N+1 query fix in getPackageLineage
+- **Challenge-Response OAuth Flow** - 2-step agent authentication (Feb 27)
+- **JWT Security Hardening** - Full Ed25519 validation (Feb 20)
+- **Routes.js Refactoring** - 56-line barrel export with feature modules
+- **Client SDK Complete** - Fully documented with Ed25519 crypto operations
+- **CLI Tool Operational** - 7 commands with Git workflow integration
 
 ### New Features (V2.6)
 
@@ -181,21 +209,30 @@ I understand the key pieces:
   - Client SDK for registry API communication
   - No current documentation commands - gap identified for `gitlobster docs` functionality
 
-### API Trust Endpoints (V2.6)
+### API Trust Endpoints (V2.5.6)
 
 - `GET /v1/trust/root` - Node public key & fingerprint
 - `GET /v1/trust/endorsements` - Community endorsements
 - `GET /v1/trust/stats` - Trust metrics
 - `POST /v1/trust/endorse` - Endorse this node
 - `POST /v1/admin/verify-agent` - Sign agent with node key
+- `GET /v1/packages/:name/:version/file-manifest` - Enhanced with dual-signature fields
+
+### Database Schema (V2.5.6)
+
+- **12 Tables** with dual-signature columns:
+  - `versions` table: `agent_public_key`, `agent_fingerprint`, `server_public_key`, `server_fingerprint`
+  - `manifest_signatures` audit table: Agent + server signatures, fingerprints, validation timestamps
+- **Security Properties:** Non-repudiation, per-file integrity, audit trail, backwards compatibility
 
 ### Tech Stack
 
 - Vue 3.5.28 + Vite 7.3.1
 - Express 4.18.2
 - Knex 3.0.1 + SQLite3 5.1.6
-- TweetNaCl 1.0.3 + jsonwebtoken 9.0.2
+- TweetNaCl 1.0.3 (Ed25519 exclusively) + jsonwebtoken 9.0.2
 - Highlight.js 11.11.1 + marked 17.0.2
+- Git operations: execFileSync with argument arrays (no shell injection)
 
 ---
 

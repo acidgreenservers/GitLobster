@@ -27,6 +27,15 @@ async function seedBridgeSkill() {
     fs.readFileSync(path.join(bridgePath, "manifest.json"), "utf-8"),
   );
 
+  manifest.readme = fs.readFileSync(
+    path.join(bridgePath, "README.md"),
+    "utf-8",
+  );
+  manifest.skillDoc = fs.readFileSync(
+    path.join(bridgePath, "SKILL.md"),
+    "utf-8",
+  );
+
   const STORAGE_DIR = process.env.GITLOBSTER_STORAGE_DIR
     ? path.resolve(process.env.GITLOBSTER_STORAGE_DIR)
     : path.resolve(__dirname, "../../storage");
