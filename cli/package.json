@@ -24,7 +24,8 @@
     "js-yaml": "^4.1.1",
     "ora": "^7.0.0",
     "tweetnacl": "^1.0.3",
-    "tweetnacl-util": "^0.15.1"
+    "tweetnacl-util": "^0.15.1",
+    "inquirer": "^9.2.0"
   },
   "engines": {
     "node": ">=20.0.0"

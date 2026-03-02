@@ -116,176 +116,119 @@ async function isDirectory(path) {
 }
 
 /**
- * Main install command - Git Workflow (V2.5)
- * @param {string} packageName - Package name to install
- * @param {object} options - Command options
- * @param {string} options.registry - Registry URL
- * @param {string} options.destination - Installation destination (default: ~/.gitlobster/skills)
- * @param {string} options.version - Specific version to install (default: latest)
- * @param {boolean} options.yes - Skip confirmation prompts
+ * Resolve dependencies recursively
+ * @param {string} packageName - Package name
+ * @param {string} version - Package version
+ * @param {GitLobsterClient} client - GitLobster client instance
+ * @param {Set} visited - Set to track visited packages (prevent cycles)
+ * @returns {Array} Array of dependency objects {name, version}
  */
-export async function installCommand(packageName, options) {
-  const spinner = ora(`Installing ${packageName}`).start();
+async function resolveDependencies(
+  packageName,
+  version,
+  client,
+  visited = new Set(),
+) {
+  if (visited.has(packageName)) {
+    return []; // Prevent infinite recursion
+  }
+  visited.add(packageName);
+
+  const dependencies = [];
 
   try {
-    // Step 0: Verify git is available first
-    if (!checkGitAvailable()) {
-      throw new Error(
-        "Git is not available. Please install Git and ensure it is in your PATH.",
-      );
-    }
-    spinner.succeed("Git is available");
+    const manifest = await client.getManifest(packageName, version);
 
-    // Resolve destination path
-    const destPath = resolve(
-      options.destination?.replace(/^~/, process.env.HOME) ||
-        DEFAULT_DESTINATION.replace(/^~/, process.env.HOME),
-    );
-    const registryUrl = options.registry || "https://gitlobster.registry";
-    const cloneUrl = `${registryUrl}/git/${packageName}.git`;
+    if (manifest.dependencies?.skills) {
+      for (const [depName, depVersion] of Object.entries(
+        manifest.dependencies.skills,
+      )) {
+        dependencies.push({ name: depName, version: depVersion });
 
-    // Determine version to install
-    let version = options.version || "latest";
-
-    // Step 1: Verify package exists in registry (optional - API may not be available)
-    // We do this to validate the package name before attempting clone
-    spinner.text = "Verifying package in registry...";
-
-    try {
-      const client = new GitLobsterClient({ registryUrl });
-      const metadata = await client.getPackageMetadata(packageName);
-
-      if (version === "latest") {
-        version = metadata.latest;
-      }
-
-      if (!metadata.versions.includes(version) && version !== metadata.latest) {
-        throw new Error(
-          `Version ${version} not found. Available: ${metadata.versions.join(", ")}`,
+        // Recursively resolve nested dependencies
+        const nestedDeps = await resolveDependencies(
+          depName,
+          depVersion,
+          client,
+          visited,
         );
+        dependencies.push(...nestedDeps);
       }
-
-      spinner.succeed(
-        `Found ${chalk.cyan(packageName)}@${chalk.cyan(version)} in registry`,
-      );
-    } catch (apiError) {
-      // Continue anyway - the clone URL might still work
-      spinner.info("Registry API unavailable, proceeding with Git clone");
-      spinner.text = "Cloning repository...";
     }
+  } catch (error) {
+    console.warn(
+      chalk.yellow(
+        `Warning: Could not resolve dependencies for ${packageName}@${version}: ${error.message}`,
+      ),
+    );
+  }
 
-    // Step 2: Prepare destination directory
-    spinner.text = "Preparing destination directory...";
-    await mkdir(destPath, { recursive: true });
-    spinner.succeed("Destination directory ready");
+  return dependencies;
+}
 
-    // Step 3: Clone the repository
-    const installPath = resolve(destPath, packageName);
+/**
+ * Install a single package with dependency resolution
+ * @param {string} packageName - Package name to install
+ * @param {string} version - Version to install
+ * @param {string} destination - Installation destination
+ * @param {GitLobsterClient} client - GitLobster client instance
+ * @param {boolean} autoDeps - Whether to auto-resolve dependencies
+ * @param {boolean} yes - Skip confirmation prompts
+ * @param {Set} installed - Set to track already installed packages
+ */
+async function installPackage(
+  packageName,
+  version,
+  destination,
+  client,
+  autoDeps,
+  yes,
+  installed,
+) {
+  if (installed.has(packageName)) {
+    console.log(chalk.dim(`  ${packageName} already installed, skipping...`));
+    return;
+  }
 
-    // Check if directory already exists
-    if (existsSync(installPath)) {
-      spinner.stop();
-      const isDir = await isDirectory(installPath);
+  const spinner = ora(`Installing ${packageName}@${version}`).start();
 
-      if (isDir && !options.yes) {
-        const readline = await import("readline");
-        const rl = readline.createInterface({
-          input: process.stdin,
-          output: process.stdout,
-        });
+  try {
+    const cloneUrl = client.getCloneUrl(packageName);
+    const installPath = resolve(destination, packageName);
 
-        const answer = await new Promise((resolve) => {
-          rl.question(
-            chalk.yellow(
-              `Directory ${chalk.cyan(installPath)} already exists. Overwrite? (y/N): `,
-            ),
-            (ans) => {
-              rl.close();
-              resolve(ans.toLowerCase().trim());
-            },
-          );
-        });
-
-        if (answer !== "y") {
-          console.log(chalk.yellow("\nInstallation cancelled."));
-          process.exit(0);
-        }
-      } else if (!isDir) {
-        throw new Error(`Path exists but is not a directory: ${installPath}`);
-      }
-
-      spinner.start();
-
-      // Remove existing directory
-      const { rm } = await import("fs/promises");
-      await rm(installPath, { recursive: true, force: true });
-      spinner.text = "Cloning repository...";
-    } else {
-      spinner.text = "Cloning repository...";
-    }
-
+    // Clone the repository
     const cloneResult = cloneRepo(cloneUrl, installPath);
-
     if (!cloneResult.success) {
       throw new Error(`Failed to clone repository: ${cloneResult.message}`);
     }
 
-    spinner.succeed(`Cloned ${chalk.cyan(packageName)}`);
-
-    // Step 4: Checkout specific version if requested (tag format: v{version})
-    if (options.version && options.version !== "latest") {
-      spinner.text = `Checking out version ${options.version}...`;
-
-      // Try with v prefix first (standard git tag format)
-      const tagName = `v${options.version}`;
-
+    // Checkout specific version if requested
+    if (version && version !== "latest") {
       try {
+        const tagName = `v${version}`;
         execFileSync("git", ["checkout", tagName], {
           cwd: installPath,
           stdio: "pipe",
         });
-        spinner.succeed(`Checked out ${chalk.cyan(tagName)}`);
       } catch (tagError) {
-        // Try without v prefix
         try {
-          execFileSync("git", ["checkout", options.version], {
+          execFileSync("git", ["checkout", version], {
             cwd: installPath,
             stdio: "pipe",
           });
-          spinner.succeed(`Checked out ${chalk.cyan(options.version)}`);
         } catch (checkoutError) {
-          // If neither works, just stay on current branch (likely main/master)
-          spinner.warn(
-            `Could not checkout ${options.version}, staying on current branch`,
-          );
+          // Stay on current branch
         }
       }
     }
 
-    // Step 5: Read gitlobster.json from cloned repository
-    spinner.text = "Reading manifest...";
+    // Read manifest
     const manifestPath = resolve(installPath, "gitlobster.json");
+    const manifestContent = await readFile(manifestPath, "utf-8");
+    const manifest = JSON.parse(manifestContent);
 
-    let manifest;
-    try {
-      const manifestContent = await readFile(manifestPath, "utf-8");
-      manifest = JSON.parse(manifestContent);
-    } catch (error) {
-      throw new Error(
-        `Invalid or missing gitlobster.json in cloned repository`,
-      );
-    }
-
-    spinner.succeed("Manifest loaded");
-
-    // Use version from manifest if not specified
-    if (!options.version || options.version === "latest") {
-      version = manifest.version || version;
-    }
-
-    // Step 6: Display permissions and get approval
-    if (!options.yes) {
-      spinner.stop();
+    // Display permissions if not auto-deps
+    if (!autoDeps && !yes) {
       console.log("\n" + chalk.yellow("⚠ Permission Review Required"));
       console.log(`\nPackage: ${chalk.cyan(packageName)}@${version}`);
       console.log(
@@ -319,16 +262,126 @@ export async function installCommand(packageName, options) {
           console.log(`  ${manifest.permissions.env.join(", ")}`);
         }
       }
-
-      console.log("\n" + chalk.dim("(Use --yes to skip this prompt)\n"));
-      spinner.start();
     }
 
-    // Step 7: Display safety warning and get confirmation
-    displaySafetyWarning();
+    spinner.succeed(chalk.green(`Installed ${packageName}@${version}`));
+    installed.add(packageName);
+  } catch (error) {
+    spinner.fail(chalk.red(`Failed to install ${packageName}`));
+    console.error(`\n${chalk.red("Error:")} ${error.message}`);
+    throw error;
+  }
+}
 
-    if (!options.yes) {
+/**
+ * Main install command - Git Workflow (V2.5)
+ * @param {string} packageName - Package name to install
+ * @param {object} options - Command options
+ * @param {string} options.registry - Registry URL
+ * @param {string} options.destination - Installation destination (default: ~/.gitlobster/skills)
+ * @param {string} options.version - Specific version to install (default: latest)
+ * @param {boolean} options.yes - Skip confirmation prompts
+ * @param {boolean} options.autoDeps - Auto-resolve and install dependencies
+ */
+export async function installCommand(packageName, options) {
+  const spinner = ora(`Installing ${packageName}`).start();
+
+  try {
+    // Step 0: Verify git is available first
+    if (!checkGitAvailable()) {
+      throw new Error(
+        "Git is not available. Please install Git and ensure it is in your PATH.",
+      );
+    }
+    spinner.succeed("Git is available");
+
+    // Resolve destination path
+    const destPath = resolve(
+      options.destination?.replace(/^~/, process.env.HOME) ||
+        DEFAULT_DESTINATION.replace(/^~/, process.env.HOME),
+    );
+    const registryUrl = options.registry || "https://gitlobster.registry";
+    const cloneUrl = `${registryUrl}/git/${packageName}.git`;
+
+    // Determine version to install
+    let version = options.version || "latest";
+
+    // Step 1: Verify package exists in registry (optional - API may not be available)
+    // We do this to validate the package name before attempting clone
+    spinner.text = "Verifying package in registry...";
+
+    const client = new GitLobsterClient({ registryUrl });
+    let manifest;
+
+    try {
+      const metadata = await client.getPackageMetadata(packageName);
+
+      if (version === "latest") {
+        version = metadata.latest;
+      }
+
+      if (!metadata.versions.includes(version) && version !== metadata.latest) {
+        throw new Error(
+          `Version ${version} not found. Available: ${metadata.versions.join(", ")}`,
+        );
+      }
+
+      // Get manifest for dependency resolution
+      manifest = await client.getManifest(packageName, version);
+
+      spinner.succeed(
+        `Found ${chalk.cyan(packageName)}@${chalk.cyan(version)} in registry`,
+      );
+    } catch (apiError) {
+      // Continue anyway - the clone URL might still work
+      spinner.info("Registry API unavailable, proceeding with Git clone");
+      spinner.text = "Cloning repository...";
+    }
+
+    // Step 2: Prepare destination directory
+    spinner.text = "Preparing destination directory...";
+    await mkdir(destPath, { recursive: true });
+    spinner.succeed("Destination directory ready");
+
+    // Step 3: Safety warning + user confirmation BEFORE writing anything to disk
+    if (!options.autoDeps && !options.yes) {
       spinner.stop();
+      displaySafetyWarning();
+
+      // Fetch and display manifest permissions before cloning
+      if (manifest?.permissions) {
+        console.log(chalk.yellow("\n⚠ Permission Review"));
+        console.log(`\nPackage: ${chalk.cyan(packageName)}@${version}`);
+        if (manifest.author) {
+          console.log(
+            `Author:  ${manifest.author.name || "Unknown"} (${manifest.author.email || "N/A"})`,
+          );
+        }
+        if (manifest.permissions.filesystem) {
+          console.log("\n" + chalk.bold("Filesystem Access:"));
+          if (manifest.permissions.filesystem.read) {
+            console.log(
+              `  Read:  ${manifest.permissions.filesystem.read.join(", ")}`,
+            );
+          }
+          if (manifest.permissions.filesystem.write) {
+            console.log(
+              `  Write: ${manifest.permissions.filesystem.write.join(", ")}`,
+            );
+          }
+        }
+        if (manifest.permissions.network) {
+          console.log("\n" + chalk.bold("Network Access:"));
+          console.log(
+            `  Domains: ${manifest.permissions.network.domains?.join(", ") || "N/A"}`,
+          );
+        }
+        if (manifest.permissions.env) {
+          console.log("\n" + chalk.bold("Environment Variables:"));
+          console.log(`  ${manifest.permissions.env.join(", ")}`);
+        }
+      }
+
       const confirmed = await getUserConfirmation();
       if (!confirmed) {
         console.log(chalk.yellow("\nInstallation cancelled by user."));
@@ -337,16 +390,78 @@ export async function installCommand(packageName, options) {
       spinner.start();
     }
 
-    // Step 8: Finalize installation
-    spinner.succeed(chalk.green(`Installed ${packageName}@${version}`));
-    console.log(`\n  Location: ${chalk.cyan(installPath)}`);
+    // Step 4: Install dependencies (if --auto-deps)
+    const installed = new Set();
 
-    // Step 9: Check dependencies
-    if (manifest.dependencies?.skills) {
-      console.log("\n" + chalk.yellow("⚠ Skill dependencies detected:"));
+    if (options.autoDeps && manifest?.dependencies?.skills) {
+      spinner.text = "Resolving dependencies...";
+
+      // Resolve all dependencies recursively
+      const dependencies = await resolveDependencies(
+        packageName,
+        version,
+        client,
+      );
+
+      if (dependencies.length > 0) {
+        console.log(
+          chalk.yellow(`\nAuto-resolving ${dependencies.length} dependencies:`),
+        );
+        for (const dep of dependencies) {
+          console.log(`  ${chalk.cyan(dep.name)}@${chalk.cyan(dep.version)}`);
+        }
+
+        // Install dependencies first
+        for (const dep of dependencies) {
+          try {
+            await installPackage(
+              dep.name,
+              dep.version,
+              destPath,
+              client,
+              true,
+              options.yes,
+              installed,
+            );
+          } catch (error) {
+            console.warn(
+              chalk.yellow(
+                `Warning: Failed to install dependency ${dep.name}: ${error.message}`,
+              ),
+            );
+          }
+        }
+      } else {
+        console.log(chalk.dim("  No dependencies found"));
+      }
+    }
+
+    // Step 5: Install the main package
+    await installPackage(
+      packageName,
+      version,
+      destPath,
+      client,
+      options.autoDeps,
+      options.yes,
+      installed,
+    );
+
+    // Step 6: Final success message
+    spinner.succeed(chalk.green(`Installed ${packageName}@${version}`));
+    console.log(`\n  Location: ${chalk.cyan(destPath)}`);
+
+    // Step 7: Show dependency information
+    if (manifest?.dependencies?.skills) {
+      console.log("\n" + chalk.yellow("⚠ Skill dependencies:"));
       for (const [dep, ver] of Object.entries(manifest.dependencies.skills)) {
         console.log(`  ${dep}@${ver} - Run: gitlobster install ${dep}`);
       }
+      console.log(
+        chalk.dim(
+          "\nTip: Use --auto-deps to automatically install dependencies",
+        ),
+      );
     }
   } catch (error) {
     spinner.fail(chalk.red("Installation failed"));

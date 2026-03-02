@@ -19,7 +19,7 @@
 import { readFile } from "fs/promises";
 import { resolve } from "path";
 import nacl from "tweetnacl";
-import { encodeBase64, decodeBase64 } from "tweetnacl-util";
+import * as util from "tweetnacl-util";
 
 /**
  * Fields that are added by signing — must be excluded from
@@ -62,7 +62,7 @@ export function buildCanonical(manifest) {
 export function signManifest(canonicalStr, secretKey) {
   const message = new Uint8Array(Buffer.from(canonicalStr, "utf-8"));
   const signature = nacl.sign.detached(message, secretKey);
-  return encodeBase64(signature);
+  return util.encodeBase64(signature);
 }
 
 /**
@@ -73,7 +73,7 @@ export function signManifest(canonicalStr, secretKey) {
  */
 export function derivePublicKey(secretKey) {
   const keyPair = nacl.sign.keyPair.fromSecretKey(secretKey);
-  return encodeBase64(keyPair.publicKey);
+  return util.encodeBase64(keyPair.publicKey);
 }
 
 /**
@@ -106,7 +106,7 @@ export async function loadSecretKey(keyPath) {
     );
   }
 
-  const secretKey = decodeBase64(keyRaw.trim());
+  const secretKey = Buffer.from(keyRaw.trim(), "base64");
 
   if (secretKey.length !== 64) {
     throw new Error(
