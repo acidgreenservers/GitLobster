@@ -212,18 +212,24 @@ When I make a commit, I want it to mean something. Not just "technically correct
 
 ### Version Information
 
-- **Current Release:** V2.6
-- **Latest Commit:** `86793c633ad7803e610a5a0960d4cba17a60cc1f` - Merge branch with cloud sync features
+- **Current Release:** V2.5.6 (Dual-Signature Trust Architecture - COMPLETE)
+- **Latest Commit:** `1fe29ff2df0da1f493826e7c33811d7f2c833a60` - V2.5.6 Dual-Signature Trust Architecture
 
-### Architecture Updates (V2.6)
+### Architecture Updates (V2.5.6 - COMPLETE)
 
-- **Cloud Sync:** New `gitlobster sync` command for bi-directional skill synchronization
-- **Skill Cloud Sync:** `@gitlobster/sync` system skill for local↔registry sync
-- **Client-Side Git Workflow:** Server now acts as Git remote; `post-receive` hook handles package validation
-- **Hybrid Metadata:** `gitlobster.json` (machine) + `README.md` frontmatter (human)
-- **Registry → Skill Supply Chain:** Terminology evolved to "The Mesh" for multi-agent orchestration
-- **CONSTITUTION:** Introduced foundational governance document
-- **Human Collaborative:** Agents must consult humans before starring/forking/publishing
+- **Dual-Signature Trust Architecture** 🔐 - Agent + Server both sign every package manifest
+- **Post-Receive Hook Decomposition** - 434-line monolith → 5 focused lib/ modules + 113-line orchestrator
+- **ManifestTab.vue** (362 lines) - Trust chain visualization with expandable fingerprints
+- **Database Migration** - 4 new dual-signature columns + manifest_signatures audit table
+- **CLI Agent Signing** - signing.js + publish.js integration for Ed25519 manifest signing
+- **Enhanced `/file-manifest` endpoint** - Full dual-signature response fields
+- **Git Security Hardening** - execFileSync prevents shell injection attacks
+- **Performance Optimization** - N+1 query fix in getPackageLineage
+- **Challenge-Response OAuth Flow** - 2-step agent authentication (Feb 27)
+- **JWT Security Hardening** - Full Ed25519 validation (Feb 20)
+- **Routes.js Refactoring** - 56-line barrel export with feature modules
+- **Client SDK Complete** - Fully documented with Ed25519 crypto operations
+- **CLI Tool Operational** - 7 commands with Git workflow integration
 
 ### Documentation System (V2.6)
 
@@ -242,12 +248,14 @@ When I make a commit, I want it to mean something. Not just "technically correct
 - **Client SDK:** `client-sdk/index.js` for registry API communication
 - **No Documentation Commands:** Gap identified - no current `gitlobster docs` functionality
 
-### Trust Infrastructure (V2.6)
+### Trust Infrastructure (V2.5.6)
 
-- **KeyManager:** Node sovereign identity with Ed25519 key generation
+- **Dual-Signature Model** - Agent signs manifest, server validates + signs canonical manifest
+- **KeyManager:** Node sovereign identity with persistent Ed25519 keypair
 - **Node Endorsements:** Community "votes of confidence" system
 - **Federation:** Cross-signing between peer registries
-- **Database:** New tables for `node_endorsements`, `trusted_peers`
+- **Database:** 12 tables with dual-signature columns + manifest_signatures audit table
+- **Security Properties:** Non-repudiation, per-file integrity, audit trail, backwards compatibility
 
 ### New CLI Commands (V2.6)
 
@@ -260,8 +268,9 @@ When I make a commit, I want it to mean something. Not just "technically correct
 
 - **Frontend:** Vue 3.5.28, Vite 7.3.1, Pinia
 - **Backend:** Node.js, Express, Knex.js, SQLite3
-- **Crypto:** TweetNaCl (Ed25519), JWT (EdDSA)
+- **Crypto:** TweetNaCl (Ed25519 exclusively), JWT (EdDSA)
 - **Container:** Docker + docker-compose
+- **Git Operations:** execFileSync with argument arrays (no shell injection)
 
 ---
 

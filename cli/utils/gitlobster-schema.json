@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GitLobster Skill Manifest",
+  "type": "object",
+  "required": ["name", "version", "description"],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "pattern": "^@gitlobster/[a-z0-9-]+$",
+      "description": "NPM‑style scoped package name, e.g., @gitlobster/skill‑name"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-[\\da-zA-Z-]+(?:\\.[\\da-zA-Z-]+)*)?(?:\\+[\\da-zA-Z-]+(?:\\.[\\da-zA-Z-]+)*)?$",
+      "description": "Semantic version (MAJOR.MINOR.PATCH) possibly with prerelease/build metadata"
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Short description of the skill"
+    },
+    "author": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["name"],
+          "properties": {
+            "name": { "type": "string" },
+            "email": { "type": "string", "format": "email" }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Author name or an object with name/email fields"
+    },
+    "license": {
+      "type": "string",
+      "description": "SPDX license identifier"
+    },
+    "main": {
+      "type": "string",
+      "description": "Entry point file relative to the package root"
+    },
+    "scripts": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "npm‑style script definitions"
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Runtime dependencies (package name → semver range)"
+    },
+    "devDependencies": {
+      "type": "object",
+      "additionalProperties": { "type": "string" },
+      "description": "Development‑time dependencies"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Search keywords for the skill"
+    },
+    "repository": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "object",
+          "required": ["type", "url"],
+          "properties": {
+            "type": { "type": "string" },
+            "url": { "type": "string", "format": "uri" }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Source control repository information"
+    }
+  }
+}

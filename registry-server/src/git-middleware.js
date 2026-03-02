@@ -106,7 +106,7 @@ function scopedToDirName(name) {
     );
   }
 
-  return safeName.endsWith(".git") ? safeName : safeName + ".git";
+  return safeName + ".git";
 }
 
 /**
@@ -131,7 +131,7 @@ const gitMiddleware = (req, res, next) => {
   // Handle requests with /git/... prefix or direct .git access
   // Pattern: /git/:repo.git/* or /git/:repo.git or /:repo.git/*
   const gitRegex =
-    /^\/git\/([a-zA-Z0-9_\-@\.\/]+\.git)(.*)$|^\/([a-zA-Z0-9_\-@\.\/]+\.git)(.*)$/;
+    /^\/git\/([a-zA-Z0-9_\-@\.]+\.git)(.*)$|^\/([a-zA-Z0-9_\-]+\.git)(.*)$/;
   const match = req.url.match(gitRegex);
 
   if (!match) return next();
@@ -154,64 +154,16 @@ const gitMiddleware = (req, res, next) => {
   }
   const repoPath = path.join(GIT_PROJECT_ROOT, dirName);
 
-  // Auto-Provisioning on Git Push
-  // If the agent attempts a git push (service=git-receive-pack) and the repo doesn't exist, create it.
-  const isPushRequest =
-    req.query.service === "git-receive-pack" ||
-    req.url.endsWith("/git-receive-pack");
-
-  if (isPushRequest && !fs.existsSync(repoPath)) {
-    console.log(
-      `[GIT-MIDDLEWARE] Auto-provisioning new repository: ${dirName}`,
-    );
-    try {
-      // 1. Create the container directory
-      fs.mkdirSync(repoPath, { recursive: true });
-
-      // 2. Initialize it as a bare git repository
-      const { execFileSync } = require("child_process");
-      execFileSync("git", ["init", "--bare"], {
-        cwd: repoPath,
-        stdio: "ignore",
-      });
-
-      // 3. Attach the gitlobster post-receive hook from the template
-      const hooksDestDir = path.join(repoPath, "hooks");
-      const postReceiveSource = path.join(
-        GIT_TEMPLATE_DIR,
-        "hooks",
-        "post-receive",
-      );
-      const postReceiveDest = path.join(hooksDestDir, "post-receive");
-
-      if (!fs.existsSync(hooksDestDir)) {
-        fs.mkdirSync(hooksDestDir, { recursive: true });
-      }
-
-      if (fs.existsSync(postReceiveSource)) {
-        fs.copyFileSync(postReceiveSource, postReceiveDest);
-        fs.chmodSync(postReceiveDest, 0o755);
-      } else {
-        console.warn(
-          `[GIT-MIDDLEWARE] Initialized ${dirName} but could not find template hook to copy.`,
-        );
-      }
-    } catch (err) {
-      console.error(
-        `[GIT-MIDDLEWARE] Failed to auto-provision ${dirName}:`,
-        err,
-      );
-      // Give git unbuffered stderr, then 500
-      return res.status(500).send("Failed to provision git repository");
-    }
-  }
+  // PATH_INFO must be relative to GIT_PROJECT_ROOT and not include query string
+  const urlObj = new URL(req.originalUrl, "http://localhost");
+  const safePathInfo = "/" + dirName + urlObj.pathname.split(repoName)[1];
 
   const env = {
     ...process.env,
     GIT_PROJECT_ROOT: GIT_PROJECT_ROOT,
     GIT_HTTP_EXPORT_ALL: "1",
     GIT_TEMPLATE_DIR: GIT_TEMPLATE_DIR, // Auto-install hooks on new repos
-    PATH_INFO: `/${dirName}/${pathInfo.split("?")[0]}`,
+    PATH_INFO: safePathInfo,
     REMOTE_USER: req.user ? req.user.id : "anonymous",
     REMOTE_ADDR: req.ip,
     CONTENT_TYPE: req.headers["content-type"],
