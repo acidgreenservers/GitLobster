@@ -1,6 +1,5 @@
 services:
   registry:
-    build: .
     image: ghcr.io/acidgreenservers/gitlobster:main
     container_name: gitlobster-registry
     restart: unless-stopped

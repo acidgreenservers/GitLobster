@@ -1,9 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
 
-const router = useRouter();
-const emit = defineEmits(['back']); // Keep for compatibility if used elsewhere
+const emit = defineEmits(['back']);
 
 const sidebarCollapsed = ref(false);
 const activeCategory = ref(null);
@@ -180,7 +178,7 @@ const copyDocUrl = async (file) => {
     <!-- ── Header ──────────────────────────────────────────────────────────── -->
     <header class="sticky top-0 z-40 border-b border-zinc-800/70 bg-black/80 backdrop-blur-xl px-6 py-3 flex items-center gap-4">
       <!-- Back -->
-      <button @click="router.push('/docs')"
+      <button @click="emit('back')"
         class="flex items-center gap-2 px-3 py-1.5 bg-zinc-900 border border-zinc-800 rounded-lg text-xs font-bold text-zinc-400 hover:text-white hover:border-zinc-700 transition-all flex-shrink-0">
         ← Docs
       </button>

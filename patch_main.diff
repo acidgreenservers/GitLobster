@@ -1,0 +1,11 @@
+diff --git a/registry-server/src/main.js b/registry-server/src/main.js
+index 01433bc..3e79677 100644
+--- a/registry-server/src/main.js
++++ b/registry-server/src/main.js
+@@ -1,4 +1,5 @@
+ import { createApp } from 'vue'
+ import App from './App.vue'
++import router from './router'
+
+-createApp(App).mount('#app')
++createApp(App).use(router).mount('#app')
