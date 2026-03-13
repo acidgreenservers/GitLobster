@@ -52,24 +52,33 @@ async function getAgentProfile(req, res) {
 
     const rawSkills = await db("packages").where({ author_name: name });
 
-    // Enhance skills with latest version and parsed tags
-    const skills = await Promise.all(
-      rawSkills.map(async (pkg) => {
-        const latest = await db("versions")
-          .where({ package_name: pkg.name })
-          .orderBy("published_at", "desc")
-          .first();
+    // 1. Get all package names
+    const packageNames = rawSkills.map((pkg) => pkg.name);
 
-        return {
-          ...pkg,
-          tags:
-            typeof pkg.tags === "string"
-              ? JSON.parse(pkg.tags || "[]")
-              : pkg.tags || [],
-          latest_version: latest ? latest.version : "0.0.0",
-        };
-      }),
-    );
+    // 2. Fetch all versions for these packages in a single query
+    const allVersions = await db("versions")
+      .whereIn("package_name", packageNames)
+      .orderBy("published_at", "desc");
+
+    // 3. Map to latest version for each package in memory
+    const latestVersionMap = new Map();
+    allVersions.forEach((v) => {
+      if (!latestVersionMap.has(v.package_name)) {
+        latestVersionMap.set(v.package_name, v.version);
+      }
+    });
+
+    // 4. Enhance skills
+    const skills = rawSkills.map((pkg) => {
+      return {
+        ...pkg,
+        tags:
+          typeof pkg.tags === "string"
+            ? JSON.parse(pkg.tags || "[]")
+            : pkg.tags || [],
+        latest_version: latestVersionMap.get(pkg.name) || "0.0.0",
+      };
+    });
 
     // Get identity metadata
     const identityMeta = await getIdentityMetadata(name);
@@ -181,24 +190,33 @@ async function getAuthenticatedAgentSkills(req, res) {
 
     const rawSkills = await db("packages").where({ author_name: agentName });
 
-    // Enhance skills with latest version and parsed tags
-    const skills = await Promise.all(
-      rawSkills.map(async (pkg) => {
-        const latest = await db("versions")
-          .where({ package_name: pkg.name })
-          .orderBy("published_at", "desc")
-          .first();
+    // 1. Get all package names
+    const packageNames = rawSkills.map((pkg) => pkg.name);
 
-        return {
-          ...pkg,
-          tags:
-            typeof pkg.tags === "string"
-              ? JSON.parse(pkg.tags || "[]")
-              : pkg.tags || [],
-          latest_version: latest ? latest.version : "0.0.0",
-        };
-      }),
-    );
+    // 2. Fetch all versions for these packages in a single query
+    const allVersions = await db("versions")
+      .whereIn("package_name", packageNames)
+      .orderBy("published_at", "desc");
+
+    // 3. Map to latest version for each package in memory
+    const latestVersionMap = new Map();
+    allVersions.forEach((v) => {
+      if (!latestVersionMap.has(v.package_name)) {
+        latestVersionMap.set(v.package_name, v.version);
+      }
+    });
+
+    // 4. Enhance skills
+    const skills = rawSkills.map((pkg) => {
+      return {
+        ...pkg,
+        tags:
+          typeof pkg.tags === "string"
+            ? JSON.parse(pkg.tags || "[]")
+            : pkg.tags || [],
+        latest_version: latestVersionMap.get(pkg.name) || "0.0.0",
+      };
+    });
 
     res.json(skills);
   } catch (error) {
