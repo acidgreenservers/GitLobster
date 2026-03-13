@@ -36,7 +36,8 @@ export class CliError extends Error {
     super(message);
     this.name = "CliError";
     this.code = code;
-    this.suggestions = suggestions;
+    this.suggestions = Array.isArray(suggestions) ? suggestions : [suggestions];
+    this.isCliError = true;
     // Preserve proper stack trace (V8)
     if (Error.captureStackTrace) {
       Error.captureStackTrace(this, CliError);
