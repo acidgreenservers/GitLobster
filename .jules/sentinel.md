@@ -1,3 +1,8 @@
+## 2026-04-02 - [CRITICAL] Fixed Path Traversal in Package Downloads
+**Vulnerability:** The `/v1/packages/:name/:version/tarball` endpoint in `registry-server/src/routes/packages/downloads.js` used `path.join(STORAGE_DIR, versionData.storage_path)` without validating the resulting path. If an attacker manipulated the database record for `storage_path` to include `../`, they could read arbitrary files on the server (like `../../../../etc/passwd`).
+**Learning:** Even when data comes from a trusted database, file paths must be rigorously validated before being passed to `fs` operations, especially if those paths are eventually derived from or can be influenced by untrusted input during package publication.
+**Prevention:** Always use `path.resolve()` to normalize paths and verify that the resulting path strictly `startsWith` the expected base directory (e.g., `tarballPath.startsWith(resolvedStorageDir + path.sep)`).
+
 ## 2026-02-23 - Command Injection in Fork Operations
 **Vulnerability:** The `botkitFork` and `injectForkLineage` functions in `registry-server/src/features/botkit/fork.service.js` used `execSync` and `exec` with string interpolation of user-controlled variables (`parent_package`, `forked_package`). This allowed attackers to escape the git command and execute arbitrary shell commands on the registry server.
 **Learning:** `JSON.stringify` or simple quotes are not sufficient to sanitize inputs for shell execution. Arrays of arguments with `execFile` should always be preferred.

@@ -40,7 +40,16 @@ async function downloadTarball(req, res) {
       });
     }
 
-    const tarballPath = path.join(STORAGE_DIR, versionData.storage_path);
+    const tarballPath = path.resolve(STORAGE_DIR, versionData.storage_path);
+    const resolvedStorageDir = path.resolve(STORAGE_DIR);
+
+    // SECURITY: Prevent path traversal vulnerabilities
+    if (!tarballPath.startsWith(resolvedStorageDir + path.sep)) {
+      return res.status(403).json({
+        error: "invalid_path",
+        message: "Path traversal detected in storage path",
+      });
+    }
 
     try {
       await fs.access(tarballPath);
