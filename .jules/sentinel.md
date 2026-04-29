@@ -23,3 +23,8 @@
 - Handles scoped packages safely: Replaces `/` with `-`.
 - **Note:** Deliberately chose NOT to collapse multiple hyphens (`---`) to prevent collision between distinct package names like `foo-bar` and `foo--bar`.
 **Verification:** Added `registry-server/test-scoped-to-dirname.js` to test valid and malicious inputs.
+
+## 2026-02-27 - URL-Encoded Path Traversal Bypass in Git Middleware
+**Vulnerability:** The Git middleware at `registry-server/src/git-middleware.js` protected against directory traversal by checking `repoName.includes("..") || pathInfo.includes("..")`. However, the payload parts extracted from `req.url` were not URI decoded prior to the check. An attacker could bypass the protection using URL-encoded dots (e.g. `%2e%2e`).
+**Learning:** Simple string matching for path traversal (`..`) is vulnerable to URL-encoding bypasses if performed on raw URL components before decoding. Also, when URI decoding inputs, a `try/catch` must be used as `decodeURIComponent` throws a `URIError` on malformed inputs, which could lead to an unhandled exception DoS.
+**Prevention:** Always decode URL components using `decodeURIComponent` (wrapped in a `try/catch` to handle malformed encoding) *before* applying path traversal or input validation checks.

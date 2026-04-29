@@ -131,14 +131,22 @@ const gitMiddleware = (req, res, next) => {
   // Handle requests with /git/... prefix or direct .git access
   // Pattern: /git/:repo.git/* or /git/:repo.git or /:repo.git/*
   const gitRegex =
-    /^\/git\/([a-zA-Z0-9_\-@\.]+\.git)(.*)$|^\/([a-zA-Z0-9_\-]+\.git)(.*)$/;
+    /^\/git\/([a-zA-Z0-9_\-@\.\%]+\.git)(.*)$|^\/([a-zA-Z0-9_\-\%]+\.git)(.*)$/;
   const match = req.url.match(gitRegex);
 
   if (!match) return next();
 
   // Determine which group matched
-  const repoName = match[1] || match[3];
-  const pathInfo = (match[2] || match[4] || "/").replace(/^\/+/, "");
+  let repoName = match[1] || match[3];
+  let pathInfo = (match[2] || match[4] || "/").replace(/^\/+/, "");
+
+  // Decode URI components to prevent URL-encoded bypasses like %2e%2e
+  try {
+    repoName = decodeURIComponent(repoName);
+    pathInfo = decodeURIComponent(pathInfo);
+  } catch (err) {
+    return res.status(400).send("Bad Request: Invalid URL encoding");
+  }
 
   // Security: Prevent directory traversal
   if (repoName.includes("..") || pathInfo.includes("..")) {
@@ -156,7 +164,8 @@ const gitMiddleware = (req, res, next) => {
 
   // PATH_INFO must be relative to GIT_PROJECT_ROOT and not include query string
   const urlObj = new URL(req.originalUrl, "http://localhost");
-  const safePathInfo = "/" + dirName + urlObj.pathname.split(repoName)[1];
+  // Split on the decoded repo name, but urlObj.pathname might be URL encoded, so decode it first
+  const safePathInfo = "/" + dirName + decodeURIComponent(urlObj.pathname).split(repoName)[1];
 
   const env = {
     ...process.env,
