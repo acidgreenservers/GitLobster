@@ -124,7 +124,7 @@ watch(() => route.params, fetchRepo, { immediate: true });
                 <!-- Repo Title Bar -->
                 <div class="flex items-center justify-between flex-wrap gap-4">
                     <div class="flex items-center gap-4">
-                        <div class="w-14 h-14 lobster-gradient rounded-2xl flex items-center justify-center text-3xl shadow-lg">📦</div>
+                        <div class="w-14 h-14 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] rounded-2xl flex items-center justify-center text-3xl shadow-lg">📦</div>
                         <div>
                             <h1 class="text-3xl font-black tracking-tight flex items-center gap-3">
                                 {{ repo.name }}
@@ -216,7 +216,7 @@ watch(() => route.params, fetchRepo, { immediate: true });
 
                         <!-- Download -->
                         <button @click="showSafetyWarning('/v1/packages/' + encodeURIComponent(repo.name) + '/latest/tarball')"
-                            class="px-4 py-2 lobster-gradient text-black font-black rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">
+                            class="px-4 py-2 bg-[#21262d] border border-[#30363d] hover:bg-[#30363d] text-white font-black rounded-lg text-sm transition-transform active:scale-95 flex items-center gap-2">
                             <span>↓</span>
                             <span>Download</span>
                         </button>
