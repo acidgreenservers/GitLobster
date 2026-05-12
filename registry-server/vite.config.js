@@ -1,11 +1,15 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
+import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 
 export default defineConfig({
-    plugins: [vue()],
-    root: '.', // Use current directory as root
-    publicDir: 'public', // Serve static assets from public/
+    plugins: [
+        vue(),
+        tailwindcss(),
+    ],
+    root: '.',
+    publicDir: 'public',
     build: {
         outDir: 'dist',
         emptyOutDir: true,
