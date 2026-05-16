@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const nacl = require('tweetnacl');
 const { decodeBase64 } = require('tweetnacl-util');
 const { saveCollective, getCollective, verifyGovernanceThreshold } = require('../collectives/registry');
+const db = require('../db');
 
 /**
  * GET /v1/collectives/:id
@@ -30,16 +31,29 @@ async function get(req, res) {
 async function create(req, res) {
     try {
         const { manifest } = req.body;
-        const agent = req.agent; // Populated by requireAuth middleware
 
         if (!manifest) {
             return res.status(400).json({ error: 'missing_manifest', message: 'Manifest is required' });
         }
 
+        if (!req.auth?.payload?.sub) {
+            return res.status(401).json({ error: 'authentication_required' });
+        }
+
+        const agentName = req.auth.payload.sub;
+        const agent = await db("agents").where({ name: agentName }).first();
+
+        if (!agent || !agent.public_key) {
+            return res.status(403).json({
+                error: 'permission_denied',
+                message: 'Agent not found or has no public key'
+            });
+        }
+
         // 1. Verify that the Creator (authenticated agent) is an ADMIN in the new collective
         // This prevents creating DAOs you don't control (spam).
         const members = manifest.governance?.members || [];
-        const creatorMember = members.find(m => m.id === agent.publicKey);
+        const creatorMember = members.find(m => m.id === agent.public_key);
 
         if (!creatorMember || creatorMember.role !== 'admin') {
             return res.status(403).json({
